@@ -1,7 +1,11 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = path.join(__dirname, 'data/app.db');
+const dataDir = path.join(__dirname, 'data');
+fs.mkdirSync(dataDir, { recursive: true });
+
+const dbPath = path.join(dataDir, 'app.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error al abrir la base de datos:', err);
@@ -42,6 +46,21 @@ const initDatabase = () => {
     `, (err) => {
         if (err) console.error('Error al crear tabla códigos:', err);
         else console.log('✅ Tabla códigos_verificacion lista');
+    });
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS registros_pendientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            usuario TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            privacidad BOOLEAN DEFAULT 0,
+            fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `, (err) => {
+        if (err) console.error('Error al crear tabla registros_pendientes:', err);
+        else console.log('Tabla registros_pendientes lista');
     });
 };
 
