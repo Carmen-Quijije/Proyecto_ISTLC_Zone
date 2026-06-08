@@ -4,6 +4,8 @@
     border-bottom: 3px solid #FFC107;
     padding-top: 10px;
     padding-bottom: 10px;
+    flex-shrink: 0;
+    z-index: 100;
 }
 
 .navbar-brand{
@@ -55,7 +57,6 @@ h1{
 
 html,
 body{
-    height: 100%;
     margin: 0;
 }
 
@@ -63,15 +64,17 @@ body{
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    padding: 0;
 }
 
 footer{
-    margin-top: auto;
     background-color: #061A38;
     color: white;
     text-align: center;
-    padding: 15px;
+    padding: 20px 15px;
     border-top: 3px solid #FFC107;
+    margin-top: auto;
+    flex-shrink: 0;
 }
 
 footer p{
@@ -225,18 +228,169 @@ footer p{
     margin-top: 10px;
 }
 
-
-
-
-
-.registro-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: calc(100vh - 200px);
+.registro-main{
+    flex: 1;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 60px 20px !important;
+    min-height: auto;
 }
 
-.registro-card {
+.registro-card{
     width: 100%;
     max-width: 500px;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
 }
+
+.divider-text {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    color: #999;
+    font-weight: 600;
+}
+
+.divider-text::before,
+.divider-text::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background: #ddd;
+}
+
+.divider-text::before {
+    left: 0;
+}
+
+.divider-text::after {
+    right: 0;
+}
+
+.form-label {
+    color: #061A38;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    padding: 12px 15px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #FFC107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: #FFC107;
+    border-color: #FFC107;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border: 2px solid #6c757d;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+    color: #fff;
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+.text-decoration-none {
+    color: #FFC107;
+    font-weight: 600;
+}
+
+.text-decoration-none:hover {
+    color: #e0aa00;
+}
+
+/* =========================
+   MODAL DE CONFIRMACIÓN
+========================= */
+
+.modal-header.bg-primary {
+    background-color: #061A38 !important;
+}
+
+.modal-header h5 {
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.modal-header i {
+    margin-right: 8px;
+    color: #FFC107;
+}
+
+.modal-body {
+    padding: 30px;
+}
+
+.modal-body p {
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+#codigoConfirmacion {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 10px;
+    border: 2px solid #FFC107;
+}
+
+#codigoConfirmacion:focus {
+    border-color: #FFC107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.modal-footer {
+    border-top: 1px solid #e9ecef;
+    padding: 20px;
+}
+
+.modal-footer .btn {
+    min-width: 120px;
+    font-weight: 600;
+}
+
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 15px;
+    font-size: 15px;
+    margin: 0;
+}
+
+.alert i {
+    margin-right: 8px;
+}
+
+
+
+
+
