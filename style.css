@@ -229,3 +229,14 @@ footer p{
 
 
 
+.registro-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+}
+
+.registro-card {
+    width: 100%;
+    max-width: 500px;
+}
