@@ -390,6 +390,200 @@ footer p{
     margin-right: 8px;
 }
 
+.perfil-page{
+    background-color: #f0f2f5;
+}
+
+
+.perfil-foto-box{
+    position: relative;
+    margin-top: -90px;
+}
+
+.perfil-foto{
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    border: 5px solid white;
+    object-fit: cover;
+    background-color: white;
+}
+
+.btn-camara{
+    position: absolute;
+    right: 10px;
+    bottom: 15px;
+    background-color: #e9ecef;
+    border-radius: 50%;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.perfil-seguidores,
+.perfil-frase,
+.perfil-detalles{
+    margin: 3px 0;
+}
+
+.perfil-acciones{
+    margin-left: auto;
+}
+
+.perfil-tabs{
+    background-color: white;
+    display: flex;
+    gap: 35px;
+    padding: 15px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.perfil-tabs a{
+    text-decoration: none;
+    color: #555;
+    font-weight: 600;
+}
+
+.perfil-tabs .activo{
+    color: #0d6efd;
+    border-bottom: 3px solid #0d6efd;
+    padding-bottom: 12px;
+}
+
+.perfil-info{
+    display: flex;
+    align-items: end;
+    gap: 25px;
+    padding-bottom: 25px;
+    border-bottom: none;
+
+    margin-top: -150px;
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+.perfil-datos h1{
+    color: white;
+    font-size: 38px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-shadow: 2px 2px 6px rgba(0,0,0,0.55);
+}
+
+.perfil-datos p{
+    color: white;
+    margin: 3px 0;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.55);
+}
+
+.perfil-header{
+    background: linear-gradient(135deg,#958861,#061A38);
+    padding-bottom: 25px;
+}
+
+.perfil-portada{
+    height: 230px;
+    background: transparent;
+}
+
+.perfil-tabs{
+    margin-top: 0;
+}
+
+.icono-editar{
+    cursor:pointer;
+    color:#666;
+    font-size:28px;
+}
+
+.icono-editar:hover{
+    color:#001f4d;
+}
+
+.img-amigo{
+    width:90px;
+    height:90px;
+    object-fit:cover;
+    border-radius:12px;
+    margin-bottom:5px;
+}
+
+.dato-linea{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+}
+
+.dato-linea .material-symbols-outlined{
+    font-size: 28px;
+    color: #061A38;
+}
+
+.perfil-detalles{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.perfil-detalles .material-symbols-outlined{
+    font-size: 22px;
+}
+
+/* ==================================
+   LOGO ISTLC ZONE
+================================== */
+
+.logo-istlc{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    text-decoration:none !important;
+}
+
+.logo-istlc:hover{
+    text-decoration:none;
+}
+
+.logo-navbar{
+    width:65px;
+    height:65px;
+    object-fit:contain;
+
+    pointer-events:none;
+
+    filter:
+        drop-shadow(0 0 3px rgba(255,255,255,.9))
+        drop-shadow(0 0 8px rgba(255,255,255,.7));
+}
+
+.texto-logo{
+    color:white;
+    font-weight:bold;
+    font-size:40px;
+}
+
+.texto-logo::after{
+    content:" Zone";
+    color:#FFC107;
+}
+
+/* evita cursor de mano */
+
+.logo-istlc,
+.logo-istlc:hover,
+.logo-istlc:focus{
+    cursor:default !important;
+}
+
+
+
+
+
+
+
+
+
 
 
 

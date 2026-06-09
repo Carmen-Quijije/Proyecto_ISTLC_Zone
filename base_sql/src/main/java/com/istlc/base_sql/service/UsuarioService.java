@@ -45,4 +45,24 @@ public class UsuarioService {
     public List<Usuario> listarUsuarios() {
         return usuarioRepository.findAll();
     }
+
+    public Usuario actualizarUsuario(Integer id, Usuario datosActualizados) {
+
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+
+        if (usuario != null) {
+            usuario.setNombreCompleto(datosActualizados.getNombreCompleto());
+            usuario.setViveEn(datosActualizados.getViveEn());
+            usuario.setLugarOrigen(datosActualizados.getLugarOrigen());
+            usuario.setFechaNacimiento(datosActualizados.getFechaNacimiento());
+            usuario.setEstadoCivil(datosActualizados.getEstadoCivil());
+            usuario.setCarrera(datosActualizados.getCarrera());
+            usuario.setSemestre(datosActualizados.getSemestre());
+            usuario.setGenero(datosActualizados.getGenero());
+
+            return usuarioRepository.save(usuario);
+        }
+
+        return null;
+    }
 }

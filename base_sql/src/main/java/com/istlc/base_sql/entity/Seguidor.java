@@ -15,8 +15,8 @@ public class Seguidor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "IdSeguidor")
-    private Integer idSeguidor;
+    @Column(name = "IdSeguimiento")
+    private Integer idSeguimiento;
 
     @ManyToOne
     @JoinColumn(name = "IdUsuario")
@@ -29,12 +29,12 @@ public class Seguidor {
     public Seguidor() {
     }
 
-    public Integer getIdSeguidor() {
-        return idSeguidor;
+    public Integer getIdSeguimiento() {
+        return idSeguimiento;
     }
 
-    public void setIdSeguidor(Integer idSeguidor) {
-        this.idSeguidor = idSeguidor;
+    public void setIdSeguimiento(Integer idSeguimiento) {
+        this.idSeguimiento = idSeguimiento;
     }
 
     public Usuario getUsuario() {

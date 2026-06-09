@@ -1,7 +1,14 @@
 package com.istlc.base_sql.entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "Usuarios")
@@ -26,6 +33,31 @@ public class Usuario {
 
     @Column(name = "FechaRegistro")
     private LocalDateTime fechaRegistro;
+
+    // DATOS PERSONALES
+
+    @Column(name = "ViveEn")
+    private String viveEn;
+
+    @Column(name = "LugarOrigen")
+    private String lugarOrigen;
+
+    @Column(name = "FechaNacimiento")
+    private LocalDate fechaNacimiento;
+
+    @Column(name = "EstadoCivil")
+    private String estadoCivil;
+
+    @Column(name = "Genero")
+    private String genero;
+
+    // FORMACIÓN ACADÉMICA
+
+    @Column(name = "Carrera")
+    private String carrera;
+
+    @Column(name = "Semestre")
+    private String semestre;
 
     public Usuario() {
     }
@@ -76,5 +108,61 @@ public class Usuario {
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public String getViveEn() {
+        return viveEn;
+    }
+
+    public void setViveEn(String viveEn) {
+        this.viveEn = viveEn;
+    }
+
+    public String getLugarOrigen() {
+        return lugarOrigen;
+    }
+
+    public void setLugarOrigen(String lugarOrigen) {
+        this.lugarOrigen = lugarOrigen;
+    }
+
+    public LocalDate getFechaNacimiento() {
+        return fechaNacimiento;
+    }
+
+    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
+    }
+
+    public String getEstadoCivil() {
+        return estadoCivil;
+    }
+
+    public void setEstadoCivil(String estadoCivil) {
+        this.estadoCivil = estadoCivil;
+    }
+
+    public String getGenero() {
+        return genero;
+    }
+
+    public void setGenero(String genero) {
+        this.genero = genero;
+    }
+
+    public String getCarrera() {
+        return carrera;
+    }
+
+    public void setCarrera(String carrera) {
+        this.carrera = carrera;
+    }
+
+    public String getSemestre() {
+        return semestre;
+    }
+
+    public void setSemestre(String semestre) {
+        this.semestre = semestre;
     }
 }
