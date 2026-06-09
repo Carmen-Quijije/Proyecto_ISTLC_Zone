@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Perfil | ISTLC Zone</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
+
+    <link rel="icon" type="image/x-icon" href="images/iconoRed.ico" />
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+      <div class="container">
+        <a class="navbar-brand logo-istlc" href="javascript:void(0)">
+          <img
+            src="images/logo.png"
+            alt="Logo ISTLC Zone"
+            class="logo-navbar"
+          />
+
+          <span class="texto-logo"> ISTLC </span>
+        </a>
+
+        <div class="ms-auto">
+          <a href="muro.html" class="btn btn-warning me-2">Volver al muro</a>
+          <button class="btn btn-light" onclick="cerrarSesion()">
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="perfil-page">
+      <section class="perfil-header">
+        <div class="perfil-portada"></div>
+
+        <div class="perfil-info container">
+          <div class="perfil-foto-box">
+            <img
+              src="images/icono.png"
+              id="fotoPerfil"
+              class="perfil-foto"
+              alt="Foto perfil"
+            />
+            <label for="inputFoto" class="btn-camara">📷</label>
+            <input type="file" id="inputFoto" accept="image/*" hidden />
+          </div>
+
+          <div class="perfil-datos">
+            <h1 id="nombrePerfil">Usuario</h1>
+
+            <p class="perfil-seguidores" id="contadorSeguidores">
+              0 seguidores • 0 seguidos
+            </p>
+
+            <p class="perfil-frase">Bienvenido a mi perfil de ISTLC Zone.</p>
+
+            <p class="perfil-detalles">
+              <span class="material-symbols-outlined">location_on</span>
+              <span id="detalleViveEn">No registrado</span>
+
+              &nbsp;
+
+              <span class="material-symbols-outlined">school</span>
+              <span id="detalleCarrera">No registrado</span>
+
+              &nbsp;
+
+              <span class="material-symbols-outlined">book_6</span>
+              <span id="detalleSemestre">No registrado</span>
+            </p>
+          </div>
+
+          <div class="perfil-acciones">
+            <a href="editarPerfil.html" class="btn btn-warning"
+              >Editar perfil</a
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="perfil-tabs container">
+        <a href="#" class="activo">Todo</a>
+        <a href="#">Información</a>
+        <a href="#">Fotos</a>
+        <a href="#">Amigos</a>
+        <a href="#">Más</a>
+      </section>
+
+      <section class="container my-4">
+        <div class="row">
+          <aside class="col-md-4">
+            <div class="card shadow-sm p-4 mb-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h4 class="mb-0">Datos personales</h4>
+
+                <a href="editarPerfil.html" class="text-dark">
+                  <span class="material-symbols-outlined icono-editar"
+                    >edit</span
+                  >
+                </a>
+              </div>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">location_on</span>
+                Vive en <span id="viveEn">No registrado</span>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">house</span>
+                De <span id="lugarOrigen">No registrado</span>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">cake</span>
+                <span id="fechaNacimiento">No registrado</span>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">person</span>
+                Estado civil: <span id="estadoCivil">No registrado</span>
+              </p>
+            </div>
+
+            <div class="card shadow-sm p-4 mb-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h4 class="mb-0">Formación académica</h4>
+
+                <a href="editarPerfil.html" class="text-dark">
+                  <span class="material-symbols-outlined icono-editar"
+                    >edit</span
+                  >
+                </a>
+              </div>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">school</span>
+                <span id="carrera">No registrado</span>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">book_6</span>
+                <span id="semestre">No registrado</span>
+              </p>
+            </div>
+
+            <div class="card shadow-sm p-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h4 class="mb-0">Amigos</h4>
+                <a href="amigos.html">Buscar amigos</a>
+              </div>
+
+              <p class="text-muted" id="contadorAmigos">0 amigos</p>
+
+              <div class="row g-2" id="listaAmigos"></div>
+            </div>
+          </aside>
+
+          <section class="col-md-8">
+            <div class="card shadow-sm p-3 mb-4">
+              <div class="d-flex align-items-center">
+                <img
+                  src="images/icono.png"
+                  class="rounded-circle me-2"
+                  width="55"
+                  height="55"
+                />
+
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="¿Qué estás pensando?"
+                />
+              </div>
+
+              <hr />
+
+              <div class="d-flex justify-content-around">
+                <button class="btn btn-light">🖼️ Foto/Video</button>
+                <button class="btn btn-light">🎬 Reel</button>
+              </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h4>Publicaciones</h4>
+                <hr />
+
+                <div class="d-flex align-items-center mb-3">
+                  <img
+                    src="images/icono.png"
+                    class="rounded-circle me-2"
+                    width="50"
+                    height="50"
+                  />
+
+                  <div>
+                    <h6 class="mb-0" id="nombrePost">Usuario</h6>
+                    <small class="text-muted">Hoy</small>
+                  </div>
+                </div>
+
+                <p>Esta es mi primera publicación en ISTLC Zone.</p>
+
+                <div class="border-top pt-2 d-flex justify-content-around">
+                  <button class="btn btn-light">👍 Me gusta</button>
+                  <button class="btn btn-light">💬 Comentar</button>
+                  <button class="btn btn-light">↗ Compartir</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
+    </footer>
+
+    <script src="perfil.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

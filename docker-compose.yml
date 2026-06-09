@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: registro
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - SECRET_KEY=tu-clave-secreta-super-segura
+      - EMAIL_USER=tecnologicoliceo@proton.me
+      - EMAIL_PASS=ClaveTecnologico14
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: node backend/server.js
+    networks:
+      - istlc-network
+
+networks:
+  istlc-network:
+    driver: bridge
+
