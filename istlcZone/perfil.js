@@ -1,75 +1,131 @@
-const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+const API_BASE =
+    window.location.hostname.includes("onrender.com")
+        ? window.location.origin
+        : "http://localhost:3000";
+
+let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
 
 if (!usuario) {
     window.location.href = "index.html";
 }
 
-const nombreUsuario =
-    usuario?.nombre || usuario?.nombreCompleto || usuario?.usuario || "Usuario";
-
-document.addEventListener("DOMContentLoaded", () => {
-    cargarDatosUsuario();
-    cargarContadores();
-    cargarAmigosPerfil();
+document.addEventListener("DOMContentLoaded", async () => {
+    cargarDatosUsuario(usuario);
+    await cargarPerfilActualizado();
+    await cargarAmigosPerfil();
 });
 
-function cargarDatosUsuario() {
-    document.getElementById("nombrePerfil").textContent = nombreUsuario;
-    document.getElementById("nombrePost").textContent = nombreUsuario;
+async function cargarPerfilActualizado() {
+    if (!usuario?.id) {
+        return;
+    }
 
-    document.getElementById("detalleViveEn").textContent =
-        usuario.viveEn || "No registrado";
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${usuario.id}`);
+        const data = await respuesta.json();
 
-    document.getElementById("detalleCarrera").textContent =
-        usuario.carrera || "No registrado";
+        if (!respuesta.ok || !data.success) {
+            return;
+        }
 
-    document.getElementById("detalleSemestre").textContent =
-        usuario.semestre || "No registrado";
-
-    document.getElementById("viveEn").textContent =
-        usuario.viveEn || "No registrado";
-
-    document.getElementById("lugarOrigen").textContent =
-        usuario.lugarOrigen || "No registrado";
-
-    document.getElementById("fechaNacimiento").textContent =
-        usuario.fechaNacimiento || "No registrado";
-
-    document.getElementById("estadoCivil").textContent =
-        usuario.estadoCivil || "No registrado";
-
-    document.getElementById("carrera").textContent =
-        usuario.carrera || "No registrado";
-
-    document.getElementById("semestre").textContent =
-        usuario.semestre || "No registrado";
-
-    if (usuario.fotoPerfil) {
-        document.getElementById("fotoPerfil").src = usuario.fotoPerfil;
+        usuario = data.usuario;
+        usuario.seguidores = data.seguidores;
+        usuario.seguidos = data.seguidos;
+        localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
+        cargarDatosUsuario(usuario);
+        cargarContadores(data.seguidores, data.seguidos);
+    } catch (error) {
+        console.error("No se pudo cargar el perfil:", error);
     }
 }
 
-function cargarContadores() {
-    document.getElementById("contadorSeguidores").textContent =
-        "0 seguidores - 0 seguidos";
+function texto(valor) {
+    return valor && String(valor).trim() ? valor : "No registrado";
 }
 
-function cargarAmigosPerfil() {
+function ponerTexto(id, valor) {
+    const elemento = document.getElementById(id);
+    if (elemento) {
+        elemento.textContent = valor;
+    }
+}
+
+function ponerImagen(selector, src) {
+    document.querySelectorAll(selector).forEach((imagen) => {
+        imagen.src = src || "images/icono.png";
+    });
+}
+
+function cargarDatosUsuario(datosUsuario) {
+    const nombreUsuario =
+        datosUsuario?.nombre ||
+        datosUsuario?.nombreCompleto ||
+        datosUsuario?.usuario ||
+        "Usuario";
+
+    ponerTexto("nombrePerfil", nombreUsuario);
+    ponerTexto("nombrePost", nombreUsuario);
+    ponerTexto("detalleViveEn", texto(datosUsuario?.viveEn));
+    ponerTexto("detalleCarrera", texto(datosUsuario?.carrera));
+    ponerTexto("detalleSemestre", texto(datosUsuario?.semestre));
+    ponerTexto("viveEn", texto(datosUsuario?.viveEn));
+    ponerTexto("lugarOrigen", texto(datosUsuario?.lugarOrigen));
+    ponerTexto("fechaNacimiento", texto(datosUsuario?.fechaNacimiento));
+    ponerTexto("estadoCivil", texto(datosUsuario?.estadoCivil));
+    ponerTexto("carrera", texto(datosUsuario?.carrera));
+    ponerTexto("semestre", texto(datosUsuario?.semestre));
+
+    const bio = datosUsuario?.bio || "Bienvenido a mi perfil de ISTLC Zone.";
+    ponerTexto("bioPerfil", bio);
+
+    ponerImagen("#fotoPerfil, .foto-usuario", datosUsuario?.fotoPerfil);
+}
+
+function cargarContadores(seguidores = usuario?.seguidores || 0, seguidos = usuario?.seguidos || 0) {
+    ponerTexto("contadorSeguidores", `${seguidores} seguidores - ${seguidos} seguidos`);
+    ponerTexto("contadorAmigos", `${seguidos} amigos`);
+}
+
+async function cargarAmigosPerfil() {
     const listaAmigos = document.getElementById("listaAmigos");
     const contadorAmigos = document.getElementById("contadorAmigos");
 
-    contadorAmigos.textContent = "0 amigos";
-    listaAmigos.innerHTML = `
-        <div class="col-12">
-            <p class="text-muted mb-2">
-                Aun no tienes amigos agregados.
-            </p>
+    if (!listaAmigos || !usuario?.id) {
+        return;
+    }
 
-            <a href="amigos.html" class="btn btn-warning w-100">
-                Buscar amigos
-            </a>
-        </div>
-    `;
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/following/${usuario.id}`);
+        const data = await respuesta.json();
+        const amigos = data.success ? data.usuarios : [];
+
+        if (contadorAmigos) {
+            contadorAmigos.textContent = `${amigos.length} amigos`;
+        }
+
+        if (!amigos.length) {
+            listaAmigos.innerHTML = `
+                <div class="col-12">
+                    <p class="text-muted mb-2">Aun no tienes amigos agregados.</p>
+                    <a href="amigos.html" class="btn btn-warning w-100">Buscar amigos</a>
+                </div>
+            `;
+            return;
+        }
+
+        listaAmigos.innerHTML = amigos
+            .map((amigo) => `
+                <div class="col-6">
+                    <div class="amigo-mini">
+                        <img src="${amigo.fotoPerfil || "images/icono.png"}" alt="${amigo.nombre}">
+                        <strong>${amigo.nombre}</strong>
+                    </div>
+                </div>
+            `)
+            .join("");
+    } catch (error) {
+        console.error("No se pudieron cargar amigos:", error);
+    }
 }
 
 function cerrarSesion() {

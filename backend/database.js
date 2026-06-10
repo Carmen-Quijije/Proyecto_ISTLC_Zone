@@ -48,6 +48,19 @@ const initDatabase = async () => {
     console.log('Tabla usuarios lista');
 
     await pool.query(`
+        ALTER TABLE usuarios
+        ADD COLUMN IF NOT EXISTS vive_en TEXT,
+        ADD COLUMN IF NOT EXISTS lugar_origen TEXT,
+        ADD COLUMN IF NOT EXISTS fecha_nacimiento TEXT,
+        ADD COLUMN IF NOT EXISTS estado_civil TEXT,
+        ADD COLUMN IF NOT EXISTS carrera TEXT,
+        ADD COLUMN IF NOT EXISTS semestre TEXT,
+        ADD COLUMN IF NOT EXISTS foto_perfil TEXT,
+        ADD COLUMN IF NOT EXISTS bio TEXT
+    `);
+    console.log('Columnas de perfil listas');
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS codigos_verificacion (
             id SERIAL PRIMARY KEY,
             email TEXT NOT NULL,
@@ -71,6 +84,17 @@ const initDatabase = async () => {
         )
     `);
     console.log('Tabla registros_pendientes lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS seguidores (
+            id SERIAL PRIMARY KEY,
+            seguidor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            seguido_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (seguidor_id, seguido_id)
+        )
+    `);
+    console.log('Tabla seguidores lista');
 
     await pool.query('SELECT 1');
     console.log('Base de datos Neon PostgreSQL conectada');

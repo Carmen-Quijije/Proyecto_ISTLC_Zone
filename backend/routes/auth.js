@@ -22,6 +22,21 @@ const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString
 const run = (db, sql, params = []) => db.run(sql, params);
 const get = (db, sql, params = []) => db.get(sql, params);
 
+const perfilPublico = (usuario) => ({
+    id: usuario.id,
+    nombre: usuario.nombre,
+    email: usuario.email,
+    usuario: usuario.usuario,
+    viveEn: usuario.vive_en,
+    lugarOrigen: usuario.lugar_origen,
+    fechaNacimiento: usuario.fecha_nacimiento,
+    estadoCivil: usuario.estado_civil,
+    carrera: usuario.carrera,
+    semestre: usuario.semestre,
+    fotoPerfil: usuario.foto_perfil,
+    bio: usuario.bio
+});
+
 const enviarCorreoVerificacion = async (email, codigo) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -196,12 +211,7 @@ router.post('/login', async (req, res) => {
         res.json({
             success: true,
             message: 'Inicio de sesion correcto',
-            usuario: {
-                id: usuario.id,
-                nombre: usuario.nombre,
-                email: usuario.email,
-                usuario: usuario.usuario
-            }
+            usuario: perfilPublico(usuario)
         });
     } catch (error) {
         console.error('Error en login:', error);
@@ -263,6 +273,179 @@ router.post('/verify-email', async (req, res) => {
     } catch (error) {
         console.error('Error al verificar:', error);
         res.status(500).json({ success: false, message: 'Error al verificar email' });
+    }
+});
+
+router.get('/profile/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const usuario = await get(db, 'SELECT * FROM usuarios WHERE id = ?', [req.params.id]);
+
+        if (!usuario) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        const seguidores = await get(db, 'SELECT COUNT(*)::int AS total FROM seguidores WHERE seguido_id = ?', [req.params.id]);
+        const seguidos = await get(db, 'SELECT COUNT(*)::int AS total FROM seguidores WHERE seguidor_id = ?', [req.params.id]);
+
+        res.json({
+            success: true,
+            usuario: perfilPublico(usuario),
+            seguidores: seguidores?.total || 0,
+            seguidos: seguidos?.total || 0
+        });
+    } catch (error) {
+        console.error('Error al cargar perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar perfil' });
+    }
+});
+
+router.put('/profile', async (req, res) => {
+    try {
+        const {
+            id,
+            nombre,
+            viveEn,
+            lugarOrigen,
+            fechaNacimiento,
+            estadoCivil,
+            carrera,
+            semestre,
+            fotoPerfil,
+            bio
+        } = req.body;
+        const db = getDb();
+
+        if (!id || !nombre) {
+            return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+
+        await run(
+            db,
+            `UPDATE usuarios
+             SET nombre = ?, vive_en = ?, lugar_origen = ?, fecha_nacimiento = ?,
+                 estado_civil = ?, carrera = ?, semestre = ?, foto_perfil = ?, bio = ?
+             WHERE id = ?`,
+            [
+                nombre,
+                viveEn || null,
+                lugarOrigen || null,
+                fechaNacimiento || null,
+                estadoCivil || null,
+                carrera || null,
+                semestre || null,
+                fotoPerfil || null,
+                bio || null,
+                id
+            ]
+        );
+
+        const usuario = await get(db, 'SELECT * FROM usuarios WHERE id = ?', [id]);
+
+        res.json({
+            success: true,
+            message: 'Perfil actualizado',
+            usuario: perfilPublico(usuario)
+        });
+    } catch (error) {
+        console.error('Error al actualizar perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al actualizar perfil' });
+    }
+});
+
+router.get('/users', async (req, res) => {
+    try {
+        const db = getDb();
+        const q = `%${String(req.query.q || '').trim().toLowerCase()}%`;
+        const currentUserId = Number(req.query.currentUserId || 0);
+        const result = await db.run(
+            `SELECT u.*,
+                    EXISTS (
+                        SELECT 1 FROM seguidores s
+                        WHERE s.seguidor_id = ? AND s.seguido_id = u.id
+                    ) AS siguiendo
+             FROM usuarios u
+             WHERE u.email_verificado = TRUE
+               AND u.id <> ?
+               AND (LOWER(u.nombre) LIKE ? OR LOWER(u.usuario) LIKE ? OR LOWER(u.email) LIKE ?)
+             ORDER BY u.nombre
+             LIMIT 30`,
+            [currentUserId, currentUserId, q, q, q]
+        );
+
+        res.json({
+            success: true,
+            usuarios: result.rows.map((usuario) => ({
+                ...perfilPublico(usuario),
+                siguiendo: Boolean(usuario.siguiendo)
+            }))
+        });
+    } catch (error) {
+        console.error('Error al buscar usuarios:', error);
+        res.status(500).json({ success: false, message: 'Error al buscar usuarios' });
+    }
+});
+
+router.get('/following/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT u.*
+             FROM seguidores s
+             JOIN usuarios u ON u.id = s.seguido_id
+             WHERE s.seguidor_id = ?
+             ORDER BY u.nombre
+             LIMIT 12`,
+            [req.params.id]
+        );
+
+        res.json({
+            success: true,
+            usuarios: result.rows.map(perfilPublico)
+        });
+    } catch (error) {
+        console.error('Error al cargar seguidos:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar amigos' });
+    }
+});
+
+router.post('/follow', async (req, res) => {
+    try {
+        const { seguidorId, seguidoId } = req.body;
+        const db = getDb();
+
+        if (!seguidorId || !seguidoId || Number(seguidorId) === Number(seguidoId)) {
+            return res.status(400).json({ success: false, message: 'Datos invalidos' });
+        }
+
+        await run(
+            db,
+            'INSERT INTO seguidores (seguidor_id, seguido_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
+            [seguidorId, seguidoId]
+        );
+
+        res.json({ success: true, message: 'Usuario agregado' });
+    } catch (error) {
+        console.error('Error al seguir:', error);
+        res.status(500).json({ success: false, message: 'Error al seguir usuario' });
+    }
+});
+
+router.delete('/follow', async (req, res) => {
+    try {
+        const { seguidorId, seguidoId } = req.body;
+        const db = getDb();
+
+        await run(
+            db,
+            'DELETE FROM seguidores WHERE seguidor_id = ? AND seguido_id = ?',
+            [seguidorId, seguidoId]
+        );
+
+        res.json({ success: true, message: 'Usuario eliminado' });
+    } catch (error) {
+        console.error('Error al dejar de seguir:', error);
+        res.status(500).json({ success: false, message: 'Error al dejar de seguir' });
     }
 });
 
