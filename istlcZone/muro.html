@@ -74,11 +74,15 @@
                   required
                 ></textarea>
 
-                <input
-                  id="imagenPublicacion"
-                  class="form-control mb-3"
-                  type="file"
-                  accept="image/*"
+                <label class="publicacion-imagen-label mb-3" for="imagenPublicacion">
+                  <span class="material-symbols-outlined">image</span>
+                  <span id="textoImagenPublicacion">Añadir foto desde el ordenador</span>
+                </label>
+                <input id="imagenPublicacion" type="file" accept="image/*" hidden />
+                <img
+                  id="previewImagenPublicacion"
+                  class="publicacion-preview d-none"
+                  alt="Vista previa"
                 />
 
                 <button

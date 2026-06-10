@@ -1,5 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
     const formulario = document.getElementById("loginForm");
+    const linkRecuperar = document.getElementById("linkRecuperar");
+
+    if (linkRecuperar) {
+        linkRecuperar.addEventListener("click", (evento) => {
+            evento.preventDefault();
+            window.location.href = "recuperar.html";
+        });
+    }
 
     formulario.addEventListener("submit", async (e) => {
         e.preventDefault();

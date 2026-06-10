@@ -12,6 +12,7 @@ if (!usuario) {
 document.addEventListener("DOMContentLoaded", async () => {
     pintarUsuario(usuario);
     document.getElementById("formPublicacion").addEventListener("submit", crearPublicacion);
+    document.getElementById("imagenPublicacion").addEventListener("change", actualizarPreviewPublicacion);
     await cargarPerfil();
     await cargarFeed();
     await cargarSugerencias();
@@ -74,6 +75,7 @@ async function crearPublicacion(evento) {
         }
 
         document.getElementById("formPublicacion").reset();
+        limpiarPreviewPublicacion();
         await cargarFeed();
     } catch (error) {
         alert(error.message);
@@ -81,6 +83,31 @@ async function crearPublicacion(evento) {
         boton.disabled = false;
         boton.textContent = "Publicar";
     }
+}
+
+function actualizarPreviewPublicacion() {
+    const input = document.getElementById("imagenPublicacion");
+    const archivo = input.files[0];
+    const preview = document.getElementById("previewImagenPublicacion");
+    const texto = document.getElementById("textoImagenPublicacion");
+
+    if (!archivo) {
+        limpiarPreviewPublicacion();
+        return;
+    }
+
+    preview.src = URL.createObjectURL(archivo);
+    preview.classList.remove("d-none");
+    texto.textContent = archivo.name;
+}
+
+function limpiarPreviewPublicacion() {
+    const preview = document.getElementById("previewImagenPublicacion");
+    const texto = document.getElementById("textoImagenPublicacion");
+
+    preview.src = "";
+    preview.classList.add("d-none");
+    texto.textContent = "Añadir foto desde el ordenador";
 }
 
 async function subirImagen(archivo, folder) {
