@@ -1,67 +1,114 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-const dataDir = path.join(__dirname, 'data');
-fs.mkdirSync(dataDir, { recursive: true });
+if (!process.env.DATABASE_URL) {
+    throw new Error('Falta DATABASE_URL para conectar con Neon PostgreSQL');
+}
 
-const dbPath = path.join(dataDir, 'app.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error al abrir la base de datos:', err);
-    } else {
-        console.log('✅ Base de datos conectada');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
     }
 });
 
-const initDatabase = () => {
-    // Tabla de usuarios
-    db.run(`
+const toPostgresQuery = (sql) => {
+    let index = 0;
+    return sql.replace(/\?/g, () => `$${++index}`);
+};
+
+const db = {
+    async get(sql, params = []) {
+        const result = await pool.query(toPostgresQuery(sql), params);
+        return result.rows[0];
+    },
+
+    async run(sql, params = []) {
+        const result = await pool.query(toPostgresQuery(sql), params);
+        return {
+            rowCount: result.rowCount,
+            rows: result.rows
+        };
+    }
+};
+
+const initDatabase = async () => {
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nombre TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             usuario TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            email_verificado BOOLEAN DEFAULT 0,
-            privacidad BOOLEAN DEFAULT 0,
+            email_verificado BOOLEAN DEFAULT FALSE,
+            privacidad BOOLEAN DEFAULT FALSE,
             codigo_verificacion TEXT,
-            fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+            fecha_registro TIMESTAMPTZ DEFAULT NOW()
         )
-    `, (err) => {
-        if (err) console.error('Error al crear tabla usuarios:', err);
-        else console.log('✅ Tabla usuarios lista');
-    });
+    `);
+    console.log('Tabla usuarios lista');
 
-    // Tabla de códigos de verificación
-    db.run(`
+    await pool.query(`
+        ALTER TABLE usuarios
+        ADD COLUMN IF NOT EXISTS vive_en TEXT,
+        ADD COLUMN IF NOT EXISTS lugar_origen TEXT,
+        ADD COLUMN IF NOT EXISTS fecha_nacimiento TEXT,
+        ADD COLUMN IF NOT EXISTS estado_civil TEXT,
+        ADD COLUMN IF NOT EXISTS carrera TEXT,
+        ADD COLUMN IF NOT EXISTS semestre TEXT,
+        ADD COLUMN IF NOT EXISTS foto_perfil TEXT,
+        ADD COLUMN IF NOT EXISTS bio TEXT
+    `);
+    console.log('Columnas de perfil listas');
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS codigos_verificacion (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             email TEXT NOT NULL,
             codigo TEXT NOT NULL,
             intentos INTEGER DEFAULT 0,
-            fecha_expiracion DATETIME NOT NULL,
-            usado BOOLEAN DEFAULT 0
+            fecha_expiracion TIMESTAMPTZ NOT NULL,
+            usado BOOLEAN DEFAULT FALSE
         )
-    `, (err) => {
-        if (err) console.error('Error al crear tabla códigos:', err);
-        else console.log('✅ Tabla códigos_verificacion lista');
-    });
+    `);
+    console.log('Tabla codigos_verificacion lista');
 
-    db.run(`
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS registros_pendientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nombre TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             usuario TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            privacidad BOOLEAN DEFAULT 0,
-            fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
+            privacidad BOOLEAN DEFAULT FALSE,
+            fecha_registro TIMESTAMPTZ DEFAULT NOW()
         )
-    `, (err) => {
-        if (err) console.error('Error al crear tabla registros_pendientes:', err);
-        else console.log('Tabla registros_pendientes lista');
-    });
+    `);
+    console.log('Tabla registros_pendientes lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS seguidores (
+            id SERIAL PRIMARY KEY,
+            seguidor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            seguido_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (seguidor_id, seguido_id)
+        )
+    `);
+    console.log('Tabla seguidores lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS publicaciones (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            contenido TEXT NOT NULL,
+            imagen_url TEXT,
+            fecha TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla publicaciones lista');
+
+    await pool.query('SELECT 1');
+    console.log('Base de datos Neon PostgreSQL conectada');
 };
 
 const getDb = () => db;

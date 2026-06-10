@@ -1,17 +1,14 @@
-// Variables globales
 let emailRegistrado = "";
 let modalConfirmacion = null;
+let registroEnCurso = false;
 
-// Inicializar modal
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
     modalConfirmacion = new bootstrap.Modal(
         document.getElementById("modalConfirmacion")
     );
 });
 
-// Manejar respuesta de Google
 function handleCredentialResponse(response) {
-
     console.log("Token recibido:", response.credential);
 
     fetch("/api/auth/google-signin", {
@@ -25,134 +22,164 @@ function handleCredentialResponse(response) {
     })
     .then(response => response.json())
     .then(data => {
-
-        if(data.success){
-            alert("¡Cuenta creada correctamente!");
+        if (data.success) {
+            alert("Cuenta creada correctamente");
             window.location.href = "index.html";
         }
-
     })
     .catch(error => console.error(error));
 }
 
-// Registro
-document.getElementById("registroForm")
-.addEventListener("submit", async function(e){
-
+document.getElementById("registroForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
+    if (registroEnCurso) {
+        return;
+    }
+
+    const botonRegistro = this.querySelector('button[type="submit"]');
     const nombre = document.getElementById("nombre").value.trim();
     const email = document.getElementById("email").value.trim();
+    const usuario = document.getElementById("usuario").value.trim();
     const password = document.getElementById("password").value;
-    const passwordConfirm =
-        document.getElementById("passwordConfirm").value;
+    const passwordConfirm = document.getElementById("passwordConfirm").value;
+    const privacidad = document.getElementById("privacidad").checked;
 
-    if(password !== passwordConfirm){
-        alert("Las contraseñas no coinciden");
+    if (password !== passwordConfirm) {
+        alert("Las contrasenas no coinciden");
         return;
     }
 
-    try{
+    const activarBoton = () => {
+        registroEnCurso = false;
+        botonRegistro.disabled = false;
+        botonRegistro.innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
+    };
 
-        const respuesta = await fetch(
-            "http://localhost:8085/api/usuarios",
-            {
-                method:"POST",
-                headers:{
-                    "Content-Type":"application/json"
-                },
-                body: JSON.stringify({
-                    nombreCompleto:nombre,
-                    correo:email,
-                    contrasena:password
-                })
-            }
-        );
+    try {
+        registroEnCurso = true;
+        botonRegistro.disabled = true;
+        botonRegistro.textContent = "Creando cuenta...";
 
-        if(!respuesta.ok){
-            throw new Error("Error al registrar");
+        const respuesta = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nombre,
+                email,
+                usuario,
+                password,
+                privacidad
+            })
+        });
+
+        const contentType = respuesta.headers.get("content-type") || "";
+        const data = contentType.includes("application/json")
+            ? await respuesta.json()
+            : { message: "El servidor no respondio correctamente. Revisa si Render termino el deploy." };
+
+        if (!respuesta.ok || !data.success) {
+            activarBoton();
+            alert(data.message || "No se pudo registrar el usuario");
+            return;
         }
 
-        alert("Usuario registrado correctamente");
-
-        window.location.href = "index.html";
-
-    }
-    catch(error){
-
+        emailRegistrado = email;
+        document.getElementById("emailConfirmacion").textContent = email;
+        document.getElementById("codigoConfirmacion").value = "";
+        document.getElementById("mensajeError").classList.add("d-none");
+        document.getElementById("mensajeExito").classList.add("d-none");
+        modalConfirmacion.show();
+    } catch (error) {
         console.error(error);
-        alert("No se pudo registrar el usuario");
-
+        activarBoton();
+        alert("No se pudo conectar con la API. Revisa que Render este en estado Live.");
+    } finally {
+        if (registroEnCurso) {
+            activarBoton();
+        }
     }
-
 });
 
-// Confirmar código
-document.getElementById("btnConfirmar")
-.addEventListener("click", function(){
+document.getElementById("btnConfirmar").addEventListener("click", async function() {
+    const codigo = document.getElementById("codigoConfirmacion").value.trim();
 
-    const codigo =
-        document.getElementById("codigoConfirmacion").value;
-
-    if(codigo.length !== 6){
-        mostrarError("Ingresa un código válido");
+    if (codigo.length !== 6 || !/^\d+$/.test(codigo)) {
+        mostrarError("Ingresa un codigo valido");
         return;
     }
 
-    mostrarExito("Código confirmado");
+    try {
+        const respuesta = await fetch("/api/auth/verify-email", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: emailRegistrado,
+                codigo
+            })
+        });
 
-    setTimeout(() => {
+        const data = await respuesta.json();
 
-        modalConfirmacion.hide();
-        window.location.href = "index.html";
+        if (!respuesta.ok || !data.success) {
+            mostrarError(data.message || "Codigo invalido");
+            return;
+        }
 
-    }, 1500);
+        mostrarExito("Correo confirmado correctamente");
 
+        setTimeout(() => {
+            modalConfirmacion.hide();
+            window.location.href = "index.html";
+        }, 1500);
+    } catch (error) {
+        console.error(error);
+        mostrarError("No se pudo conectar con la API");
+    }
 });
 
-// Reenviar código
-document.getElementById("btnReenviar")
-.addEventListener("click", function(){
+document.getElementById("btnReenviar").addEventListener("click", async function() {
+    try {
+        const respuesta = await fetch("/api/auth/resend-code", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: emailRegistrado
+            })
+        });
 
-    mostrarExito("Código reenviado");
+        const data = await respuesta.json();
 
+        if (!respuesta.ok || !data.success) {
+            mostrarError(data.message || "No se pudo reenviar el codigo");
+            return;
+        }
+
+        mostrarExito("Codigo reenviado");
+    } catch (error) {
+        console.error(error);
+        mostrarError("No se pudo conectar con la API");
+    }
 });
 
-// Solo números
-document.getElementById("codigoConfirmacion")
-.addEventListener("input", function(){
-
-    this.value =
-        this.value.replace(/[^0-9]/g,"");
-
+document.getElementById("codigoConfirmacion").addEventListener("input", function() {
+    this.value = this.value.replace(/[^0-9]/g, "");
 });
 
-// Mostrar error
-function mostrarError(mensaje){
-
-    const errorDiv =
-        document.getElementById("mensajeError");
-
-    document.getElementById("textoError")
-        .textContent = mensaje;
-
-    errorDiv.classList.remove("d-none");
-
-    document.getElementById("mensajeExito")
-        .classList.add("d-none");
+function mostrarError(mensaje) {
+    document.getElementById("textoError").textContent = mensaje;
+    document.getElementById("mensajeError").classList.remove("d-none");
+    document.getElementById("mensajeExito").classList.add("d-none");
 }
 
-// Mostrar éxito
-function mostrarExito(mensaje){
-
-    const exitoDiv =
-        document.getElementById("mensajeExito");
-
-    document.getElementById("textoExito")
-        .textContent = mensaje;
-
-    exitoDiv.classList.remove("d-none");
-
-    document.getElementById("mensajeError")
-        .classList.add("d-none");
+function mostrarExito(mensaje) {
+    document.getElementById("textoExito").textContent = mensaje;
+    document.getElementById("mensajeExito").classList.remove("d-none");
+    document.getElementById("mensajeError").classList.add("d-none");
 }

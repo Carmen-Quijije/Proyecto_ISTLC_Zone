@@ -11,9 +11,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - SECRET_KEY=tu-clave-secreta-super-segura
-      - EMAIL_USER=tecnologicoliceo@proton.me
-      - EMAIL_PASS=ClaveTecnologico14
+      - SECRET_KEY=${SECRET_KEY}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - BREVO_API_KEY=${BREVO_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/app
       - /app/node_modules
