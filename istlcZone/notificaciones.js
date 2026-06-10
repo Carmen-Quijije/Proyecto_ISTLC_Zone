@@ -1,0 +1,212 @@
+const usuarioNotificaciones = JSON.parse(localStorage.getItem("usuarioLogueado"));
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (!usuarioNotificaciones) {
+        return;
+    }
+
+    crearCentroNotificaciones();
+    cargarNotificacionesApp();
+    setInterval(cargarNotificacionesApp, 30000);
+});
+
+function crearCentroNotificaciones() {
+    const contenedorNav = document.querySelector(".navbar .ms-auto");
+    if (!contenedorNav || document.getElementById("btnNotificacionesApp")) {
+        return;
+    }
+
+    const centro = document.createElement("div");
+    centro.className = "notificaciones-app";
+    centro.innerHTML = `
+        <button id="btnNotificacionesApp" class="btn btn-warning btn-notificaciones-app" type="button">
+            <span class="material-symbols-outlined">notifications</span>
+            <span id="contadorNotificacionesApp" class="contador-notificaciones d-none">0</span>
+        </button>
+        <section id="panelNotificacionesApp" class="panel-notificaciones-app d-none">
+            <div class="panel-notificaciones-header">
+                <strong>Notificaciones</strong>
+                <button class="btn btn-sm btn-light" type="button" onclick="marcarNotificacionesLeidas()">Marcar leidas</button>
+            </div>
+            <div id="listaNotificacionesApp" class="panel-notificaciones-lista">
+                <p class="text-muted mb-0">Cargando...</p>
+            </div>
+        </section>
+    `;
+
+    contenedorNav.prepend(centro);
+    document.getElementById("btnNotificacionesApp").addEventListener("click", alternarPanelNotificaciones);
+    document.addEventListener("click", (evento) => {
+        if (!centro.contains(evento.target)) {
+            document.getElementById("panelNotificacionesApp")?.classList.add("d-none");
+        }
+    });
+}
+
+async function cargarNotificacionesApp() {
+    const lista = document.getElementById("listaNotificacionesApp");
+    const contador = document.getElementById("contadorNotificacionesApp");
+
+    if (!lista || !contador || !usuarioNotificaciones?.id) {
+        return;
+    }
+
+    try {
+        const [notificacionesRespuesta, solicitudesRespuesta] = await Promise.all([
+            fetch(`${API_BASE}/api/auth/notifications/${usuarioNotificaciones.id}`),
+            fetch(`${API_BASE}/api/auth/follow-requests/${usuarioNotificaciones.id}`)
+        ]);
+        const notificacionesData = await notificacionesRespuesta.json();
+        const solicitudesData = await solicitudesRespuesta.json();
+        const solicitudes = solicitudesData.success ? solicitudesData.solicitudes : [];
+        const notificaciones = notificacionesData.success ? notificacionesData.notificaciones : [];
+        const sinLeer = Number(notificacionesData.sinLeer || 0) + solicitudes.length;
+
+        contador.textContent = sinLeer > 9 ? "9+" : sinLeer;
+        contador.classList.toggle("d-none", sinLeer === 0);
+
+        const bloques = [
+            ...solicitudes.map(renderSolicitudNotificacion),
+            ...notificaciones.map(renderNotificacion)
+        ];
+
+        lista.innerHTML = bloques.length
+            ? bloques.join("")
+            : `<p class="text-muted mb-0">No tienes notificaciones nuevas.</p>`;
+    } catch (error) {
+        lista.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar las notificaciones.</p>`;
+    }
+}
+
+function renderSolicitudNotificacion(solicitud) {
+    const persona = solicitud.usuario || {};
+
+    return `
+        <article class="notificacion-item solicitud">
+            <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${persona.nombre || "Usuario"}">
+            <div>
+                <strong>${persona.nombre || "Usuario"}</strong>
+                <p>Quiere seguirte.</p>
+                <div class="notificacion-acciones">
+                    <button class="btn btn-sm btn-warning" onclick="responderSolicitudSeguimiento(${solicitud.id}, 'accept')">
+                        Aceptar
+                    </button>
+                    <button class="btn btn-sm btn-light" onclick="responderSolicitudSeguimiento(${solicitud.id}, 'reject')">
+                        Rechazar
+                    </button>
+                </div>
+            </div>
+        </article>
+    `;
+}
+
+function renderNotificacion(notificacion) {
+    const clase = notificacion.leida ? "" : "nueva";
+    const fecha = notificacion.fecha ? new Date(notificacion.fecha).toLocaleString("es-EC") : "";
+
+    return `
+        <article class="notificacion-item ${clase}">
+            <span class="material-symbols-outlined notificacion-icono">notifications</span>
+            <div>
+                <p>${escaparTextoNotificacion(notificacion.mensaje)}</p>
+                <small>${fecha}</small>
+            </div>
+        </article>
+    `;
+}
+
+async function responderSolicitudSeguimiento(solicitudId, accion) {
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/follow-requests/${solicitudId}/${accion}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo responder la solicitud");
+        }
+
+        mostrarToastApp(accion === "accept" ? "Solicitud aceptada" : "Solicitud rechazada");
+        await cargarNotificacionesApp();
+        if (typeof cargarPerfil === "function") {
+            await cargarPerfil();
+        }
+    } catch (error) {
+        mostrarToastApp(error.message, "error");
+    }
+}
+
+async function marcarNotificacionesLeidas() {
+    try {
+        await fetch(`${API_BASE}/api/auth/notifications/read`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
+        });
+        await cargarNotificacionesApp();
+    } catch (error) {
+        mostrarToastApp("No se pudieron marcar las notificaciones", "error");
+    }
+}
+
+function alternarPanelNotificaciones() {
+    document.getElementById("panelNotificacionesApp")?.classList.toggle("d-none");
+}
+
+function mostrarToastApp(mensaje, tipo = "ok") {
+    let toast = document.getElementById("toastApp");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "toastApp";
+        toast.className = "toast-app";
+        document.body.appendChild(toast);
+    }
+
+    toast.textContent = mensaje;
+    toast.className = `toast-app mostrar ${tipo === "error" ? "error" : ""}`;
+    clearTimeout(window.toastAppTimer);
+    window.toastAppTimer = setTimeout(() => toast.classList.remove("mostrar"), 2800);
+}
+
+function confirmarApp(mensaje) {
+    return new Promise((resolve) => {
+        let modal = document.getElementById("confirmacionApp");
+        if (!modal) {
+            modal = document.createElement("section");
+            modal.id = "confirmacionApp";
+            modal.className = "confirmacion-app d-none";
+            modal.innerHTML = `
+                <div class="confirmacion-overlay"></div>
+                <div class="confirmacion-card">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <p id="confirmacionAppMensaje"></p>
+                    <div>
+                        <button id="confirmacionCancelar" class="btn btn-light" type="button">Cancelar</button>
+                        <button id="confirmacionAceptar" class="btn btn-warning" type="button">Aceptar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        modal.querySelector("#confirmacionAppMensaje").textContent = mensaje;
+        modal.classList.remove("d-none");
+
+        const cerrar = (valor) => {
+            modal.classList.add("d-none");
+            resolve(valor);
+        };
+
+        modal.querySelector("#confirmacionAceptar").onclick = () => cerrar(true);
+        modal.querySelector("#confirmacionCancelar").onclick = () => cerrar(false);
+        modal.querySelector(".confirmacion-overlay").onclick = () => cerrar(false);
+    });
+}
+
+function escaparTextoNotificacion(texto) {
+    const div = document.createElement("div");
+    div.textContent = texto || "";
+    return div.innerHTML;
+}

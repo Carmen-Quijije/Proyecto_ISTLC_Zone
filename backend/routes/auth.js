@@ -43,6 +43,19 @@ const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString
 const run = (db, sql, params = []) => db.run(sql, params);
 const get = (db, sql, params = []) => db.get(sql, params);
 
+const crearNotificacion = async (db, usuarioId, tipo, mensaje, referenciaId = null) => {
+    if (!usuarioId || !tipo || !mensaje) {
+        return;
+    }
+
+    await run(
+        db,
+        `INSERT INTO notificaciones (usuario_id, tipo, mensaje, referencia_id)
+         VALUES (?, ?, ?, ?)`,
+        [usuarioId, tipo, mensaje, referenciaId]
+    );
+};
+
 const perfilPublico = (usuario) => ({
     id: usuario.id,
     nombre: usuario.nombre,
@@ -676,21 +689,26 @@ router.get('/users', async (req, res) => {
                     EXISTS (
                         SELECT 1 FROM seguidores s
                         WHERE s.seguidor_id = ? AND s.seguido_id = u.id
-                    ) AS siguiendo
+                    ) AS siguiendo,
+                    EXISTS (
+                        SELECT 1 FROM solicitudes_seguimiento ss
+                        WHERE ss.solicitante_id = ? AND ss.receptor_id = u.id AND ss.estado = 'pendiente'
+                    ) AS solicitud_pendiente
              FROM usuarios u
              WHERE u.email_verificado = TRUE
                AND u.id <> ?
                AND (LOWER(u.nombre) LIKE ? OR LOWER(u.usuario) LIKE ? OR LOWER(u.email) LIKE ?)
              ORDER BY u.nombre
              LIMIT 30`,
-            [currentUserId, currentUserId, q, q, q]
+            [currentUserId, currentUserId, currentUserId, q, q, q]
         );
 
         res.json({
             success: true,
             usuarios: result.rows.map((usuario) => ({
                 ...perfilPublico(usuario),
-                siguiendo: Boolean(usuario.siguiendo)
+                siguiendo: Boolean(usuario.siguiendo),
+                solicitudPendiente: Boolean(usuario.solicitud_pendiente)
             }))
         });
     } catch (error) {
@@ -731,13 +749,35 @@ router.post('/follow', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Datos invalidos' });
         }
 
-        await run(
+        const yaSigue = await get(
             db,
-            'INSERT INTO seguidores (seguidor_id, seguido_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
+            'SELECT id FROM seguidores WHERE seguidor_id = ? AND seguido_id = ?',
             [seguidorId, seguidoId]
         );
 
-        res.json({ success: true, message: 'Usuario agregado' });
+        if (yaSigue) {
+            return res.json({ success: true, message: 'Ya sigues a este usuario' });
+        }
+
+        const solicitante = await get(db, 'SELECT nombre FROM usuarios WHERE id = ?', [seguidorId]);
+        const result = await db.run(
+            `INSERT INTO solicitudes_seguimiento (solicitante_id, receptor_id, estado)
+             VALUES (?, ?, 'pendiente')
+             ON CONFLICT (solicitante_id, receptor_id)
+             DO UPDATE SET estado = 'pendiente', fecha = NOW()
+             RETURNING id`,
+            [seguidorId, seguidoId]
+        );
+
+        await crearNotificacion(
+            db,
+            seguidoId,
+            'solicitud_seguimiento',
+            `${solicitante?.nombre || 'Un usuario'} quiere seguirte`,
+            result.rows[0]?.id || null
+        );
+
+        res.json({ success: true, message: 'Solicitud enviada' });
     } catch (error) {
         console.error('Error al seguir:', error);
         res.status(500).json({ success: false, message: 'Error al seguir usuario' });
@@ -755,10 +795,155 @@ router.delete('/follow', async (req, res) => {
             [seguidorId, seguidoId]
         );
 
-        res.json({ success: true, message: 'Usuario eliminado' });
+        await run(
+            db,
+            `DELETE FROM solicitudes_seguimiento
+             WHERE solicitante_id = ? AND receptor_id = ? AND estado = 'pendiente'`,
+            [seguidorId, seguidoId]
+        );
+
+        res.json({ success: true, message: 'Seguimiento actualizado' });
     } catch (error) {
         console.error('Error al dejar de seguir:', error);
         res.status(500).json({ success: false, message: 'Error al dejar de seguir' });
+    }
+});
+
+router.get('/follow-requests/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT ss.id, ss.fecha, u.id AS usuario_id, u.nombre, u.usuario, u.foto_perfil, u.carrera, u.semestre
+             FROM solicitudes_seguimiento ss
+             JOIN usuarios u ON u.id = ss.solicitante_id
+             WHERE ss.receptor_id = ? AND ss.estado = 'pendiente'
+             ORDER BY ss.fecha DESC
+             LIMIT 20`,
+            [req.params.id]
+        );
+
+        res.json({
+            success: true,
+            solicitudes: result.rows.map((solicitud) => ({
+                id: solicitud.id,
+                fecha: solicitud.fecha,
+                usuario: {
+                    id: solicitud.usuario_id,
+                    nombre: solicitud.nombre,
+                    usuario: solicitud.usuario,
+                    fotoPerfil: solicitud.foto_perfil,
+                    carrera: solicitud.carrera,
+                    semestre: solicitud.semestre
+                }
+            }))
+        });
+    } catch (error) {
+        console.error('Error al cargar solicitudes:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar solicitudes' });
+    }
+});
+
+router.post('/follow-requests/:id/accept', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+        const solicitud = await get(
+            db,
+            `SELECT ss.*, u.nombre AS receptor_nombre
+             FROM solicitudes_seguimiento ss
+             JOIN usuarios u ON u.id = ss.receptor_id
+             WHERE ss.id = ? AND ss.receptor_id = ? AND ss.estado = 'pendiente'`,
+            [req.params.id, usuarioId]
+        );
+
+        if (!solicitud) {
+            return res.status(404).json({ success: false, message: 'Solicitud no encontrada' });
+        }
+
+        await run(db, `UPDATE solicitudes_seguimiento SET estado = 'aceptada' WHERE id = ?`, [req.params.id]);
+        await run(
+            db,
+            'INSERT INTO seguidores (seguidor_id, seguido_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
+            [solicitud.solicitante_id, solicitud.receptor_id]
+        );
+        await crearNotificacion(
+            db,
+            solicitud.solicitante_id,
+            'solicitud_aceptada',
+            `${solicitud.receptor_nombre || 'Un usuario'} acepto tu solicitud`,
+            solicitud.receptor_id
+        );
+
+        res.json({ success: true, message: 'Solicitud aceptada' });
+    } catch (error) {
+        console.error('Error al aceptar solicitud:', error);
+        res.status(500).json({ success: false, message: 'Error al aceptar solicitud' });
+    }
+});
+
+router.post('/follow-requests/:id/reject', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+        const solicitud = await get(
+            db,
+            `SELECT id FROM solicitudes_seguimiento
+             WHERE id = ? AND receptor_id = ? AND estado = 'pendiente'`,
+            [req.params.id, usuarioId]
+        );
+
+        if (!solicitud) {
+            return res.status(404).json({ success: false, message: 'Solicitud no encontrada' });
+        }
+
+        await run(db, `UPDATE solicitudes_seguimiento SET estado = 'rechazada' WHERE id = ?`, [req.params.id]);
+        res.json({ success: true, message: 'Solicitud rechazada' });
+    } catch (error) {
+        console.error('Error al rechazar solicitud:', error);
+        res.status(500).json({ success: false, message: 'Error al rechazar solicitud' });
+    }
+});
+
+router.get('/notifications/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT id, tipo, mensaje, referencia_id, leida, fecha
+             FROM notificaciones
+             WHERE usuario_id = ?
+             ORDER BY fecha DESC
+             LIMIT 30`,
+            [req.params.id]
+        );
+
+        res.json({
+            success: true,
+            notificaciones: result.rows.map((notificacion) => ({
+                id: notificacion.id,
+                tipo: notificacion.tipo,
+                mensaje: notificacion.mensaje,
+                referenciaId: notificacion.referencia_id,
+                leida: Boolean(notificacion.leida),
+                fecha: notificacion.fecha
+            })),
+            sinLeer: result.rows.filter((notificacion) => !notificacion.leida).length
+        });
+    } catch (error) {
+        console.error('Error al cargar notificaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar notificaciones' });
+    }
+});
+
+router.put('/notifications/read', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+
+        await run(db, 'UPDATE notificaciones SET leida = TRUE WHERE usuario_id = ?', [usuarioId]);
+        res.json({ success: true, message: 'Notificaciones leidas' });
+    } catch (error) {
+        console.error('Error al marcar notificaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al marcar notificaciones' });
     }
 });
 
@@ -821,6 +1006,7 @@ router.put('/posts/:id', async (req, res) => {
         if (debeActualizarImagenes) {
             const nuevasImagenes = limpiarImagenesPublicacion(imagenesUrls);
             const imagenesAnteriores = leerImagenesPublicacion(publicacion);
+            const imagenesEliminadas = imagenesAnteriores.filter((imagen) => !nuevasImagenes.includes(imagen));
 
             await run(
                 db,
@@ -828,7 +1014,7 @@ router.put('/posts/:id', async (req, res) => {
                 [texto, nuevasImagenes[0] || null, JSON.stringify(nuevasImagenes), req.params.id, usuarioId]
             );
 
-            await Promise.all(imagenesAnteriores.map((imagen) => borrarImagenCloudinary(imagen)));
+            await Promise.all(imagenesEliminadas.map((imagen) => borrarImagenCloudinary(imagen)));
         } else {
             await run(
                 db,
@@ -957,11 +1143,30 @@ router.post('/posts/:id/like', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Falta usuario' });
         }
 
-        await run(
+        const likeResult = await run(
             db,
             'INSERT INTO likes_publicaciones (publicacion_id, usuario_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
             [req.params.id, usuarioId]
         );
+
+        const publicacion = await get(
+            db,
+            `SELECT p.usuario_id, u.nombre
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = ?
+             WHERE p.id = ?`,
+            [usuarioId, req.params.id]
+        );
+
+        if (likeResult.rowCount && publicacion && Number(publicacion.usuario_id) !== Number(usuarioId)) {
+            await crearNotificacion(
+                db,
+                publicacion.usuario_id,
+                'like',
+                `${publicacion.nombre || 'Un usuario'} reacciono a tu publicacion`,
+                req.params.id
+            );
+        }
 
         res.json({ success: true, message: 'Like agregado' });
     } catch (error) {
@@ -1027,6 +1232,25 @@ router.post('/posts/:id/comments', async (req, res) => {
              RETURNING id`,
             [req.params.id, usuarioId, texto]
         );
+
+        const publicacion = await get(
+            db,
+            `SELECT p.usuario_id, u.nombre
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = ?
+             WHERE p.id = ?`,
+            [usuarioId, req.params.id]
+        );
+
+        if (publicacion && Number(publicacion.usuario_id) !== Number(usuarioId)) {
+            await crearNotificacion(
+                db,
+                publicacion.usuario_id,
+                'comentario',
+                `${publicacion.nombre || 'Un usuario'} comento tu publicacion`,
+                req.params.id
+            );
+        }
 
         res.json({
             success: true,
@@ -1158,6 +1382,15 @@ router.post('/messages', async (req, res) => {
              VALUES (?, ?, ?)
              RETURNING id`,
             [emisorId, receptorId, texto]
+        );
+
+        const emisor = await get(db, 'SELECT nombre FROM usuarios WHERE id = ?', [emisorId]);
+        await crearNotificacion(
+            db,
+            receptorId,
+            'mensaje',
+            `${emisor?.nombre || 'Un usuario'} te envio un mensaje`,
+            result.rows[0]?.id || null
         );
 
         res.json({

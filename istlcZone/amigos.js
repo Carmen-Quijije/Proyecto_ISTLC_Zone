@@ -39,8 +39,13 @@ async function buscarUsuarios() {
 
 function tarjetaUsuario(persona) {
     const detalle = [persona.carrera, persona.semestre].filter(Boolean).join(" - ") || "Miembro de ISTLC Zone";
-    const botonTexto = persona.siguiendo ? "Siguiendo" : "Seguir";
-    const botonClase = persona.siguiendo ? "btn-light" : "btn-warning";
+    const botonTexto = persona.siguiendo
+        ? "Siguiendo"
+        : persona.solicitudPendiente
+            ? "Solicitud pendiente"
+            : "Solicitar seguimiento";
+    const botonClase = persona.siguiendo || persona.solicitudPendiente ? "btn-light" : "btn-warning";
+    const deshabilitado = persona.solicitudPendiente ? "disabled" : "";
 
     return `
         <div class="col-md-6 col-lg-4">
@@ -57,6 +62,7 @@ function tarjetaUsuario(persona) {
                 <button
                     class="btn ${botonClase} fw-bold"
                     onclick="alternarSeguimiento(${persona.id}, ${persona.siguiendo})"
+                    ${deshabilitado}
                 >
                     ${botonTexto}
                 </button>
@@ -67,7 +73,7 @@ function tarjetaUsuario(persona) {
 
 async function alternarSeguimiento(seguidoId, estaSiguiendo) {
     try {
-        await fetch(`${API_BASE}/api/auth/follow`, {
+        const respuesta = await fetch(`${API_BASE}/api/auth/follow`, {
             method: estaSiguiendo ? "DELETE" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -75,13 +81,28 @@ async function alternarSeguimiento(seguidoId, estaSiguiendo) {
                 seguidoId
             })
         });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo actualizar el seguimiento");
+        }
+
+        mostrarToastAppSeguro(data.message || "Seguimiento actualizado");
         buscarUsuarios();
     } catch (error) {
-        alert("No se pudo actualizar el seguimiento");
+        mostrarToastAppSeguro(error.message || "No se pudo actualizar el seguimiento", "error");
     }
 }
 
 function cerrarSesion() {
     localStorage.removeItem("usuarioLogueado");
     window.location.href = "index.html";
+}
+
+function mostrarToastAppSeguro(mensaje, tipo) {
+    if (typeof mostrarToastApp === "function") {
+        mostrarToastApp(mensaje, tipo);
+    } else {
+        alert(mensaje);
+    }
 }

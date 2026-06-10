@@ -79,7 +79,7 @@ async function crearPublicacion(evento) {
         limpiarPreviewPublicacion();
         await cargarFeed();
     } catch (error) {
-        alert(error.message);
+        mostrarToastAppSeguro(error.message, "error");
     } finally {
         boton.disabled = false;
         boton.textContent = "Publicar";
@@ -258,37 +258,21 @@ function tarjetaPublicacion(publicacion) {
 async function editarPublicacion(publicacionId) {
     const publicacion = publicacionesFeed.find((item) => Number(item.id) === Number(publicacionId));
     if (!publicacion) {
-        alert("No se encontro la publicacion");
+        mostrarToastAppSeguro("No se encontro la publicacion", "error");
         return;
     }
 
-    const nuevoTexto = prompt("Edita tu publicacion:", publicacion.contenido || "");
-    if (nuevoTexto === null) {
+    const resultado = await abrirEditorPublicacionApp(publicacion, subirImagenes);
+    if (!resultado) {
         return;
-    }
-
-    const contenido = nuevoTexto.trim();
-    if (!contenido) {
-        alert("La publicacion no puede quedar vacia");
-        return;
-    }
-
-    const quiereCambiarImagenes = confirm("Quieres cambiar las fotos de esta publicacion?");
-    let imagenesUrls = null;
-
-    if (quiereCambiarImagenes) {
-        imagenesUrls = await seleccionarYSubirImagenes("istlc-zone/publicaciones");
     }
 
     try {
         const payload = {
             usuarioId: usuario.id,
-            contenido
+            contenido: resultado.contenido,
+            imagenesUrls: resultado.imagenesUrls
         };
-
-        if (imagenesUrls) {
-            payload.imagenesUrls = imagenesUrls;
-        }
 
         const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
             method: "PUT",
@@ -303,7 +287,7 @@ async function editarPublicacion(publicacionId) {
 
         await cargarFeed();
     } catch (error) {
-        alert(error.message);
+        mostrarToastAppSeguro(error.message, "error");
     }
 }
 
@@ -365,7 +349,7 @@ function seleccionarYSubirImagenes(folder) {
 }
 
 async function eliminarPublicacion(publicacionId) {
-    const confirmar = confirm("Quieres eliminar esta publicacion? Se borraran tambien sus comentarios y me gusta.");
+    const confirmar = await confirmarAppSeguro("Quieres eliminar esta publicacion? Se borraran tambien sus comentarios y me gusta.");
 
     if (!confirmar) {
         return;
@@ -385,7 +369,7 @@ async function eliminarPublicacion(publicacionId) {
 
         await cargarFeed();
     } catch (error) {
-        alert(error.message);
+        mostrarToastAppSeguro(error.message, "error");
     }
 }
 
@@ -398,7 +382,7 @@ async function alternarLike(publicacionId, likedByMe) {
         });
         await cargarFeed();
     } catch (error) {
-        alert("No se pudo actualizar el me gusta");
+        mostrarToastAppSeguro("No se pudo actualizar el me gusta", "error");
     }
 }
 
@@ -486,7 +470,7 @@ async function crearComentario(evento, publicacionId) {
             await cargarComentarios(publicacionId);
         }
     } catch (error) {
-        alert(error.message);
+        mostrarToastAppSeguro(error.message, "error");
     }
 }
 
@@ -494,6 +478,22 @@ function escaparHtml(texto) {
     const div = document.createElement("div");
     div.textContent = texto || "";
     return div.innerHTML;
+}
+
+function mostrarToastAppSeguro(mensaje, tipo) {
+    if (typeof mostrarToastApp === "function") {
+        mostrarToastApp(mensaje, tipo);
+    } else {
+        alert(mensaje);
+    }
+}
+
+function confirmarAppSeguro(mensaje) {
+    if (typeof confirmarApp === "function") {
+        return confirmarApp(mensaje);
+    }
+
+    return Promise.resolve(window.confirm(mensaje));
 }
 
 async function cargarSugerencias() {

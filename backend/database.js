@@ -109,6 +109,31 @@ const initDatabase = async () => {
     console.log('Tabla seguidores lista');
 
     await pool.query(`
+        CREATE TABLE IF NOT EXISTS solicitudes_seguimiento (
+            id SERIAL PRIMARY KEY,
+            solicitante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            receptor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            estado TEXT DEFAULT 'pendiente',
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (solicitante_id, receptor_id)
+        )
+    `);
+    console.log('Tabla solicitudes_seguimiento lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS notificaciones (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            tipo TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            referencia_id INTEGER,
+            leida BOOLEAN DEFAULT FALSE,
+            fecha TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla notificaciones lista');
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS publicaciones (
             id SERIAL PRIMARY KEY,
             usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,

@@ -98,12 +98,20 @@ async function guardarPerfil(evento) {
         }
 
         localStorage.setItem("usuarioLogueado", JSON.stringify(data.usuario));
-        alert("Perfil actualizado correctamente");
+        mostrarToastAppSeguro("Perfil actualizado correctamente");
         window.location.href = "muro.html";
     } catch (error) {
-        alert(error.message);
+        mostrarToastAppSeguro(error.message, "error");
         boton.disabled = false;
         boton.textContent = "Guardar cambios";
+    }
+}
+
+function mostrarToastAppSeguro(mensaje, tipo) {
+    if (typeof mostrarToastApp === "function") {
+        mostrarToastApp(mensaje, tipo);
+    } else {
+        alert(mensaje);
     }
 }
 
