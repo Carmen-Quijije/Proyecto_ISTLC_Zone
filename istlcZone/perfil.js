@@ -4,6 +4,9 @@ if (!usuario) {
     window.location.href = "index.html";
 }
 
+const nombreUsuario =
+    usuario?.nombre || usuario?.nombreCompleto || usuario?.usuario || "Usuario";
+
 document.addEventListener("DOMContentLoaded", () => {
     cargarDatosUsuario();
     cargarContadores();
@@ -11,11 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function cargarDatosUsuario() {
-    document.getElementById("nombrePerfil").textContent =
-        usuario.nombreCompleto;
-
-    document.getElementById("nombrePost").textContent =
-        usuario.nombreCompleto;
+    document.getElementById("nombrePerfil").textContent = nombreUsuario;
+    document.getElementById("nombrePost").textContent = nombreUsuario;
 
     document.getElementById("detalleViveEn").textContent =
         usuario.viveEn || "No registrado";
@@ -49,84 +49,27 @@ function cargarDatosUsuario() {
     }
 }
 
-async function cargarContadores() {
-    try {
-        const respuestaSeguidos = await fetch(
-            `http://localhost:8085/api/seguidores/seguidos/${usuario.idUsuario}`
-        );
-
-        const respuestaSeguidores = await fetch(
-            `http://localhost:8085/api/seguidores/seguidores/${usuario.idUsuario}`
-        );
-
-        const seguidos = await respuestaSeguidos.json();
-        const seguidores = await respuestaSeguidores.json();
-
-        document.getElementById("contadorSeguidores").textContent =
-            seguidores.length + " seguidores • " +
-            seguidos.length + " seguidos";
-
-    } catch (error) {
-        console.error("Error cargando contadores", error);
-    }
+function cargarContadores() {
+    document.getElementById("contadorSeguidores").textContent =
+        "0 seguidores - 0 seguidos";
 }
 
-async function cargarAmigosPerfil() {
+function cargarAmigosPerfil() {
     const listaAmigos = document.getElementById("listaAmigos");
     const contadorAmigos = document.getElementById("contadorAmigos");
 
-    try {
-        const respuesta = await fetch(
-            `http://localhost:8085/api/seguidores/seguidos/${usuario.idUsuario}`
-        );
+    contadorAmigos.textContent = "0 amigos";
+    listaAmigos.innerHTML = `
+        <div class="col-12">
+            <p class="text-muted mb-2">
+                Aun no tienes amigos agregados.
+            </p>
 
-        const seguidos = await respuesta.json();
-
-        contadorAmigos.textContent = seguidos.length + " amigos";
-
-        listaAmigos.innerHTML = "";
-
-        if (seguidos.length === 0) {
-            listaAmigos.innerHTML = `
-                <div class="col-12">
-                    <p class="text-muted mb-2">
-                        Aún no tienes amigos agregados.
-                    </p>
-
-                    <a href="amigos.html" class="btn btn-warning w-100">
-                        Buscar amigos
-                    </a>
-                </div>
-            `;
-            return;
-        }
-
-        seguidos.forEach((item) => {
-            const amigo = item.usuarioSeguido;
-
-            listaAmigos.innerHTML += `
-                <div class="col-4 text-center">
-                    <img
-                        src="${amigo.fotoPerfil ? amigo.fotoPerfil : "images/icono.png"}"
-                        class="img-amigo"
-                        alt="Foto amigo">
-
-                    <small>${amigo.nombreCompleto}</small>
-                </div>
-            `;
-        });
-
-    } catch (error) {
-        console.error("Error cargando amigos", error);
-
-        listaAmigos.innerHTML = `
-            <div class="col-12">
-                <p class="text-danger">
-                    No se pudieron cargar los amigos.
-                </p>
-            </div>
-        `;
-    }
+            <a href="amigos.html" class="btn btn-warning w-100">
+                Buscar amigos
+            </a>
+        </div>
+    `;
 }
 
 function cerrarSesion() {
