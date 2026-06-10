@@ -20,7 +20,7 @@ const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 12 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
             cb(new Error('Solo se permiten imagenes'));
@@ -34,7 +34,8 @@ const upload = multer({
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
 });
 
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -206,7 +207,11 @@ const enviarCorreoRecuperacion = async (email, codigo) => {
 };
 
 const subirImagenCloudinary = (file, folder = 'istlc-zone') => new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
+    const base64 = file.buffer.toString('base64');
+    const dataUri = `data:${file.mimetype};base64,${base64}`;
+
+    cloudinary.uploader.upload(
+        dataUri,
         {
             folder,
             resource_type: 'image',
@@ -214,18 +219,8 @@ const subirImagenCloudinary = (file, folder = 'istlc-zone') => new Promise((reso
                 { width: 1200, height: 1200, crop: 'limit' },
                 { quality: 'auto', fetch_format: 'auto' }
             ]
-        },
-        (error, result) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-
-            resolve(result);
         }
-    );
-
-    stream.end(file.buffer);
+    ).then(resolve).catch(reject);
 });
 
 router.post('/upload-image', upload.single('image'), async (req, res) => {
@@ -251,7 +246,10 @@ router.post('/upload-image', upload.single('image'), async (req, res) => {
         });
     } catch (error) {
         console.error('Error al subir imagen:', error);
-        res.status(500).json({ success: false, message: 'No se pudo subir la imagen' });
+        res.status(500).json({
+            success: false,
+            message: 'No se pudo subir la imagen: ' + (error.message || 'revisa Cloudinary')
+        });
     }
 });
 
@@ -713,7 +711,8 @@ router.get('/posts/user/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil,
+            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.fecha,
+                    u.nombre, u.usuario, u.foto_perfil,
                     COUNT(DISTINCT l.id)::int AS total_likes,
                     COUNT(DISTINCT c.id)::int AS total_comentarios,
                     EXISTS (
@@ -745,7 +744,8 @@ router.get('/feed/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil,
+            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.fecha,
+                    u.nombre, u.usuario, u.foto_perfil,
                     COUNT(DISTINCT l.id)::int AS total_likes,
                     COUNT(DISTINCT c.id)::int AS total_comentarios,
                     EXISTS (
