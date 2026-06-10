@@ -223,6 +223,43 @@ const subirImagenCloudinary = (file, folder = 'istlc-zone') => new Promise((reso
     ).then(resolve).catch(reject);
 });
 
+const obtenerPublicIdCloudinary = (urlImagen) => {
+    if (!urlImagen || !urlImagen.includes('/image/upload/')) {
+        return '';
+    }
+
+    try {
+        const url = new URL(urlImagen);
+        const ruta = url.pathname.split('/image/upload/')[1];
+        if (!ruta) {
+            return '';
+        }
+
+        const partes = ruta.split('/').filter(Boolean);
+        if (partes[0] && /^v\d+$/.test(partes[0])) {
+            partes.shift();
+        }
+
+        const publicIdConExtension = partes.join('/');
+        return decodeURIComponent(publicIdConExtension.replace(/\.[^/.]+$/, ''));
+    } catch (error) {
+        return '';
+    }
+};
+
+const borrarImagenCloudinary = async (urlImagen) => {
+    const publicId = obtenerPublicIdCloudinary(urlImagen);
+    if (!publicId) {
+        return;
+    }
+
+    try {
+        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    } catch (error) {
+        console.warn('No se pudo borrar la imagen de Cloudinary:', error.message);
+    }
+};
+
 router.post('/upload-image', upload.single('image'), async (req, res) => {
     try {
         if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
@@ -773,6 +810,41 @@ router.get('/feed/:id', async (req, res) => {
     } catch (error) {
         console.error('Error al cargar feed:', error);
         res.status(500).json({ success: false, message: 'Error al cargar publicaciones' });
+    }
+});
+
+router.delete('/posts/:id', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+
+        if (!usuarioId) {
+            return res.status(400).json({ success: false, message: 'Falta usuario' });
+        }
+
+        const publicacion = await get(
+            db,
+            'SELECT id, usuario_id, imagen_url FROM publicaciones WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (!publicacion) {
+            return res.status(404).json({ success: false, message: 'La publicacion ya no existe' });
+        }
+
+        if (Number(publicacion.usuario_id) !== Number(usuarioId)) {
+            return res.status(403).json({ success: false, message: 'Solo puedes eliminar tus publicaciones' });
+        }
+
+        await run(db, 'DELETE FROM comentarios WHERE publicacion_id = ?', [req.params.id]);
+        await run(db, 'DELETE FROM likes_publicaciones WHERE publicacion_id = ?', [req.params.id]);
+        await run(db, 'DELETE FROM publicaciones WHERE id = ? AND usuario_id = ?', [req.params.id, usuarioId]);
+        await borrarImagenCloudinary(publicacion.imagen_url);
+
+        res.json({ success: true, message: 'Publicacion eliminada' });
+    } catch (error) {
+        console.error('Error al eliminar publicacion:', error);
+        res.status(500).json({ success: false, message: 'Error al eliminar publicacion' });
     }
 });
 

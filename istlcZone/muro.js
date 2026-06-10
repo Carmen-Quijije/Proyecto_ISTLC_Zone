@@ -166,6 +166,17 @@ async function cargarFeed() {
 function tarjetaPublicacion(publicacion) {
     const autor = publicacion.autor || {};
     const contenido = escaparHtml(publicacion.contenido);
+    const esMia = Number(autor.id) === Number(usuario.id);
+    const botonEliminar = esMia
+        ? `
+            <button
+                class="btn btn-sm btn-outline-danger btn-eliminar-publicacion"
+                onclick="eliminarPublicacion(${publicacion.id})"
+            >
+                Eliminar
+            </button>
+        `
+        : "";
     const imagen = publicacion.imagenUrl
         ? `<img class="publicacion-img" src="${publicacion.imagenUrl}" alt="Imagen de publicacion">`
         : "";
@@ -176,18 +187,21 @@ function tarjetaPublicacion(publicacion) {
     return `
         <article class="card shadow-sm mb-4 publicacion-card">
             <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <img
-                        src="${autor.fotoPerfil || "images/icono.png"}"
-                        class="rounded-circle me-2"
-                        width="50"
-                        height="50"
-                        alt="${autor.nombre || "Usuario"}"
-                    />
-                    <div>
-                        <h6 class="mb-0">${autor.nombre || "Usuario"}</h6>
-                        <small class="text-muted">${fecha}</small>
+                <div class="d-flex align-items-start justify-content-between mb-3">
+                    <div class="d-flex align-items-center">
+                        <img
+                            src="${autor.fotoPerfil || "images/icono.png"}"
+                            class="rounded-circle me-2"
+                            width="50"
+                            height="50"
+                            alt="${autor.nombre || "Usuario"}"
+                        />
+                        <div>
+                            <h6 class="mb-0">${autor.nombre || "Usuario"}</h6>
+                            <small class="text-muted">${fecha}</small>
+                        </div>
                     </div>
+                    ${botonEliminar}
                 </div>
 
                 <p>${contenido}</p>
@@ -221,6 +235,31 @@ function tarjetaPublicacion(publicacion) {
             </div>
         </article>
     `;
+}
+
+async function eliminarPublicacion(publicacionId) {
+    const confirmar = confirm("Quieres eliminar esta publicacion? Se borraran tambien sus comentarios y me gusta.");
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo eliminar la publicacion");
+        }
+
+        await cargarFeed();
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 async function alternarLike(publicacionId, likedByMe) {

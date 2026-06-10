@@ -166,18 +166,26 @@ function tarjetaPublicacionPerfil(publicacion) {
 
     return `
         <article class="perfil-publicacion">
-            <div class="d-flex align-items-center mb-2">
-                <img
-                    src="${usuario.fotoPerfil || "images/icono.png"}"
-                    class="rounded-circle me-2"
-                    width="44"
-                    height="44"
-                    alt="${usuario.nombre || "Usuario"}"
-                />
-                <div>
-                    <h6 class="mb-0">${usuario.nombre || "Usuario"}</h6>
-                    <small class="text-muted">${fecha}</small>
+            <div class="d-flex align-items-start justify-content-between mb-2">
+                <div class="d-flex align-items-center">
+                    <img
+                        src="${usuario.fotoPerfil || "images/icono.png"}"
+                        class="rounded-circle me-2"
+                        width="44"
+                        height="44"
+                        alt="${usuario.nombre || "Usuario"}"
+                    />
+                    <div>
+                        <h6 class="mb-0">${usuario.nombre || "Usuario"}</h6>
+                        <small class="text-muted">${fecha}</small>
+                    </div>
                 </div>
+                <button
+                    class="btn btn-sm btn-outline-danger btn-eliminar-publicacion"
+                    onclick="eliminarPublicacionPerfil(${publicacion.id})"
+                >
+                    Eliminar
+                </button>
             </div>
             <p>${escaparHtml(publicacion.contenido)}</p>
             ${imagen}
@@ -187,6 +195,31 @@ function tarjetaPublicacionPerfil(publicacion) {
             </div>
         </article>
     `;
+}
+
+async function eliminarPublicacionPerfil(publicacionId) {
+    const confirmar = confirm("Quieres eliminar esta publicacion? Se borraran tambien sus comentarios y me gusta.");
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo eliminar la publicacion");
+        }
+
+        await cargarPublicacionesPerfil();
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 function escaparHtml(texto) {

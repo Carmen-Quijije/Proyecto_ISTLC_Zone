@@ -635,6 +635,12 @@ footer p{
     line-height: 1.45;
 }
 
+.btn-eliminar-publicacion{
+    font-weight: 700;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
 .publicacion-img{
     width: 100%;
     max-height: 420px;
