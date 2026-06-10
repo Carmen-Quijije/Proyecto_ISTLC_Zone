@@ -4,6 +4,7 @@ const API_BASE =
         : "http://localhost:3000";
 
 let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+let publicacionesPerfil = [];
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -142,6 +143,7 @@ async function cargarPublicacionesPerfil() {
         const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${usuario.id}?currentUserId=${usuario.id}`);
         const data = await respuesta.json();
         const publicaciones = data.success ? data.publicaciones : [];
+        publicacionesPerfil = publicaciones;
 
         if (!publicaciones.length) {
             contenedor.innerHTML = `
@@ -180,12 +182,20 @@ function tarjetaPublicacionPerfil(publicacion) {
                         <small class="text-muted">${fecha}</small>
                     </div>
                 </div>
+                <div>
+                    <button
+                        class="btn btn-sm btn-outline-primary btn-eliminar-publicacion me-2"
+                        onclick="editarPublicacionPerfil(${publicacion.id})"
+                    >
+                        Editar
+                    </button>
                 <button
                     class="btn btn-sm btn-outline-danger btn-eliminar-publicacion"
                     onclick="eliminarPublicacionPerfil(${publicacion.id})"
                 >
                     Eliminar
                 </button>
+                </div>
             </div>
             <p>${escaparHtml(publicacion.contenido)}</p>
             ${imagen}
@@ -195,6 +205,45 @@ function tarjetaPublicacionPerfil(publicacion) {
             </div>
         </article>
     `;
+}
+
+async function editarPublicacionPerfil(publicacionId) {
+    const publicacion = publicacionesPerfil.find((item) => Number(item.id) === Number(publicacionId));
+    if (!publicacion) {
+        alert("No se encontro la publicacion");
+        return;
+    }
+
+    const nuevoTexto = prompt("Edita tu publicacion:", publicacion.contenido || "");
+    if (nuevoTexto === null) {
+        return;
+    }
+
+    const contenido = nuevoTexto.trim();
+    if (!contenido) {
+        alert("La publicacion no puede quedar vacia");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                usuarioId: usuario.id,
+                contenido
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo editar la publicacion");
+        }
+
+        await cargarPublicacionesPerfil();
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 async function eliminarPublicacionPerfil(publicacionId) {

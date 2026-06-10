@@ -141,6 +141,18 @@ const initDatabase = async () => {
     `);
     console.log('Tabla likes_publicaciones lista');
 
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS mensajes (
+            id SERIAL PRIMARY KEY,
+            emisor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            receptor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            contenido TEXT NOT NULL,
+            leido BOOLEAN DEFAULT FALSE,
+            fecha TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla mensajes lista');
+
     await pool.query('SELECT 1');
     console.log('Base de datos Neon PostgreSQL conectada');
 };

@@ -86,6 +86,25 @@ const comentarioPublico = (comentario) => ({
     }
 });
 
+const mensajePublico = (mensaje, usuarioActualId) => ({
+    id: mensaje.id,
+    contenido: mensaje.contenido,
+    fecha: mensaje.fecha,
+    mio: Number(mensaje.emisor_id) === Number(usuarioActualId),
+    emisor: {
+        id: mensaje.emisor_id,
+        nombre: mensaje.emisor_nombre,
+        usuario: mensaje.emisor_usuario,
+        fotoPerfil: mensaje.emisor_foto
+    },
+    receptor: {
+        id: mensaje.receptor_id,
+        nombre: mensaje.receptor_nombre,
+        usuario: mensaje.receptor_usuario,
+        fotoPerfil: mensaje.receptor_foto
+    }
+});
+
 const enviarCorreoVerificacion = async (email, codigo) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -744,6 +763,43 @@ router.post('/posts', async (req, res) => {
     }
 });
 
+router.put('/posts/:id', async (req, res) => {
+    try {
+        const { usuarioId, contenido } = req.body;
+        const db = getDb();
+        const texto = String(contenido || '').trim();
+
+        if (!usuarioId || !texto) {
+            return res.status(400).json({ success: false, message: 'Escribe algo para actualizar' });
+        }
+
+        const publicacion = await get(
+            db,
+            'SELECT id, usuario_id FROM publicaciones WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (!publicacion) {
+            return res.status(404).json({ success: false, message: 'La publicacion ya no existe' });
+        }
+
+        if (Number(publicacion.usuario_id) !== Number(usuarioId)) {
+            return res.status(403).json({ success: false, message: 'Solo puedes editar tus publicaciones' });
+        }
+
+        await run(
+            db,
+            'UPDATE publicaciones SET contenido = ? WHERE id = ? AND usuario_id = ?',
+            [texto, req.params.id, usuarioId]
+        );
+
+        res.json({ success: true, message: 'Publicacion actualizada' });
+    } catch (error) {
+        console.error('Error al editar publicacion:', error);
+        res.status(500).json({ success: false, message: 'Error al editar publicacion' });
+    }
+});
+
 router.get('/posts/user/:id', async (req, res) => {
     try {
         const db = getDb();
@@ -936,6 +992,138 @@ router.post('/posts/:id/comments', async (req, res) => {
     } catch (error) {
         console.error('Error al comentar:', error);
         res.status(500).json({ success: false, message: 'Error al comentar' });
+    }
+});
+
+router.get('/messages/conversations/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const usuarioId = req.params.id;
+        const result = await db.run(
+            `WITH ultimos AS (
+                SELECT
+                    CASE
+                        WHEN emisor_id = ? THEN receptor_id
+                        ELSE emisor_id
+                    END AS contacto_id,
+                    MAX(fecha) AS ultima_fecha
+                FROM mensajes
+                WHERE emisor_id = ? OR receptor_id = ?
+                GROUP BY contacto_id
+            )
+            SELECT u.id, u.nombre, u.usuario, u.foto_perfil, m.contenido AS ultimo_mensaje, m.fecha AS ultima_fecha
+            FROM ultimos ul
+            JOIN usuarios u ON u.id = ul.contacto_id
+            JOIN mensajes m ON (
+                ((m.emisor_id = ? AND m.receptor_id = u.id) OR (m.emisor_id = u.id AND m.receptor_id = ?))
+                AND m.fecha = ul.ultima_fecha
+            )
+            ORDER BY ul.ultima_fecha DESC
+            LIMIT 30`,
+            [usuarioId, usuarioId, usuarioId, usuarioId, usuarioId]
+        );
+
+        res.json({
+            success: true,
+            conversaciones: result.rows.map((fila) => ({
+                id: fila.id,
+                nombre: fila.nombre,
+                usuario: fila.usuario,
+                fotoPerfil: fila.foto_perfil,
+                ultimoMensaje: fila.ultimo_mensaje,
+                ultimaFecha: fila.ultima_fecha
+            }))
+        });
+    } catch (error) {
+        console.error('Error al cargar conversaciones:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar conversaciones' });
+    }
+});
+
+router.get('/messages/:usuarioId/:contactoId', async (req, res) => {
+    try {
+        const db = getDb();
+        const { usuarioId, contactoId } = req.params;
+        const contacto = await get(
+            db,
+            'SELECT id, nombre, usuario, foto_perfil FROM usuarios WHERE id = ?',
+            [contactoId]
+        );
+
+        if (!contacto) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        const result = await db.run(
+            `SELECT m.*,
+                    e.nombre AS emisor_nombre, e.usuario AS emisor_usuario, e.foto_perfil AS emisor_foto,
+                    r.nombre AS receptor_nombre, r.usuario AS receptor_usuario, r.foto_perfil AS receptor_foto
+             FROM mensajes m
+             JOIN usuarios e ON e.id = m.emisor_id
+             JOIN usuarios r ON r.id = m.receptor_id
+             WHERE (m.emisor_id = ? AND m.receptor_id = ?)
+                OR (m.emisor_id = ? AND m.receptor_id = ?)
+             ORDER BY m.fecha ASC
+             LIMIT 80`,
+            [usuarioId, contactoId, contactoId, usuarioId]
+        );
+
+        await run(
+            db,
+            'UPDATE mensajes SET leido = TRUE WHERE receptor_id = ? AND emisor_id = ?',
+            [usuarioId, contactoId]
+        );
+
+        res.json({
+            success: true,
+            contacto: {
+                id: contacto.id,
+                nombre: contacto.nombre,
+                usuario: contacto.usuario,
+                fotoPerfil: contacto.foto_perfil
+            },
+            mensajes: result.rows.map((mensaje) => mensajePublico(mensaje, usuarioId))
+        });
+    } catch (error) {
+        console.error('Error al cargar mensajes:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar mensajes' });
+    }
+});
+
+router.post('/messages', async (req, res) => {
+    try {
+        const { emisorId, receptorId, contenido } = req.body;
+        const db = getDb();
+        const texto = String(contenido || '').trim();
+
+        if (!emisorId || !receptorId || !texto) {
+            return res.status(400).json({ success: false, message: 'Escribe un mensaje' });
+        }
+
+        if (Number(emisorId) === Number(receptorId)) {
+            return res.status(400).json({ success: false, message: 'No puedes enviarte mensajes a ti mismo' });
+        }
+
+        const receptor = await get(db, 'SELECT id FROM usuarios WHERE id = ?', [receptorId]);
+        if (!receptor) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        const result = await db.run(
+            `INSERT INTO mensajes (emisor_id, receptor_id, contenido)
+             VALUES (?, ?, ?)
+             RETURNING id`,
+            [emisorId, receptorId, texto]
+        );
+
+        res.json({
+            success: true,
+            message: 'Mensaje enviado',
+            id: result.rows[0]?.id
+        });
+    } catch (error) {
+        console.error('Error al enviar mensaje:', error);
+        res.status(500).json({ success: false, message: 'Error al enviar mensaje' });
     }
 });
 
