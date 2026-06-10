@@ -222,7 +222,7 @@ function obtenerIconoNotificacion(tipo) {
         return "chat_bubble";
     }
 
-    if (tipo === "comentario") {
+    if (tipo === "comentario" || tipo === "respuesta_comentario") {
         return "forum";
     }
 

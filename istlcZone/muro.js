@@ -5,12 +5,16 @@ const API_BASE =
 
 let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
 let publicacionesFeed = [];
+let respuestasComentario = {};
+let usuariosParaCompartir = [];
 
 if (!usuario) {
     window.location.href = "index.html";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    prepararEstilosSocialesMuro();
+    prepararModalCompartir();
     pintarUsuario(usuario);
     document.getElementById("formPublicacion").addEventListener("submit", crearPublicacion);
     document.getElementById("imagenPublicacion").addEventListener("change", actualizarPreviewPublicacion);
@@ -215,7 +219,7 @@ function tarjetaPublicacion(publicacion) {
                             alt="${autor.nombre || "Usuario"}"
                         />
                         <div>
-                            <h6 class="mb-0">${autor.nombre || "Usuario"}</h6>
+                            <h6 class="mb-0">${escaparHtml(autor.nombre || "Usuario")}</h6>
                             <small class="text-muted">${fecha}</small>
                         </div>
                     </div>
@@ -235,7 +239,9 @@ function tarjetaPublicacion(publicacion) {
                     <button class="btn btn-light" onclick="mostrarComentarios(${publicacion.id})">
                         Comentar (${publicacion.totalComentarios})
                     </button>
-                    <button class="btn btn-light">Compartir</button>
+                    <button class="btn btn-light" onclick="abrirCompartirPublicacion(${publicacion.id})">
+                        Compartir
+                    </button>
                 </div>
 
                 <section class="comentarios-box mt-3" id="comentarios-${publicacion.id}">
@@ -414,26 +420,72 @@ async function cargarComentarios(publicacionId) {
             return;
         }
 
-        lista.innerHTML = comentarios.map(tarjetaComentario).join("");
+        lista.innerHTML = comentarios.map((comentario) => tarjetaComentario(comentario, publicacionId)).join("");
     } catch (error) {
         lista.innerHTML = `<p class="text-muted small mb-2">No se pudieron cargar comentarios.</p>`;
     }
 }
 
-function tarjetaComentario(comentario) {
+function tarjetaComentario(comentario, publicacionId) {
     const autor = comentario.autor || {};
+    const respuestaA = comentario.respuestaA?.autor;
     const fecha = comentario.fecha ? new Date(comentario.fecha).toLocaleString("es-EC") : "Hoy";
+    const nombreAutor = autor.nombre || "Usuario";
+    const claseRespuesta = comentario.comentarioPadreId ? "respuesta" : "";
 
     return `
-        <div class="comentario-item">
+        <div class="comentario-item ${claseRespuesta}">
             <img src="${autor.fotoPerfil || "images/icono.png"}" alt="${autor.nombre || "Usuario"}">
             <div>
-                <strong>${autor.nombre || "Usuario"}</strong>
+                ${respuestaA ? `<small class="respuesta-a">Responde a ${escaparHtml(respuestaA.nombre || "Usuario")}</small>` : ""}
+                <strong>${escaparHtml(nombreAutor)}</strong>
                 <p>${escaparHtml(comentario.contenido)}</p>
                 <small>${fecha}</small>
+                <button
+                    class="comentario-responder"
+                    type="button"
+                    onclick='prepararRespuestaComentario(${publicacionId}, ${comentario.id}, ${JSON.stringify(nombreAutor)})'
+                >
+                    Responder
+                </button>
             </div>
         </div>
     `;
+}
+
+function prepararRespuestaComentario(publicacionId, comentarioId, nombreAutor) {
+    respuestasComentario[publicacionId] = comentarioId;
+    const input = document.getElementById(`comentario-input-${publicacionId}`);
+    const caja = document.getElementById(`comentarios-${publicacionId}`);
+    let aviso = document.getElementById(`respuesta-activa-${publicacionId}`);
+
+    if (!input || !caja) {
+        return;
+    }
+
+    if (!aviso) {
+        aviso = document.createElement("div");
+        aviso.id = `respuesta-activa-${publicacionId}`;
+        aviso.className = "respuesta-activa";
+        caja.querySelector(".comentario-form")?.before(aviso);
+    }
+
+    aviso.innerHTML = `
+        Respondiendo a <strong>${escaparHtml(nombreAutor)}</strong>
+        <button type="button" onclick="cancelarRespuestaComentario(${publicacionId})">Cancelar</button>
+    `;
+    input.placeholder = `Respondiendo a ${nombreAutor}...`;
+    input.focus();
+}
+
+function cancelarRespuestaComentario(publicacionId) {
+    delete respuestasComentario[publicacionId];
+    document.getElementById(`respuesta-activa-${publicacionId}`)?.remove();
+    const input = document.getElementById(`comentario-input-${publicacionId}`);
+
+    if (input) {
+        input.placeholder = "Escribe un comentario...";
+    }
 }
 
 async function crearComentario(evento, publicacionId) {
@@ -452,7 +504,8 @@ async function crearComentario(evento, publicacionId) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 usuarioId: usuario.id,
-                contenido
+                contenido,
+                comentarioPadreId: respuestasComentario[publicacionId] || null
             })
         });
         const data = await respuesta.json();
@@ -462,6 +515,7 @@ async function crearComentario(evento, publicacionId) {
         }
 
         input.value = "";
+        cancelarRespuestaComentario(publicacionId);
         await cargarComentarios(publicacionId);
         await cargarFeed();
         const caja = document.getElementById(`comentarios-${publicacionId}`);
@@ -472,6 +526,189 @@ async function crearComentario(evento, publicacionId) {
     } catch (error) {
         mostrarToastAppSeguro(error.message, "error");
     }
+}
+
+function prepararModalCompartir() {
+    if (document.getElementById("modalCompartirPublicacion")) {
+        return;
+    }
+
+    const modal = document.createElement("section");
+    modal.id = "modalCompartirPublicacion";
+    modal.className = "modal-compartir d-none";
+    modal.innerHTML = `
+        <div class="modal-compartir-caja">
+            <div class="modal-compartir-header">
+                <div>
+                    <h3>Compartir publicacion</h3>
+                    <p>Elige donde quieres enviarla.</p>
+                </div>
+                <button type="button" class="modal-cerrar" onclick="cerrarCompartirPublicacion()">x</button>
+            </div>
+
+            <button id="btnCompartirPerfil" class="btn btn-warning w-100 mb-3" type="button">
+                Compartir en mi perfil
+            </button>
+
+            <label class="form-label fw-bold">Enviar por mensaje</label>
+            <input id="buscarCompartirUsuario" class="form-control mb-3" placeholder="Buscar persona..." autocomplete="off" />
+            <div id="listaCompartirUsuarios" class="lista-compartir-usuarios">
+                <p class="text-muted mb-0">Cargando personas...</p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.getElementById("buscarCompartirUsuario").addEventListener("input", (evento) => {
+        pintarUsuariosParaCompartir(evento.target.value);
+    });
+    document.getElementById("btnCompartirPerfil").addEventListener("click", compartirEnMiPerfil);
+}
+
+async function abrirCompartirPublicacion(publicacionId) {
+    const modal = document.getElementById("modalCompartirPublicacion");
+
+    if (!modal) {
+        return;
+    }
+
+    modal.dataset.publicacionId = publicacionId;
+    modal.classList.remove("d-none");
+    document.getElementById("buscarCompartirUsuario").value = "";
+    document.getElementById("listaCompartirUsuarios").innerHTML = `<p class="text-muted mb-0">Cargando personas...</p>`;
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/users?q=&currentUserId=${usuario.id}`);
+        const data = await respuesta.json();
+        usuariosParaCompartir = data.success
+            ? data.usuarios.filter((persona) => Number(persona.id) !== Number(usuario.id))
+            : [];
+        pintarUsuariosParaCompartir("");
+    } catch (error) {
+        document.getElementById("listaCompartirUsuarios").innerHTML =
+            `<p class="text-muted mb-0">No se pudieron cargar personas.</p>`;
+    }
+}
+
+function cerrarCompartirPublicacion() {
+    document.getElementById("modalCompartirPublicacion")?.classList.add("d-none");
+}
+
+function pintarUsuariosParaCompartir(busqueda) {
+    const lista = document.getElementById("listaCompartirUsuarios");
+    const filtro = String(busqueda || "").trim().toLowerCase();
+    const personas = usuariosParaCompartir
+        .filter((persona) => {
+            const texto = `${persona.nombre || ""} ${persona.usuario || ""} ${persona.email || ""}`.toLowerCase();
+            return texto.includes(filtro);
+        })
+        .slice(0, 8);
+
+    if (!personas.length) {
+        lista.innerHTML = `<p class="text-muted mb-0">No hay personas para mostrar.</p>`;
+        return;
+    }
+
+    lista.innerHTML = personas.map((persona) => `
+        <button class="compartir-persona" type="button" onclick="compartirPorMensaje(${persona.id})">
+            <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${escaparHtml(persona.nombre || "Usuario")}">
+            <span>
+                <strong>${escaparHtml(persona.nombre || "Usuario")}</strong>
+                <small>@${escaparHtml(persona.usuario || "usuario")}</small>
+            </span>
+            <b>Enviar</b>
+        </button>
+    `).join("");
+}
+
+async function compartirEnMiPerfil() {
+    const modal = document.getElementById("modalCompartirPublicacion");
+    const publicacionId = modal?.dataset.publicacionId;
+
+    if (!publicacionId) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/share-profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo compartir");
+        }
+
+        cerrarCompartirPublicacion();
+        mostrarToastAppSeguro("Compartido en tu perfil");
+        await cargarFeed();
+    } catch (error) {
+        mostrarToastAppSeguro(error.message, "error");
+    }
+}
+
+async function compartirPorMensaje(receptorId) {
+    const modal = document.getElementById("modalCompartirPublicacion");
+    const publicacionId = modal?.dataset.publicacionId;
+
+    if (!publicacionId) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/share-message`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                emisorId: usuario.id,
+                receptorId
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo enviar por mensaje");
+        }
+
+        cerrarCompartirPublicacion();
+        mostrarToastAppSeguro("Publicacion enviada por mensaje");
+    } catch (error) {
+        mostrarToastAppSeguro(error.message, "error");
+    }
+}
+
+function prepararEstilosSocialesMuro() {
+    if (document.getElementById("estilosSocialesMuro")) {
+        return;
+    }
+
+    const style = document.createElement("style");
+    style.id = "estilosSocialesMuro";
+    style.textContent = `
+        .comentario-item.respuesta{margin-left:46px;border-left:3px solid #ffc107;padding-left:10px}
+        .respuesta-a{display:block;color:#6c757d;font-size:12px;margin-bottom:2px}
+        .comentario-responder{border:0;background:transparent;color:#0d6efd;font-weight:700;font-size:13px;padding:0;margin-left:8px}
+        .comentario-responder:hover{text-decoration:underline}
+        .respuesta-activa{background:#fff8df;border:1px solid #ffc107;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:14px}
+        .respuesta-activa button{border:0;background:transparent;color:#a00000;font-weight:700;margin-left:8px}
+        .modal-compartir{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:18px}
+        .modal-compartir.d-none{display:none!important}
+        .modal-compartir-caja{width:min(560px,100%);background:white;border-radius:8px;box-shadow:0 18px 50px rgba(0,0,0,.25);padding:20px}
+        .modal-compartir-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+        .modal-compartir-header h3{font-size:26px;margin:0;color:#061a38;font-weight:800}
+        .modal-compartir-header p{margin:2px 0 0;color:#6c757d}
+        .modal-cerrar{border:0;background:#f1f3f5;border-radius:8px;width:34px;height:34px;font-weight:800}
+        .lista-compartir-usuarios{max-height:310px;overflow:auto;display:grid;gap:8px}
+        .compartir-persona{width:100%;border:1px solid #dee2e6;background:#fff;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;text-align:left}
+        .compartir-persona:hover{border-color:#ffc107;background:#fff8df}
+        .compartir-persona img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid #ffc107}
+        .compartir-persona span{display:flex;flex-direction:column;flex:1}
+        .compartir-persona small{color:#6c757d}
+        .compartir-persona b{color:#061a38}
+    `;
+    document.head.appendChild(style);
 }
 
 function escaparHtml(texto) {

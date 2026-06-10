@@ -155,9 +155,15 @@ const initDatabase = async () => {
             id SERIAL PRIMARY KEY,
             publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
             usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            comentario_padre_id INTEGER REFERENCES comentarios(id) ON DELETE CASCADE,
             contenido TEXT NOT NULL,
             fecha TIMESTAMPTZ DEFAULT NOW()
         )
+    `);
+
+    await pool.query(`
+        ALTER TABLE comentarios
+        ADD COLUMN IF NOT EXISTS comentario_padre_id INTEGER REFERENCES comentarios(id) ON DELETE CASCADE
     `);
     console.log('Tabla comentarios lista');
 

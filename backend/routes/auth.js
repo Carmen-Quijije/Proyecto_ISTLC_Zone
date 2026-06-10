@@ -118,6 +118,16 @@ const comentarioPublico = (comentario) => ({
     id: comentario.id,
     contenido: comentario.contenido,
     fecha: comentario.fecha,
+    comentarioPadreId: comentario.comentario_padre_id,
+    respuestaA: comentario.comentario_padre_id ? {
+        id: comentario.comentario_padre_id,
+        autor: {
+            id: comentario.padre_usuario_id,
+            nombre: comentario.padre_nombre,
+            usuario: comentario.padre_usuario,
+            fotoPerfil: comentario.padre_foto
+        }
+    } : null,
     autor: {
         id: comentario.usuario_id,
         nombre: comentario.nombre,
@@ -1221,9 +1231,15 @@ router.get('/posts/:id/comments', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT c.*, u.nombre, u.usuario, u.foto_perfil
+            `SELECT c.*, u.nombre, u.usuario, u.foto_perfil,
+                    cp.usuario_id AS padre_usuario_id,
+                    up.nombre AS padre_nombre,
+                    up.usuario AS padre_usuario,
+                    up.foto_perfil AS padre_foto
              FROM comentarios c
              JOIN usuarios u ON u.id = c.usuario_id
+             LEFT JOIN comentarios cp ON cp.id = c.comentario_padre_id
+             LEFT JOIN usuarios up ON up.id = cp.usuario_id
              WHERE c.publicacion_id = ?
              ORDER BY c.fecha ASC
              LIMIT 40`,
@@ -1242,19 +1258,31 @@ router.get('/posts/:id/comments', async (req, res) => {
 
 router.post('/posts/:id/comments', async (req, res) => {
     try {
-        const { usuarioId, contenido } = req.body;
+        const { usuarioId, contenido, comentarioPadreId } = req.body;
         const db = getDb();
         const texto = String(contenido || '').trim();
+        const comentarioPadre = comentarioPadreId ? await get(
+            db,
+            `SELECT c.id, c.usuario_id, u.nombre
+             FROM comentarios c
+             JOIN usuarios u ON u.id = c.usuario_id
+             WHERE c.id = ? AND c.publicacion_id = ?`,
+            [comentarioPadreId, req.params.id]
+        ) : null;
 
         if (!usuarioId || !texto) {
             return res.status(400).json({ success: false, message: 'Escribe un comentario' });
         }
 
+        if (comentarioPadreId && !comentarioPadre) {
+            return res.status(404).json({ success: false, message: 'El comentario ya no existe' });
+        }
+
         const result = await db.run(
-            `INSERT INTO comentarios (publicacion_id, usuario_id, contenido)
-             VALUES (?, ?, ?)
+            `INSERT INTO comentarios (publicacion_id, usuario_id, comentario_padre_id, contenido)
+             VALUES (?, ?, ?, ?)
              RETURNING id`,
-            [req.params.id, usuarioId, texto]
+            [req.params.id, usuarioId, comentarioPadre?.id || null, texto]
         );
 
         const publicacion = await get(
@@ -1266,7 +1294,21 @@ router.post('/posts/:id/comments', async (req, res) => {
             [usuarioId, req.params.id]
         );
 
-        if (publicacion && Number(publicacion.usuario_id) !== Number(usuarioId)) {
+        if (comentarioPadre && Number(comentarioPadre.usuario_id) !== Number(usuarioId)) {
+            await crearNotificacion(
+                db,
+                comentarioPadre.usuario_id,
+                'respuesta_comentario',
+                `${publicacion?.nombre || 'Un usuario'} respondio tu comentario`,
+                req.params.id
+            );
+        }
+
+        if (
+            publicacion &&
+            Number(publicacion.usuario_id) !== Number(usuarioId) &&
+            Number(publicacion.usuario_id) !== Number(comentarioPadre?.usuario_id)
+        ) {
             await crearNotificacion(
                 db,
                 publicacion.usuario_id,
@@ -1284,6 +1326,106 @@ router.post('/posts/:id/comments', async (req, res) => {
     } catch (error) {
         console.error('Error al comentar:', error);
         res.status(500).json({ success: false, message: 'Error al comentar' });
+    }
+});
+
+router.post('/posts/:id/share-profile', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+
+        if (!usuarioId) {
+            return res.status(400).json({ success: false, message: 'Falta usuario' });
+        }
+
+        const publicacion = await get(
+            db,
+            `SELECT p.id, p.contenido, u.nombre
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = p.usuario_id
+             WHERE p.id = ?`,
+            [req.params.id]
+        );
+
+        if (!publicacion) {
+            return res.status(404).json({ success: false, message: 'La publicacion ya no existe' });
+        }
+
+        const contenidoCompartido = `Compartio una publicacion de ${publicacion.nombre || 'un usuario'}:\n\n${publicacion.contenido}`;
+        const result = await db.run(
+            `INSERT INTO publicaciones (usuario_id, contenido, imagen_url, imagenes_json)
+             VALUES (?, ?, ?, ?)
+             RETURNING id`,
+            [usuarioId, contenidoCompartido, null, JSON.stringify([])]
+        );
+
+        res.json({
+            success: true,
+            message: 'Publicacion compartida en tu perfil',
+            id: result.rows[0]?.id
+        });
+    } catch (error) {
+        console.error('Error al compartir en perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al compartir en tu perfil' });
+    }
+});
+
+router.post('/posts/:id/share-message', async (req, res) => {
+    try {
+        const { emisorId, receptorId } = req.body;
+        const db = getDb();
+
+        if (!emisorId || !receptorId) {
+            return res.status(400).json({ success: false, message: 'Elige a quien enviar la publicacion' });
+        }
+
+        if (Number(emisorId) === Number(receptorId)) {
+            return res.status(400).json({ success: false, message: 'No puedes enviarte la publicacion a ti mismo' });
+        }
+
+        const publicacion = await get(
+            db,
+            `SELECT p.id, p.contenido, u.nombre
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = p.usuario_id
+             WHERE p.id = ?`,
+            [req.params.id]
+        );
+
+        if (!publicacion) {
+            return res.status(404).json({ success: false, message: 'La publicacion ya no existe' });
+        }
+
+        const receptor = await get(db, 'SELECT id FROM usuarios WHERE id = ?', [receptorId]);
+        if (!receptor) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        const contenido = `Te compartio una publicacion de ${publicacion.nombre || 'un usuario'}:\n\n${publicacion.contenido}`;
+        const result = await db.run(
+            `INSERT INTO mensajes (emisor_id, receptor_id, contenido)
+             VALUES (?, ?, ?)
+             RETURNING id`,
+            [emisorId, receptorId, contenido]
+        );
+
+        const emisor = await get(db, 'SELECT nombre FROM usuarios WHERE id = ?', [emisorId]);
+        await crearNotificacion(
+            db,
+            receptorId,
+            'mensaje',
+            `${emisor?.nombre || 'Un usuario'} te compartio una publicacion`,
+            emisorId
+        );
+
+        res.json({
+            success: true,
+            message: 'Publicacion enviada por mensaje',
+            id: result.rows[0]?.id
+        });
+    } catch (error) {
+        console.error('Error al compartir por mensaje:', error);
+        res.status(500).json({ success: false, message: 'Error al compartir por mensaje' });
     }
 });
 
