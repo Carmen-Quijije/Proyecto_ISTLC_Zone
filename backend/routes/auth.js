@@ -18,19 +18,8 @@ const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const run = (db, sql, params = []) => new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-        if (err) reject(err);
-        else resolve(this);
-    });
-});
-
-const get = (db, sql, params = []) => new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-    });
-});
+const run = (db, sql, params = []) => db.run(sql, params);
+const get = (db, sql, params = []) => db.get(sql, params);
 
 const enviarCorreoVerificacion = async (email, codigo) => {
     try {
@@ -102,7 +91,7 @@ router.post('/register', async (req, res) => {
         if (pendingExistente) {
             await run(db, 'DELETE FROM registros_pendientes WHERE email = ?', [email]);
             await run(db, 'DELETE FROM registros_pendientes WHERE usuario = ?', [usuario]);
-            await run(db, 'UPDATE codigos_verificacion SET usado = 1 WHERE email = ?', [email]);
+            await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?', [email]);
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -113,7 +102,7 @@ router.post('/register', async (req, res) => {
             db,
             `INSERT INTO registros_pendientes (nombre, email, usuario, password, privacidad)
              VALUES (?, ?, ?, ?, ?)`,
-            [nombre, email, usuario, hashedPassword, privacidad ? 1 : 0]
+            [nombre, email, usuario, hashedPassword, Boolean(privacidad)]
         );
 
         await run(
@@ -126,7 +115,7 @@ router.post('/register', async (req, res) => {
 
         if (!emailEnviado) {
             await run(db, 'DELETE FROM registros_pendientes WHERE email = ?', [email]);
-            await run(db, 'UPDATE codigos_verificacion SET usado = 1 WHERE email = ? AND codigo = ?', [email, codigo]);
+            await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
 
             return res.status(502).json({
                 success: false,
@@ -158,7 +147,7 @@ router.post('/login', async (req, res) => {
 
         const usuario = await get(
             db,
-            'SELECT * FROM usuarios WHERE email = ? AND email_verificado = 1',
+            'SELECT * FROM usuarios WHERE email = ? AND email_verificado = TRUE',
             [email]
         );
 
@@ -200,8 +189,8 @@ router.post('/verify-email', async (req, res) => {
         const codigoValido = await get(
             db,
             `SELECT * FROM codigos_verificacion
-             WHERE email = ? AND codigo = ? AND usado = 0
-             AND datetime(fecha_expiracion) > datetime('now')
+             WHERE email = ? AND codigo = ? AND usado = FALSE
+             AND fecha_expiracion > NOW()
              ORDER BY id DESC LIMIT 1`,
             [email, codigo]
         );
@@ -216,19 +205,20 @@ router.post('/verify-email', async (req, res) => {
             return res.status(400).json({ success: false, message: 'No hay registro pendiente para este email' });
         }
 
-        await run(db, 'UPDATE codigos_verificacion SET usado = 1 WHERE id = ?', [codigoValido.id]);
+        await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?', [codigoValido.id]);
 
         await run(
             db,
             `INSERT INTO usuarios (nombre, email, usuario, password, privacidad, codigo_verificacion, email_verificado)
-             VALUES (?, ?, ?, ?, ?, ?, 1)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 pendiente.nombre,
                 pendiente.email,
                 pendiente.usuario,
                 pendiente.password,
-                pendiente.privacidad ? 1 : 0,
+                Boolean(pendiente.privacidad),
                 codigo,
+                true
             ]
         );
 
@@ -262,7 +252,7 @@ router.post('/resend-code', async (req, res) => {
         const codigo = generarCodigo();
         const expiracion = new Date(Date.now() + 10 * 60000);
 
-        await run(db, 'UPDATE codigos_verificacion SET usado = 1 WHERE email = ?', [email]);
+        await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?', [email]);
         await run(
             db,
             'INSERT INTO codigos_verificacion (email, codigo, fecha_expiracion) VALUES (?, ?, ?)',
