@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     cargarDatosUsuario(usuario);
     await cargarPerfilActualizado();
     await cargarAmigosPerfil();
+    await cargarPublicacionesPerfil();
 });
 
 async function cargarPerfilActualizado() {
@@ -126,6 +127,68 @@ async function cargarAmigosPerfil() {
     } catch (error) {
         console.error("No se pudieron cargar amigos:", error);
     }
+}
+
+async function cargarPublicacionesPerfil() {
+    const contenedor = document.getElementById("publicacionesPerfil");
+
+    if (!contenedor || !usuario?.id) {
+        return;
+    }
+
+    contenedor.innerHTML = `<p class="text-muted">Cargando publicaciones...</p>`;
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${usuario.id}`);
+        const data = await respuesta.json();
+        const publicaciones = data.success ? data.publicaciones : [];
+
+        if (!publicaciones.length) {
+            contenedor.innerHTML = `
+                <p class="text-muted mb-0">
+                    Aun no tienes publicaciones. Crea una desde tu muro.
+                </p>
+            `;
+            return;
+        }
+
+        contenedor.innerHTML = publicaciones.map(tarjetaPublicacionPerfil).join("");
+    } catch (error) {
+        contenedor.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar tus publicaciones.</p>`;
+    }
+}
+
+function tarjetaPublicacionPerfil(publicacion) {
+    const imagen = publicacion.imagenUrl
+        ? `<img class="publicacion-img" src="${publicacion.imagenUrl}" alt="Imagen de publicacion">`
+        : "";
+    const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
+
+    return `
+        <article class="perfil-publicacion">
+            <div class="d-flex align-items-center mb-2">
+                <img
+                    src="${usuario.fotoPerfil || "images/icono.png"}"
+                    class="rounded-circle me-2"
+                    width="44"
+                    height="44"
+                    alt="${usuario.nombre || "Usuario"}"
+                />
+                <div>
+                    <h6 class="mb-0">${usuario.nombre || "Usuario"}</h6>
+                    <small class="text-muted">${fecha}</small>
+                </div>
+            </div>
+            <p>${escaparHtml(publicacion.contenido)}</p>
+            ${imagen}
+        </article>
+    `;
+}
+
+function escaparHtml(texto) {
+    const div = document.createElement("div");
+    div.textContent = texto || "";
+    return div.innerHTML;
 }
 
 function cerrarSesion() {

@@ -582,6 +582,98 @@ footer p{
     color: #061A38;
 }
 
+.muro-page{
+    background-color: #f5f6f8;
+    flex: 1;
+}
+
+.muro-perfil-card{
+    text-align: center;
+    position: sticky;
+    top: 20px;
+}
+
+.muro-avatar{
+    width: 105px;
+    height: 105px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: white;
+    border: 4px solid #FFC107;
+    margin: 10px auto 18px;
+}
+
+.muro-perfil-card h3{
+    color: #061A38;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.publicacion-card p{
+    font-size: 18px;
+    line-height: 1.45;
+}
+
+.publicacion-img{
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 5px 0 16px;
+    border: 1px solid #e9ecef;
+}
+
+.perfil-publicacion{
+    padding: 14px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.perfil-publicacion:last-child{
+    border-bottom: none;
+}
+
+.perfil-publicacion p{
+    font-size: 17px;
+    line-height: 1.45;
+    margin-bottom: 10px;
+}
+
+.icono-muro{
+    color: #FFC107;
+    font-size: 22px;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.sugerido-linea{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sugerido-linea:last-child{
+    border-bottom: none;
+}
+
+.sugerido-linea img{
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: white;
+}
+
+.sugerido-linea strong,
+.sugerido-linea small{
+    display: block;
+}
+
+.sugerido-linea small{
+    color: #6c757d;
+}
+
 /* ==================================
    LOGO ISTLC ZONE
 ================================== */

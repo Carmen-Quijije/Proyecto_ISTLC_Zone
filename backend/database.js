@@ -96,6 +96,17 @@ const initDatabase = async () => {
     `);
     console.log('Tabla seguidores lista');
 
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS publicaciones (
+            id SERIAL PRIMARY KEY,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            contenido TEXT NOT NULL,
+            imagen_url TEXT,
+            fecha TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla publicaciones lista');
+
     await pool.query('SELECT 1');
     console.log('Base de datos Neon PostgreSQL conectada');
 };

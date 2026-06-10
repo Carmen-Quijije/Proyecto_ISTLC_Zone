@@ -37,6 +37,19 @@ const perfilPublico = (usuario) => ({
     bio: usuario.bio
 });
 
+const publicacionPublica = (publicacion) => ({
+    id: publicacion.id,
+    contenido: publicacion.contenido,
+    imagenUrl: publicacion.imagen_url,
+    fecha: publicacion.fecha,
+    autor: {
+        id: publicacion.usuario_id,
+        nombre: publicacion.nombre,
+        usuario: publicacion.usuario,
+        fotoPerfil: publicacion.foto_perfil
+    }
+});
+
 const enviarCorreoVerificacion = async (email, codigo) => {
     const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -446,6 +459,83 @@ router.delete('/follow', async (req, res) => {
     } catch (error) {
         console.error('Error al dejar de seguir:', error);
         res.status(500).json({ success: false, message: 'Error al dejar de seguir' });
+    }
+});
+
+router.post('/posts', async (req, res) => {
+    try {
+        const { usuarioId, contenido, imagenUrl } = req.body;
+        const db = getDb();
+        const texto = String(contenido || '').trim();
+
+        if (!usuarioId || !texto) {
+            return res.status(400).json({ success: false, message: 'Escribe algo para publicar' });
+        }
+
+        const result = await db.run(
+            `INSERT INTO publicaciones (usuario_id, contenido, imagen_url)
+             VALUES (?, ?, ?)
+             RETURNING id`,
+            [usuarioId, texto, imagenUrl || null]
+        );
+
+        res.json({
+            success: true,
+            message: 'Publicacion creada',
+            id: result.rows[0]?.id
+        });
+    } catch (error) {
+        console.error('Error al crear publicacion:', error);
+        res.status(500).json({ success: false, message: 'Error al publicar' });
+    }
+});
+
+router.get('/posts/user/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = p.usuario_id
+             WHERE p.usuario_id = ?
+             ORDER BY p.fecha DESC
+             LIMIT 30`,
+            [req.params.id]
+        );
+
+        res.json({
+            success: true,
+            publicaciones: result.rows.map(publicacionPublica)
+        });
+    } catch (error) {
+        console.error('Error al cargar publicaciones del perfil:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar publicaciones' });
+    }
+});
+
+router.get('/feed/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil
+             FROM publicaciones p
+             JOIN usuarios u ON u.id = p.usuario_id
+             WHERE p.usuario_id = ?
+                OR p.usuario_id IN (
+                    SELECT seguido_id FROM seguidores WHERE seguidor_id = ?
+                )
+             ORDER BY p.fecha DESC
+             LIMIT 50`,
+            [req.params.id, req.params.id]
+        );
+
+        res.json({
+            success: true,
+            publicaciones: result.rows.map(publicacionPublica)
+        });
+    } catch (error) {
+        console.error('Error al cargar feed:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar publicaciones' });
     }
 });
 
