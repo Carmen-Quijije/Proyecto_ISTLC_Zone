@@ -6,9 +6,92 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     crearCentroNotificaciones();
+    prepararAjustesVisuales();
+    prepararLogoPrincipal();
+    prepararLinksResumenNotificaciones();
     cargarNotificacionesApp();
     setInterval(cargarNotificacionesApp, 30000);
 });
+
+function prepararAjustesVisuales() {
+    if (document.getElementById("ajustesVisualesNotificaciones")) {
+        return;
+    }
+
+    const style = document.createElement("style");
+    style.id = "ajustesVisualesNotificaciones";
+    style.textContent = `
+        .navbar-brand::after{content:none!important}
+        .texto-logo{font-size:clamp(28px,3vw,40px)!important}
+        .texto-logo strong{display:none!important}
+        .logo-istlc{position:relative;cursor:pointer!important}
+        .logo-istlc::before{
+            content:attr(data-tooltip);
+            position:absolute;
+            left:50%;
+            top:calc(100% + 8px);
+            transform:translateX(-50%) translateY(-4px);
+            background-color:#061A38;
+            color:white;
+            border:1px solid #FFC107;
+            border-radius:6px;
+            padding:6px 10px;
+            font-size:13px;
+            font-weight:700;
+            white-space:nowrap;
+            opacity:0;
+            pointer-events:none;
+            transition:opacity .2s ease,transform .2s ease;
+            z-index:2200;
+        }
+        .logo-istlc:hover::before{opacity:1;transform:translateX(-50%) translateY(0)}
+        .sugerido-linea{color:inherit;text-decoration:none;border-radius:8px;transition:background-color .2s ease,padding-left .2s ease}
+        .sugerido-linea:hover{color:inherit;background-color:#fff8df;padding-left:8px;cursor:pointer}
+        .notificacion-item{color:#212529;text-decoration:none;cursor:pointer;transition:border-color .2s ease,background-color .2s ease,transform .2s ease}
+        .notificacion-item:hover{color:#212529;border-color:#FFC107;background-color:#fff8df;transform:translateY(-1px)}
+        .notificacion-resumen-link{border-radius:8px;padding:6px 4px;transition:background-color .2s ease,padding-left .2s ease}
+        .notificacion-resumen-link:hover{color:#061A38;background-color:#fff8df;padding-left:10px;cursor:pointer}
+    `;
+    document.head.appendChild(style);
+}
+
+function prepararLogoPrincipal() {
+    document.querySelectorAll(".logo-istlc").forEach((logo) => {
+        logo.href = "muro.html";
+        logo.title = "Ir a la pagina principal";
+        logo.dataset.tooltip = "Ir a la pagina principal";
+    });
+}
+
+function prepararLinksResumenNotificaciones() {
+    document.querySelectorAll(".icono-muro").forEach((icono) => {
+        const fila = icono.closest("p");
+        if (!fila || fila.dataset.linkPreparado) {
+            return;
+        }
+
+        fila.dataset.linkPreparado = "true";
+        fila.classList.add("notificacion-resumen-link");
+        fila.setAttribute("role", "link");
+        fila.tabIndex = 0;
+
+        const destino = icono.textContent.trim() === "chat_bubble"
+            ? "mensajes.html"
+            : "muro.html#listaPublicaciones";
+
+        const abrir = () => {
+            window.location.href = destino;
+        };
+
+        fila.addEventListener("click", abrir);
+        fila.addEventListener("keydown", (evento) => {
+            if (evento.key === "Enter" || evento.key === " ") {
+                evento.preventDefault();
+                abrir();
+            }
+        });
+    });
+}
 
 function crearCentroNotificaciones() {
     const contenedorNav = document.querySelector(".navbar .ms-auto");
@@ -103,16 +186,48 @@ function renderSolicitudNotificacion(solicitud) {
 function renderNotificacion(notificacion) {
     const clase = notificacion.leida ? "" : "nueva";
     const fecha = notificacion.fecha ? new Date(notificacion.fecha).toLocaleString("es-EC") : "";
+    const destino = obtenerDestinoNotificacion(notificacion);
+    const contenido = `
+        <span class="material-symbols-outlined notificacion-icono">${obtenerIconoNotificacion(notificacion.tipo)}</span>
+        <div>
+            <p>${escaparTextoNotificacion(notificacion.mensaje)}</p>
+            <small>${fecha}</small>
+        </div>
+    `;
 
     return `
-        <article class="notificacion-item ${clase}">
-            <span class="material-symbols-outlined notificacion-icono">notifications</span>
-            <div>
-                <p>${escaparTextoNotificacion(notificacion.mensaje)}</p>
-                <small>${fecha}</small>
-            </div>
-        </article>
+        <a class="notificacion-item ${clase}" href="${destino}" title="Abrir notificacion">
+            ${contenido}
+        </a>
     `;
+}
+
+function obtenerDestinoNotificacion(notificacion) {
+    if (notificacion.tipo === "mensaje" && notificacion.referenciaId) {
+        return `mensajes.html?contacto=${notificacion.referenciaId}`;
+    }
+
+    if (notificacion.tipo === "solicitud_aceptada" && notificacion.referenciaId) {
+        return `perfil.html?id=${notificacion.referenciaId}`;
+    }
+
+    return "muro.html";
+}
+
+function obtenerIconoNotificacion(tipo) {
+    if (tipo === "mensaje") {
+        return "chat_bubble";
+    }
+
+    if (tipo === "comentario") {
+        return "forum";
+    }
+
+    if (tipo === "like") {
+        return "thumb_up";
+    }
+
+    return "notifications";
 }
 
 async function responderSolicitudSeguimiento(solicitudId, accion) {

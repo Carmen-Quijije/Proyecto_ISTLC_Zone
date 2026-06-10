@@ -1390,7 +1390,7 @@ router.post('/messages', async (req, res) => {
             receptorId,
             'mensaje',
             `${emisor?.nombre || 'Un usuario'} te envio un mensaje`,
-            result.rows[0]?.id || null
+            emisorId
         );
 
         res.json({

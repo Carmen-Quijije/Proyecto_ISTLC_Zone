@@ -14,6 +14,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("buscarMensajes").addEventListener("input", buscarContactos);
     document.getElementById("formMensaje").addEventListener("submit", enviarMensaje);
     await cargarConversaciones();
+
+    const contactoUrl = new URLSearchParams(window.location.search).get("contacto");
+    if (contactoUrl) {
+        await abrirChat(contactoUrl);
+    }
 });
 
 async function cargarConversaciones() {

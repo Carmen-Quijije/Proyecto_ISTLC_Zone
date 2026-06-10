@@ -511,13 +511,13 @@ async function cargarSugerencias() {
 
         contenedor.innerHTML = sugeridos
             .map((persona) => `
-                <div class="sugerido-linea">
+                <a class="sugerido-linea" href="perfil.html?id=${persona.id}" title="Ver perfil de ${escaparHtml(persona.nombre)}">
                     <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${persona.nombre}">
                     <div>
                         <strong>${persona.nombre}</strong>
                         <small>@${persona.usuario}</small>
                     </div>
-                </div>
+                </a>
             `)
             .join("");
     } catch (error) {
