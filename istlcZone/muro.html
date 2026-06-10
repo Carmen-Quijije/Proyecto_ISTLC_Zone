@@ -180,7 +180,7 @@
 
       if (usuario) {
         document.getElementById("nombreUsuario").textContent =
-          usuario.nombreCompleto;
+          usuario.nombre || usuario.nombreCompleto || usuario.usuario || "Usuario";
       }
 
       function cerrarSesion() {
