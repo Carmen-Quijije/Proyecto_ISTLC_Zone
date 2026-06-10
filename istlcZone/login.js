@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             localStorage.setItem("usuarioLogueado", JSON.stringify(data.usuario));
-            window.location.href = "perfil.html";
+            window.location.href = "muro.html";
         } catch (error) {
             console.error(error);
             alert("No se pudo conectar con la API");
