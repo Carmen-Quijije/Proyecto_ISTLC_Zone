@@ -67,7 +67,9 @@ const enviarCorreoVerificacion = async (email, codigo) => {
 
 router.post('/register', async (req, res) => {
     try {
-        const { nombre, email, usuario, password, privacidad } = req.body;
+        const { nombre, password, privacidad } = req.body;
+        const email = String(req.body.email || '').trim().toLowerCase();
+        const usuario = String(req.body.usuario || '').trim();
         const db = getDb();
 
         if (!nombre || !email || !usuario || !password) {
@@ -98,7 +100,8 @@ router.post('/register', async (req, res) => {
         );
 
         if (pendingExistente) {
-            await run(db, 'DELETE FROM registros_pendientes WHERE email = ? OR usuario = ?', [email, usuario]);
+            await run(db, 'DELETE FROM registros_pendientes WHERE email = ?', [email]);
+            await run(db, 'DELETE FROM registros_pendientes WHERE usuario = ?', [usuario]);
             await run(db, 'UPDATE codigos_verificacion SET usado = 1 WHERE email = ?', [email]);
         }
 
@@ -137,7 +140,10 @@ router.post('/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Error en registro:', error);
-        res.status(500).json({ success: false, message: 'Error al registrar' });
+        res.status(500).json({
+            success: false,
+            message: 'Error al registrar: ' + (error.code || error.message || 'error desconocido')
+        });
     }
 });
 
