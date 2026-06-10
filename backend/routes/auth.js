@@ -15,6 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
 
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -22,24 +23,57 @@ const run = (db, sql, params = []) => db.run(sql, params);
 const get = (db, sql, params = []) => db.get(sql, params);
 
 const enviarCorreoVerificacion = async (email, codigo) => {
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #061A38; text-align: center;">Bienvenido a ISTLC Zone</h2>
+            <p style="color: #333; font-size: 16px;">Tu codigo de verificacion es:</p>
+            <div style="background-color: #FFC107; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                <h1 style="color: #061A38; font-size: 32px; letter-spacing: 5px; margin: 0;">${codigo}</h1>
+            </div>
+            <p style="color: #666; font-size: 14px;">Este codigo expira en 10 minutos.</p>
+            <p style="color: #666; font-size: 14px;">Si no solicitaste este registro, ignora este email.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px; text-align: center;">2026 Tecnologico Liceo Cristiano</p>
+        </div>
+    `;
+
     try {
+        if (BREVO_API_KEY) {
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': BREVO_API_KEY,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: {
+                        email: EMAIL_FROM,
+                        name: 'ISTLC Zone'
+                    },
+                    to: [{ email }],
+                    subject: 'Codigo de verificacion - ISTLC Zone',
+                    htmlContent
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                console.error('Error al enviar email con Brevo API:', response.status, data);
+                return false;
+            }
+
+            console.log('Email enviado con Brevo API a:', email);
+            console.log('Brevo messageId:', data.messageId || data.messageIds);
+            return true;
+        }
+
         const info = await transporter.sendMail({
             from: EMAIL_FROM,
             to: email,
             subject: 'Codigo de verificacion - ISTLC Zone',
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                    <h2 style="color: #061A38; text-align: center;">Bienvenido a ISTLC Zone</h2>
-                    <p style="color: #333; font-size: 16px;">Tu codigo de verificacion es:</p>
-                    <div style="background-color: #FFC107; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                        <h1 style="color: #061A38; font-size: 32px; letter-spacing: 5px; margin: 0;">${codigo}</h1>
-                    </div>
-                    <p style="color: #666; font-size: 14px;">Este codigo expira en 10 minutos.</p>
-                    <p style="color: #666; font-size: 14px;">Si no solicitaste este registro, ignora este email.</p>
-                    <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-                    <p style="color: #999; font-size: 12px; text-align: center;">2026 Tecnologico Liceo Cristiano</p>
-                </div>
-            `
+            html: htmlContent
         });
 
         console.log('Email enviado a:', email);
