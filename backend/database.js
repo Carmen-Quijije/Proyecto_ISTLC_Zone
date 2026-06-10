@@ -2,10 +2,12 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 
-const dataDir = path.join(__dirname, 'data');
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'data', 'app.db');
+const dataDir = path.dirname(dbPath);
 fs.mkdirSync(dataDir, { recursive: true });
 
-const dbPath = path.join(dataDir, 'app.db');
+console.log('Base de datos SQLite:', dbPath);
+
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error al abrir la base de datos:', err);
