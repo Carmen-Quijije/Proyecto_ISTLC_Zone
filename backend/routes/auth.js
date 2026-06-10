@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
 const { getDb } = require('../database');
 const router = express.Router();
 
@@ -16,6 +18,24 @@ const transporter = nodemailer.createTransport({
 
 const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+            cb(new Error('Solo se permiten imagenes'));
+            return;
+        }
+
+        cb(null, true);
+    }
+});
+
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -115,6 +135,56 @@ const enviarCorreoVerificacion = async (email, codigo) => {
         return false;
     }
 };
+
+const subirImagenCloudinary = (file, folder = 'istlc-zone') => new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+        {
+            folder,
+            resource_type: 'image',
+            transformation: [
+                { width: 1200, height: 1200, crop: 'limit' },
+                { quality: 'auto', fetch_format: 'auto' }
+            ]
+        },
+        (error, result) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+
+            resolve(result);
+        }
+    );
+
+    stream.end(file.buffer);
+});
+
+router.post('/upload-image', upload.single('image'), async (req, res) => {
+    try {
+        if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+            return res.status(500).json({
+                success: false,
+                message: 'Falta configurar Cloudinary en Render'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Selecciona una imagen' });
+        }
+
+        const folder = req.body.folder || 'istlc-zone';
+        const result = await subirImagenCloudinary(req.file, folder);
+
+        res.json({
+            success: true,
+            url: result.secure_url,
+            publicId: result.public_id
+        });
+    } catch (error) {
+        console.error('Error al subir imagen:', error);
+        res.status(500).json({ success: false, message: 'No se pudo subir la imagen' });
+    }
+});
 
 router.post('/register', async (req, res) => {
     try {

@@ -17,6 +17,9 @@ services:
       - EMAIL_FROM=${EMAIL_FROM}
       - BREVO_API_KEY=${BREVO_API_KEY}
       - DATABASE_URL=${DATABASE_URL}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
     volumes:
       - .:/app
       - /app/node_modules

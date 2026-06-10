@@ -49,12 +49,15 @@ async function crearPublicacion(evento) {
 
     const boton = document.getElementById("btnPublicar");
     const contenido = document.getElementById("contenidoPublicacion").value.trim();
-    const imagenUrl = document.getElementById("imagenPublicacion").value.trim();
+    const imagenArchivo = document.getElementById("imagenPublicacion").files[0];
 
     boton.disabled = true;
-    boton.textContent = "Publicando...";
+    boton.textContent = imagenArchivo ? "Subiendo imagen..." : "Publicando...";
 
     try {
+        const imagenUrl = await subirImagen(imagenArchivo, "istlc-zone/publicaciones");
+        boton.textContent = "Publicando...";
+
         const respuesta = await fetch(`${API_BASE}/api/auth/posts`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -78,6 +81,28 @@ async function crearPublicacion(evento) {
         boton.disabled = false;
         boton.textContent = "Publicar";
     }
+}
+
+async function subirImagen(archivo, folder) {
+    if (!archivo) {
+        return "";
+    }
+
+    const formData = new FormData();
+    formData.append("image", archivo);
+    formData.append("folder", folder);
+
+    const respuesta = await fetch(`${API_BASE}/api/auth/upload-image`, {
+        method: "POST",
+        body: formData
+    });
+    const data = await respuesta.json();
+
+    if (!respuesta.ok || !data.success) {
+        throw new Error(data.message || "No se pudo subir la imagen");
+    }
+
+    return data.url;
 }
 
 async function cargarFeed() {

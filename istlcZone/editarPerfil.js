@@ -23,7 +23,7 @@ const campos = [
 
 document.addEventListener("DOMContentLoaded", () => {
     rellenarFormulario();
-    document.getElementById("fotoPerfil").addEventListener("input", actualizarVistaFoto);
+    document.getElementById("fotoPerfilArchivo").addEventListener("change", actualizarVistaFoto);
     document.getElementById("formEditarPerfil").addEventListener("submit", guardarPerfil);
 });
 
@@ -39,8 +39,31 @@ function rellenarFormulario() {
 }
 
 function actualizarVistaFoto() {
-    const foto = document.getElementById("fotoPerfil").value || usuario.fotoPerfil || "images/icono.png";
+    const archivo = document.getElementById("fotoPerfilArchivo").files[0];
+    const foto = archivo ? URL.createObjectURL(archivo) : usuario.fotoPerfil || "images/icono.png";
     document.getElementById("previewFoto").src = foto;
+}
+
+async function subirImagen(archivo, folder) {
+    if (!archivo) {
+        return "";
+    }
+
+    const formData = new FormData();
+    formData.append("image", archivo);
+    formData.append("folder", folder);
+
+    const respuesta = await fetch(`${API_BASE}/api/auth/upload-image`, {
+        method: "POST",
+        body: formData
+    });
+    const data = await respuesta.json();
+
+    if (!respuesta.ok || !data.success) {
+        throw new Error(data.message || "No se pudo subir la imagen");
+    }
+
+    return data.url;
 }
 
 async function guardarPerfil(evento) {
@@ -50,12 +73,19 @@ async function guardarPerfil(evento) {
     boton.disabled = true;
     boton.textContent = "Guardando...";
 
-    const datos = { id: usuario.id };
-    campos.forEach((campo) => {
-        datos[campo] = document.getElementById(campo).value.trim();
-    });
-
     try {
+        const archivoFoto = document.getElementById("fotoPerfilArchivo").files[0];
+        const fotoSubida = await subirImagen(archivoFoto, "istlc-zone/perfiles");
+
+        const datos = { id: usuario.id };
+        campos.forEach((campo) => {
+            datos[campo] = document.getElementById(campo).value.trim();
+        });
+
+        if (fotoSubida) {
+            datos.fotoPerfil = fotoSubida;
+        }
+
         const respuesta = await fetch(`${API_BASE}/api/auth/profile`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
