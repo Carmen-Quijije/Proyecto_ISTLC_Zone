@@ -82,17 +82,8 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ success: false, message: 'El email o usuario ya esta registrado' });
         }
 
-        const pendingExistente = await get(
-            db,
-            'SELECT id FROM registros_pendientes WHERE email = ? OR usuario = ?',
-            [email, usuario]
-        );
-
-        if (pendingExistente) {
-            await run(db, 'DELETE FROM registros_pendientes WHERE email = ?', [email]);
-            await run(db, 'DELETE FROM registros_pendientes WHERE usuario = ?', [usuario]);
-            await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?', [email]);
-        }
+        await run(db, 'DELETE FROM registros_pendientes WHERE email = ? OR usuario = ?', [email, usuario]);
+        await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?', [email]);
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const codigo = generarCodigo();
@@ -129,6 +120,13 @@ router.post('/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Error en registro:', error);
+        if (error.code === '23505') {
+            return res.status(400).json({
+                success: false,
+                message: 'Ese correo o usuario ya existe. Prueba con otro usuario o inicia sesion.'
+            });
+        }
+
         res.status(500).json({
             success: false,
             message: 'Error al registrar: ' + (error.code || error.message || 'error desconocido')
