@@ -45,10 +45,15 @@ function tarjetaUsuario(persona) {
     return `
         <div class="col-md-6 col-lg-4">
             <div class="card usuario-card shadow-sm p-3 h-100">
-                <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${persona.nombre}">
-                <h5>${persona.nombre}</h5>
-                <p class="text-muted mb-1">@${persona.usuario}</p>
+                <a class="usuario-card-link" href="perfil.html?id=${persona.id}">
+                    <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${persona.nombre}">
+                    <h5>${persona.nombre}</h5>
+                    <p class="text-muted mb-1">@${persona.usuario}</p>
+                </a>
                 <p>${detalle}</p>
+                <a class="btn btn-outline-primary fw-bold mb-2" href="perfil.html?id=${persona.id}">
+                    Ver perfil
+                </a>
                 <button
                     class="btn ${botonClase} fw-bold"
                     onclick="alternarSeguimiento(${persona.id}, ${persona.siguiendo})"

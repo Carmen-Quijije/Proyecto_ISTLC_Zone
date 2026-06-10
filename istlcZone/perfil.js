@@ -5,36 +5,57 @@ const API_BASE =
 
 let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
 let publicacionesPerfil = [];
+const parametrosPerfil = new URLSearchParams(window.location.search);
+const perfilObjetivoId = Number(parametrosPerfil.get("id") || usuario?.id || 0);
+let perfilMostrado = usuario;
+let esPerfilPropio = Number(perfilObjetivoId) === Number(usuario?.id);
 
 if (!usuario) {
     window.location.href = "index.html";
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    cargarDatosUsuario(usuario);
+    prepararVistaPerfil();
+    cargarDatosUsuario(perfilMostrado);
     await cargarPerfilActualizado();
     await cargarAmigosPerfil();
     await cargarPublicacionesPerfil();
 });
 
+function prepararVistaPerfil() {
+    esPerfilPropio = Number(perfilObjetivoId) === Number(usuario?.id);
+
+    if (!esPerfilPropio) {
+        document.querySelectorAll(".perfil-acciones, .perfil-editar-link, .perfil-publicar-box").forEach((elemento) => {
+            elemento.classList.add("d-none");
+        });
+        ponerTexto("tituloPublicacionesPerfil", "Publicaciones");
+    }
+}
+
 async function cargarPerfilActualizado() {
-    if (!usuario?.id) {
+    if (!perfilObjetivoId) {
         return;
     }
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${usuario.id}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${perfilObjetivoId}`);
         const data = await respuesta.json();
 
         if (!respuesta.ok || !data.success) {
             return;
         }
 
-        usuario = data.usuario;
-        usuario.seguidores = data.seguidores;
-        usuario.seguidos = data.seguidos;
-        localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
-        cargarDatosUsuario(usuario);
+        perfilMostrado = data.usuario;
+        perfilMostrado.seguidores = data.seguidores;
+        perfilMostrado.seguidos = data.seguidos;
+
+        if (esPerfilPropio) {
+            usuario = perfilMostrado;
+            localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
+        }
+
+        cargarDatosUsuario(perfilMostrado);
         cargarContadores(data.seguidores, data.seguidos);
     } catch (error) {
         console.error("No se pudo cargar el perfil:", error);
@@ -92,12 +113,12 @@ async function cargarAmigosPerfil() {
     const listaAmigos = document.getElementById("listaAmigos");
     const contadorAmigos = document.getElementById("contadorAmigos");
 
-    if (!listaAmigos || !usuario?.id) {
+    if (!listaAmigos || !perfilObjetivoId) {
         return;
     }
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/following/${usuario.id}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/following/${perfilObjetivoId}`);
         const data = await respuesta.json();
         const amigos = data.success ? data.usuarios : [];
 
@@ -119,7 +140,9 @@ async function cargarAmigosPerfil() {
             .map((amigo) => `
                 <div class="col-6">
                     <div class="amigo-mini">
-                        <img src="${amigo.fotoPerfil || "images/icono.png"}" alt="${amigo.nombre}">
+                        <a href="perfil.html?id=${amigo.id}">
+                            <img src="${amigo.fotoPerfil || "images/icono.png"}" alt="${amigo.nombre}">
+                        </a>
                         <strong>${amigo.nombre}</strong>
                     </div>
                 </div>
@@ -133,14 +156,14 @@ async function cargarAmigosPerfil() {
 async function cargarPublicacionesPerfil() {
     const contenedor = document.getElementById("publicacionesPerfil");
 
-    if (!contenedor || !usuario?.id) {
+    if (!contenedor || !perfilObjetivoId) {
         return;
     }
 
     contenedor.innerHTML = `<p class="text-muted">Cargando publicaciones...</p>`;
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${usuario.id}?currentUserId=${usuario.id}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${perfilObjetivoId}?currentUserId=${usuario.id}`);
         const data = await respuesta.json();
         const publicaciones = data.success ? data.publicaciones : [];
         publicacionesPerfil = publicaciones;
@@ -148,7 +171,7 @@ async function cargarPublicacionesPerfil() {
         if (!publicaciones.length) {
             contenedor.innerHTML = `
                 <p class="text-muted mb-0">
-                    Aun no tienes publicaciones. Crea una desde tu muro.
+                    ${esPerfilPropio ? "Aun no tienes publicaciones. Crea una desde tu muro." : "Este perfil aun no tiene publicaciones."}
                 </p>
             `;
             return;
@@ -163,37 +186,43 @@ async function cargarPublicacionesPerfil() {
 function tarjetaPublicacionPerfil(publicacion) {
     const imagen = renderImagenesPublicacion(publicacion);
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
-
-    return `
-        <article class="perfil-publicacion">
-            <div class="d-flex align-items-start justify-content-between mb-2">
-                <div class="d-flex align-items-center">
-                    <img
-                        src="${usuario.fotoPerfil || "images/icono.png"}"
-                        class="rounded-circle me-2"
-                        width="44"
-                        height="44"
-                        alt="${usuario.nombre || "Usuario"}"
-                    />
-                    <div>
-                        <h6 class="mb-0">${usuario.nombre || "Usuario"}</h6>
-                        <small class="text-muted">${fecha}</small>
-                    </div>
-                </div>
-                <div>
-                    <button
-                        class="btn btn-sm btn-outline-primary btn-eliminar-publicacion me-2"
-                        onclick="editarPublicacionPerfil(${publicacion.id})"
-                    >
-                        Editar
-                    </button>
+    const autor = publicacion.autor || perfilMostrado || {};
+    const botonesGestion = esPerfilPropio
+        ? `
+            <div>
+                <button
+                    class="btn btn-sm btn-outline-primary btn-eliminar-publicacion me-2"
+                    onclick="editarPublicacionPerfil(${publicacion.id})"
+                >
+                    Editar
+                </button>
                 <button
                     class="btn btn-sm btn-outline-danger btn-eliminar-publicacion"
                     onclick="eliminarPublicacionPerfil(${publicacion.id})"
                 >
                     Eliminar
                 </button>
+            </div>
+        `
+        : "";
+
+    return `
+        <article class="perfil-publicacion">
+            <div class="d-flex align-items-start justify-content-between mb-2">
+                <div class="d-flex align-items-center">
+                    <img
+                        src="${autor.fotoPerfil || perfilMostrado?.fotoPerfil || "images/icono.png"}"
+                        class="rounded-circle me-2"
+                        width="44"
+                        height="44"
+                        alt="${autor.nombre || perfilMostrado?.nombre || "Usuario"}"
+                    />
+                    <div>
+                        <h6 class="mb-0">${autor.nombre || perfilMostrado?.nombre || "Usuario"}</h6>
+                        <small class="text-muted">${fecha}</small>
+                    </div>
                 </div>
+                ${botonesGestion}
             </div>
             <p>${escaparHtml(publicacion.contenido)}</p>
             ${imagen}
