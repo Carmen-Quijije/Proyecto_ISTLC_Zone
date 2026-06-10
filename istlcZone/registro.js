@@ -50,6 +50,12 @@ document.getElementById("registroForm").addEventListener("submit", async functio
         return;
     }
 
+    const activarBoton = () => {
+        registroEnCurso = false;
+        botonRegistro.disabled = false;
+        botonRegistro.innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
+    };
+
     try {
         registroEnCurso = true;
         botonRegistro.disabled = true;
@@ -69,9 +75,13 @@ document.getElementById("registroForm").addEventListener("submit", async functio
             })
         });
 
-        const data = await respuesta.json();
+        const contentType = respuesta.headers.get("content-type") || "";
+        const data = contentType.includes("application/json")
+            ? await respuesta.json()
+            : { message: "El servidor no respondio correctamente. Revisa si Render termino el deploy." };
 
         if (!respuesta.ok || !data.success) {
+            activarBoton();
             alert(data.message || "No se pudo registrar el usuario");
             return;
         }
@@ -84,11 +94,12 @@ document.getElementById("registroForm").addEventListener("submit", async functio
         modalConfirmacion.show();
     } catch (error) {
         console.error(error);
-        alert("No se pudo conectar con la API");
+        activarBoton();
+        alert("No se pudo conectar con la API. Revisa que Render este en estado Live.");
     } finally {
-        registroEnCurso = false;
-        botonRegistro.disabled = false;
-        botonRegistro.innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
+        if (registroEnCurso) {
+            activarBoton();
+        }
     }
 });
 
