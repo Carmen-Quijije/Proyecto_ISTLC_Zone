@@ -1,5 +1,6 @@
 let emailRegistrado = "";
 let modalConfirmacion = null;
+let registroEnCurso = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     modalConfirmacion = new bootstrap.Modal(
@@ -32,6 +33,11 @@ function handleCredentialResponse(response) {
 document.getElementById("registroForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
+    if (registroEnCurso) {
+        return;
+    }
+
+    const botonRegistro = this.querySelector('button[type="submit"]');
     const nombre = document.getElementById("nombre").value.trim();
     const email = document.getElementById("email").value.trim();
     const usuario = document.getElementById("usuario").value.trim();
@@ -45,6 +51,10 @@ document.getElementById("registroForm").addEventListener("submit", async functio
     }
 
     try {
+        registroEnCurso = true;
+        botonRegistro.disabled = true;
+        botonRegistro.textContent = "Creando cuenta...";
+
         const respuesta = await fetch("/api/auth/register", {
             method: "POST",
             headers: {
@@ -75,6 +85,10 @@ document.getElementById("registroForm").addEventListener("submit", async functio
     } catch (error) {
         console.error(error);
         alert("No se pudo conectar con la API");
+    } finally {
+        registroEnCurso = false;
+        botonRegistro.disabled = false;
+        botonRegistro.innerHTML = '<i class="fas fa-user-plus"></i> Crear cuenta';
     }
 });
 
