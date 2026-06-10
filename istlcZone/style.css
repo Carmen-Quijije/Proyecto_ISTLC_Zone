@@ -14,8 +14,7 @@
     font-size: 40px;
 }
 .navbar-brand::after{
-    content: " Zone";
-    color: #FFC107;
+        color: #FFC107;
 }
 
 .btn-primary{
