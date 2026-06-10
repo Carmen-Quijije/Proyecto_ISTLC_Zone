@@ -24,7 +24,10 @@ function prepararAjustesVisuales() {
         .navbar-brand::after{content:none!important}
         .texto-logo{font-size:clamp(28px,3vw,40px)!important}
         .texto-logo strong{display:none!important}
-        .logo-istlc{position:relative;cursor:pointer!important}
+        .logo-istlc,.logo-istlc:hover,.logo-istlc:focus{position:relative;cursor:pointer!important}
+        .logo-istlc:hover .logo-navbar{transform:scale(1.05);filter:drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 12px rgba(255,193,7,.85))!important}
+        .logo-navbar{transition:transform .2s ease,filter .2s ease}
+        .logo-istlc:hover .texto-logo{text-shadow:0 0 10px rgba(255,193,7,.45)}
         .logo-istlc::before{
             content:attr(data-tooltip);
             position:absolute;

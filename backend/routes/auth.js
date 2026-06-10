@@ -947,6 +947,30 @@ router.put('/notifications/read', async (req, res) => {
     }
 });
 
+router.put('/notifications/read-target', async (req, res) => {
+    try {
+        const { usuarioId, tipo, referenciaId } = req.body;
+        const db = getDb();
+
+        if (!usuarioId || !tipo || !referenciaId) {
+            return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+
+        await run(
+            db,
+            `UPDATE notificaciones
+             SET leida = TRUE
+             WHERE usuario_id = ? AND tipo = ? AND referencia_id = ?`,
+            [usuarioId, tipo, referenciaId]
+        );
+
+        res.json({ success: true, message: 'Notificacion leida' });
+    } catch (error) {
+        console.error('Error al marcar notificacion puntual:', error);
+        res.status(500).json({ success: false, message: 'Error al marcar notificacion' });
+    }
+});
+
 router.post('/posts', async (req, res) => {
     try {
         const { usuarioId, contenido, imagenUrl, imagenesUrls } = req.body;

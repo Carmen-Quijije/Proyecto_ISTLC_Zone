@@ -98,9 +98,30 @@ async function abrirChat(contactoId) {
         pintarEncabezado(data.contacto);
         pintarMensajes(data.mensajes);
         document.getElementById("formMensaje").classList.remove("d-none");
+        await marcarMensajesComoLeidos(contactoId);
         await cargarConversaciones();
     } catch (error) {
         alert(error.message);
+    }
+}
+
+async function marcarMensajesComoLeidos(contactoId) {
+    try {
+        await fetch(`${API_BASE}/api/auth/notifications/read-target`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                usuarioId: usuario.id,
+                tipo: "mensaje",
+                referenciaId: contactoId
+            })
+        });
+
+        if (typeof cargarNotificacionesApp === "function") {
+            await cargarNotificacionesApp();
+        }
+    } catch (error) {
+        console.warn("No se pudo actualizar la campanita:", error);
     }
 }
 
