@@ -120,6 +120,12 @@ const initDatabase = async () => {
     console.log('Tabla publicaciones lista');
 
     await pool.query(`
+        ALTER TABLE publicaciones
+        ADD COLUMN IF NOT EXISTS imagenes_json TEXT
+    `);
+    console.log('Columnas de publicaciones listas');
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS comentarios (
             id SERIAL PRIMARY KEY,
             publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,

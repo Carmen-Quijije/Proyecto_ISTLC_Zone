@@ -51,13 +51,13 @@ async function crearPublicacion(evento) {
 
     const boton = document.getElementById("btnPublicar");
     const contenido = document.getElementById("contenidoPublicacion").value.trim();
-    const imagenArchivo = document.getElementById("imagenPublicacion").files[0];
+    const imagenesArchivos = Array.from(document.getElementById("imagenPublicacion").files).slice(0, 6);
 
     boton.disabled = true;
-    boton.textContent = imagenArchivo ? "Subiendo imagen..." : "Publicando...";
+    boton.textContent = imagenesArchivos.length ? "Subiendo imagenes..." : "Publicando...";
 
     try {
-        const imagenUrl = await subirImagen(imagenArchivo, "istlc-zone/publicaciones");
+        const imagenesUrls = await subirImagenes(imagenesArchivos, "istlc-zone/publicaciones");
         boton.textContent = "Publicando...";
 
         const respuesta = await fetch(`${API_BASE}/api/auth/posts`, {
@@ -66,7 +66,7 @@ async function crearPublicacion(evento) {
             body: JSON.stringify({
                 usuarioId: usuario.id,
                 contenido,
-                imagenUrl
+                imagenesUrls
             })
         });
         const data = await respuesta.json();
@@ -88,27 +88,39 @@ async function crearPublicacion(evento) {
 
 function actualizarPreviewPublicacion() {
     const input = document.getElementById("imagenPublicacion");
-    const archivo = input.files[0];
+    const archivos = Array.from(input.files).slice(0, 6);
     const preview = document.getElementById("previewImagenPublicacion");
     const texto = document.getElementById("textoImagenPublicacion");
 
-    if (!archivo) {
+    if (!archivos.length) {
         limpiarPreviewPublicacion();
         return;
     }
 
-    preview.src = URL.createObjectURL(archivo);
+    preview.innerHTML = archivos
+        .map((archivo) => `<img src="${URL.createObjectURL(archivo)}" alt="Vista previa">`)
+        .join("");
     preview.classList.remove("d-none");
-    texto.textContent = archivo.name;
+    texto.textContent = archivos.length === 1 ? archivos[0].name : `${archivos.length} imagenes seleccionadas`;
 }
 
 function limpiarPreviewPublicacion() {
     const preview = document.getElementById("previewImagenPublicacion");
     const texto = document.getElementById("textoImagenPublicacion");
 
-    preview.src = "";
+    preview.innerHTML = "";
     preview.classList.add("d-none");
     texto.textContent = "Añadir foto desde el ordenador";
+}
+
+async function subirImagenes(archivos, folder) {
+    const imagenes = [];
+
+    for (const archivo of archivos) {
+        imagenes.push(await subirImagen(archivo, folder));
+    }
+
+    return imagenes;
 }
 
 async function subirImagen(archivo, folder) {
@@ -185,9 +197,7 @@ function tarjetaPublicacion(publicacion) {
             </button>
         `
         : "";
-    const imagen = publicacion.imagenUrl
-        ? `<img class="publicacion-img" src="${publicacion.imagenUrl}" alt="Imagen de publicacion">`
-        : "";
+    const imagen = renderImagenesPublicacion(publicacion);
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
     const likeClase = publicacion.likedByMe ? "btn-warning" : "btn-light";
     const likeTexto = publicacion.likedByMe ? "Te gusta" : "Me gusta";
@@ -263,14 +273,27 @@ async function editarPublicacion(publicacionId) {
         return;
     }
 
+    const quiereCambiarImagenes = confirm("Quieres cambiar las fotos de esta publicacion?");
+    let imagenesUrls = null;
+
+    if (quiereCambiarImagenes) {
+        imagenesUrls = await seleccionarYSubirImagenes("istlc-zone/publicaciones");
+    }
+
     try {
+        const payload = {
+            usuarioId: usuario.id,
+            contenido
+        };
+
+        if (imagenesUrls) {
+            payload.imagenesUrls = imagenesUrls;
+        }
+
         const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                usuarioId: usuario.id,
-                contenido
-            })
+            body: JSON.stringify(payload)
         });
         const data = await respuesta.json();
 
@@ -282,6 +305,63 @@ async function editarPublicacion(publicacionId) {
     } catch (error) {
         alert(error.message);
     }
+}
+
+function renderImagenesPublicacion(publicacion) {
+    const imagenes = obtenerImagenesPublicacion(publicacion);
+
+    if (!imagenes.length) {
+        return "";
+    }
+
+    const clase = imagenes.length > 1 ? "publicacion-galeria multiple" : "publicacion-galeria";
+
+    return `
+        <div class="${clase}">
+            ${imagenes.map((imagen) => `
+                <img class="publicacion-img" src="${imagen}" alt="Imagen de publicacion">
+            `).join("")}
+        </div>
+    `;
+}
+
+function obtenerImagenesPublicacion(publicacion) {
+    if (Array.isArray(publicacion.imagenes) && publicacion.imagenes.length) {
+        return publicacion.imagenes;
+    }
+
+    return publicacion.imagenUrl ? [publicacion.imagenUrl] : [];
+}
+
+function seleccionarYSubirImagenes(folder) {
+    return new Promise((resolve, reject) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+        let resuelto = false;
+
+        input.addEventListener("change", async () => {
+            try {
+                resuelto = true;
+                const archivos = Array.from(input.files).slice(0, 6);
+                resolve(await subirImagenes(archivos, folder));
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        window.addEventListener("focus", () => {
+            setTimeout(() => {
+                if (!resuelto && !input.files.length) {
+                    resuelto = true;
+                    resolve(null);
+                }
+            }, 400);
+        }, { once: true });
+
+        input.click();
+    });
 }
 
 async function eliminarPublicacion(publicacionId) {

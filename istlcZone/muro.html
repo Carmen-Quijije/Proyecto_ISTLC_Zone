@@ -78,12 +78,11 @@
                   <span class="material-symbols-outlined">image</span>
                   <span id="textoImagenPublicacion">Añadir foto desde el ordenador</span>
                 </label>
-                <input id="imagenPublicacion" type="file" accept="image/*" hidden />
-                <img
+                <input id="imagenPublicacion" type="file" accept="image/*" multiple hidden />
+                <div
                   id="previewImagenPublicacion"
-                  class="publicacion-preview d-none"
-                  alt="Vista previa"
-                />
+                  class="publicacion-preview-grid d-none"
+                ></div>
 
                 <button
                   id="btnPublicar"

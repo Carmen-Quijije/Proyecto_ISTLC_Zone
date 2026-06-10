@@ -161,9 +161,7 @@ async function cargarPublicacionesPerfil() {
 }
 
 function tarjetaPublicacionPerfil(publicacion) {
-    const imagen = publicacion.imagenUrl
-        ? `<img class="publicacion-img" src="${publicacion.imagenUrl}" alt="Imagen de publicacion">`
-        : "";
+    const imagen = renderImagenesPublicacion(publicacion);
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
 
     return `
@@ -225,14 +223,27 @@ async function editarPublicacionPerfil(publicacionId) {
         return;
     }
 
+    const quiereCambiarImagenes = confirm("Quieres cambiar las fotos de esta publicacion?");
+    let imagenesUrls = null;
+
+    if (quiereCambiarImagenes) {
+        imagenesUrls = await seleccionarYSubirImagenes("istlc-zone/publicaciones");
+    }
+
     try {
+        const payload = {
+            usuarioId: usuario.id,
+            contenido
+        };
+
+        if (imagenesUrls) {
+            payload.imagenesUrls = imagenesUrls;
+        }
+
         const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                usuarioId: usuario.id,
-                contenido
-            })
+            body: JSON.stringify(payload)
         });
         const data = await respuesta.json();
 
@@ -244,6 +255,95 @@ async function editarPublicacionPerfil(publicacionId) {
     } catch (error) {
         alert(error.message);
     }
+}
+
+function renderImagenesPublicacion(publicacion) {
+    const imagenes = obtenerImagenesPublicacion(publicacion);
+
+    if (!imagenes.length) {
+        return "";
+    }
+
+    const clase = imagenes.length > 1 ? "publicacion-galeria multiple" : "publicacion-galeria";
+
+    return `
+        <div class="${clase}">
+            ${imagenes.map((imagen) => `
+                <img class="publicacion-img" src="${imagen}" alt="Imagen de publicacion">
+            `).join("")}
+        </div>
+    `;
+}
+
+function obtenerImagenesPublicacion(publicacion) {
+    if (Array.isArray(publicacion.imagenes) && publicacion.imagenes.length) {
+        return publicacion.imagenes;
+    }
+
+    return publicacion.imagenUrl ? [publicacion.imagenUrl] : [];
+}
+
+async function subirImagenes(archivos, folder) {
+    const imagenes = [];
+
+    for (const archivo of archivos) {
+        imagenes.push(await subirImagen(archivo, folder));
+    }
+
+    return imagenes;
+}
+
+async function subirImagen(archivo, folder) {
+    if (!archivo) {
+        return "";
+    }
+
+    const formData = new FormData();
+    formData.append("image", archivo);
+    formData.append("folder", folder);
+
+    const respuesta = await fetch(`${API_BASE}/api/auth/upload-image`, {
+        method: "POST",
+        body: formData
+    });
+    const data = await respuesta.json();
+
+    if (!respuesta.ok || !data.success) {
+        throw new Error(data.message || "No se pudo subir la imagen");
+    }
+
+    return data.url;
+}
+
+function seleccionarYSubirImagenes(folder) {
+    return new Promise((resolve, reject) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/*";
+        input.multiple = true;
+        let resuelto = false;
+
+        input.addEventListener("change", async () => {
+            try {
+                resuelto = true;
+                const archivos = Array.from(input.files).slice(0, 6);
+                resolve(await subirImagenes(archivos, folder));
+            } catch (error) {
+                reject(error);
+            }
+        });
+
+        window.addEventListener("focus", () => {
+            setTimeout(() => {
+                if (!resuelto && !input.files.length) {
+                    resuelto = true;
+                    resolve(null);
+                }
+            }, 400);
+        }, { once: true });
+
+        input.click();
+    });
 }
 
 async function eliminarPublicacionPerfil(publicacionId) {

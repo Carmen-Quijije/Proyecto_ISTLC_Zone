@@ -58,10 +58,37 @@ const perfilPublico = (usuario) => ({
     bio: usuario.bio
 });
 
+const leerImagenesPublicacion = (publicacion) => {
+    if (publicacion.imagenes_json) {
+        try {
+            const imagenes = JSON.parse(publicacion.imagenes_json);
+            if (Array.isArray(imagenes)) {
+                return imagenes.filter(Boolean);
+            }
+        } catch (error) {
+            return publicacion.imagen_url ? [publicacion.imagen_url] : [];
+        }
+    }
+
+    return publicacion.imagen_url ? [publicacion.imagen_url] : [];
+};
+
+const limpiarImagenesPublicacion = (imagenes) => {
+    if (!Array.isArray(imagenes)) {
+        return [];
+    }
+
+    return imagenes
+        .map((imagen) => String(imagen || '').trim())
+        .filter((imagen) => imagen.startsWith('http://') || imagen.startsWith('https://'))
+        .slice(0, 6);
+};
+
 const publicacionPublica = (publicacion) => ({
     id: publicacion.id,
     contenido: publicacion.contenido,
     imagenUrl: publicacion.imagen_url,
+    imagenes: leerImagenesPublicacion(publicacion),
     fecha: publicacion.fecha,
     totalLikes: Number(publicacion.total_likes || 0),
     totalComentarios: Number(publicacion.total_comentarios || 0),
@@ -737,19 +764,22 @@ router.delete('/follow', async (req, res) => {
 
 router.post('/posts', async (req, res) => {
     try {
-        const { usuarioId, contenido, imagenUrl } = req.body;
+        const { usuarioId, contenido, imagenUrl, imagenesUrls } = req.body;
         const db = getDb();
         const texto = String(contenido || '').trim();
+        const imagenes = limpiarImagenesPublicacion(
+            Array.isArray(imagenesUrls) && imagenesUrls.length ? imagenesUrls : [imagenUrl]
+        );
 
         if (!usuarioId || !texto) {
             return res.status(400).json({ success: false, message: 'Escribe algo para publicar' });
         }
 
         const result = await db.run(
-            `INSERT INTO publicaciones (usuario_id, contenido, imagen_url)
-             VALUES (?, ?, ?)
+            `INSERT INTO publicaciones (usuario_id, contenido, imagen_url, imagenes_json)
+             VALUES (?, ?, ?, ?)
              RETURNING id`,
-            [usuarioId, texto, imagenUrl || null]
+            [usuarioId, texto, imagenes[0] || null, JSON.stringify(imagenes)]
         );
 
         res.json({
@@ -765,9 +795,10 @@ router.post('/posts', async (req, res) => {
 
 router.put('/posts/:id', async (req, res) => {
     try {
-        const { usuarioId, contenido } = req.body;
+        const { usuarioId, contenido, imagenesUrls } = req.body;
         const db = getDb();
         const texto = String(contenido || '').trim();
+        const debeActualizarImagenes = Array.isArray(imagenesUrls);
 
         if (!usuarioId || !texto) {
             return res.status(400).json({ success: false, message: 'Escribe algo para actualizar' });
@@ -775,7 +806,7 @@ router.put('/posts/:id', async (req, res) => {
 
         const publicacion = await get(
             db,
-            'SELECT id, usuario_id FROM publicaciones WHERE id = ?',
+            'SELECT id, usuario_id, imagen_url, imagenes_json FROM publicaciones WHERE id = ?',
             [req.params.id]
         );
 
@@ -787,11 +818,24 @@ router.put('/posts/:id', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Solo puedes editar tus publicaciones' });
         }
 
-        await run(
-            db,
-            'UPDATE publicaciones SET contenido = ? WHERE id = ? AND usuario_id = ?',
-            [texto, req.params.id, usuarioId]
-        );
+        if (debeActualizarImagenes) {
+            const nuevasImagenes = limpiarImagenesPublicacion(imagenesUrls);
+            const imagenesAnteriores = leerImagenesPublicacion(publicacion);
+
+            await run(
+                db,
+                'UPDATE publicaciones SET contenido = ?, imagen_url = ?, imagenes_json = ? WHERE id = ? AND usuario_id = ?',
+                [texto, nuevasImagenes[0] || null, JSON.stringify(nuevasImagenes), req.params.id, usuarioId]
+            );
+
+            await Promise.all(imagenesAnteriores.map((imagen) => borrarImagenCloudinary(imagen)));
+        } else {
+            await run(
+                db,
+                'UPDATE publicaciones SET contenido = ? WHERE id = ? AND usuario_id = ?',
+                [texto, req.params.id, usuarioId]
+            );
+        }
 
         res.json({ success: true, message: 'Publicacion actualizada' });
     } catch (error) {
@@ -804,7 +848,7 @@ router.get('/posts/user/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.fecha,
+            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.imagenes_json, p.fecha,
                     u.nombre, u.usuario, u.foto_perfil,
                     COUNT(DISTINCT l.id)::int AS total_likes,
                     COUNT(DISTINCT c.id)::int AS total_comentarios,
@@ -837,7 +881,7 @@ router.get('/feed/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.fecha,
+            `SELECT p.id, p.usuario_id, p.contenido, p.imagen_url, p.imagenes_json, p.fecha,
                     u.nombre, u.usuario, u.foto_perfil,
                     COUNT(DISTINCT l.id)::int AS total_likes,
                     COUNT(DISTINCT c.id)::int AS total_comentarios,
@@ -880,7 +924,7 @@ router.delete('/posts/:id', async (req, res) => {
 
         const publicacion = await get(
             db,
-            'SELECT id, usuario_id, imagen_url FROM publicaciones WHERE id = ?',
+            'SELECT id, usuario_id, imagen_url, imagenes_json FROM publicaciones WHERE id = ?',
             [req.params.id]
         );
 
@@ -895,7 +939,7 @@ router.delete('/posts/:id', async (req, res) => {
         await run(db, 'DELETE FROM comentarios WHERE publicacion_id = ?', [req.params.id]);
         await run(db, 'DELETE FROM likes_publicaciones WHERE publicacion_id = ?', [req.params.id]);
         await run(db, 'DELETE FROM publicaciones WHERE id = ? AND usuario_id = ?', [req.params.id, usuarioId]);
-        await borrarImagenCloudinary(publicacion.imagen_url);
+        await Promise.all(leerImagenesPublicacion(publicacion).map((imagen) => borrarImagenCloudinary(imagen)));
 
         res.json({ success: true, message: 'Publicacion eliminada' });
     } catch (error) {
