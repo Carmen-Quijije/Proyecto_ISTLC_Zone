@@ -139,7 +139,7 @@ async function cargarPublicacionesPerfil() {
     contenedor.innerHTML = `<p class="text-muted">Cargando publicaciones...</p>`;
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${usuario.id}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/user/${usuario.id}?currentUserId=${usuario.id}`);
         const data = await respuesta.json();
         const publicaciones = data.success ? data.publicaciones : [];
 
@@ -181,6 +181,10 @@ function tarjetaPublicacionPerfil(publicacion) {
             </div>
             <p>${escaparHtml(publicacion.contenido)}</p>
             ${imagen}
+            <div class="perfil-publicacion-resumen">
+                <span>${publicacion.totalLikes || 0} me gusta</span>
+                <span>${publicacion.totalComentarios || 0} comentarios</span>
+            </div>
         </article>
     `;
 }

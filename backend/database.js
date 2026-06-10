@@ -73,6 +73,18 @@ const initDatabase = async () => {
     console.log('Tabla codigos_verificacion lista');
 
     await pool.query(`
+        CREATE TABLE IF NOT EXISTS codigos_recuperacion (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            codigo TEXT NOT NULL,
+            fecha_expiracion TIMESTAMPTZ NOT NULL,
+            usado BOOLEAN DEFAULT FALSE,
+            fecha_creacion TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla codigos_recuperacion lista');
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS registros_pendientes (
             id SERIAL PRIMARY KEY,
             nombre TEXT NOT NULL,
@@ -106,6 +118,28 @@ const initDatabase = async () => {
         )
     `);
     console.log('Tabla publicaciones lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS comentarios (
+            id SERIAL PRIMARY KEY,
+            publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            contenido TEXT NOT NULL,
+            fecha TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('Tabla comentarios lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS likes_publicaciones (
+            id SERIAL PRIMARY KEY,
+            publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (publicacion_id, usuario_id)
+        )
+    `);
+    console.log('Tabla likes_publicaciones lista');
 
     await pool.query('SELECT 1');
     console.log('Base de datos Neon PostgreSQL conectada');

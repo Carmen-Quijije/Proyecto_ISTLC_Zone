@@ -143,6 +143,8 @@ function tarjetaPublicacion(publicacion) {
         ? `<img class="publicacion-img" src="${publicacion.imagenUrl}" alt="Imagen de publicacion">`
         : "";
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
+    const likeClase = publicacion.likedByMe ? "btn-warning" : "btn-light";
+    const likeTexto = publicacion.likedByMe ? "Te gusta" : "Me gusta";
 
     return `
         <article class="card shadow-sm mb-4 publicacion-card">
@@ -165,13 +167,134 @@ function tarjetaPublicacion(publicacion) {
                 ${imagen}
 
                 <div class="border-top pt-2 d-flex justify-content-around">
-                    <button class="btn btn-light">Me gusta</button>
-                    <button class="btn btn-light">Comentar</button>
+                    <button
+                        class="btn ${likeClase}"
+                        onclick="alternarLike(${publicacion.id}, ${publicacion.likedByMe})"
+                    >
+                        ${likeTexto} (${publicacion.totalLikes})
+                    </button>
+                    <button class="btn btn-light" onclick="mostrarComentarios(${publicacion.id})">
+                        Comentar (${publicacion.totalComentarios})
+                    </button>
                     <button class="btn btn-light">Compartir</button>
                 </div>
+
+                <section class="comentarios-box mt-3" id="comentarios-${publicacion.id}">
+                    <div class="comentarios-lista" id="comentarios-lista-${publicacion.id}"></div>
+                    <form class="comentario-form" onsubmit="crearComentario(event, ${publicacion.id})">
+                        <input
+                            class="form-control"
+                            id="comentario-input-${publicacion.id}"
+                            placeholder="Escribe un comentario..."
+                            autocomplete="off"
+                        />
+                        <button class="btn btn-warning" type="submit">Enviar</button>
+                    </form>
+                </section>
             </div>
         </article>
     `;
+}
+
+async function alternarLike(publicacionId, likedByMe) {
+    try {
+        await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/like`, {
+            method: likedByMe ? "DELETE" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id })
+        });
+        await cargarFeed();
+    } catch (error) {
+        alert("No se pudo actualizar el me gusta");
+    }
+}
+
+async function mostrarComentarios(publicacionId) {
+    const caja = document.getElementById(`comentarios-${publicacionId}`);
+
+    if (!caja) {
+        return;
+    }
+
+    caja.classList.toggle("activo");
+
+    if (caja.classList.contains("activo")) {
+        await cargarComentarios(publicacionId);
+    }
+}
+
+async function cargarComentarios(publicacionId) {
+    const lista = document.getElementById(`comentarios-lista-${publicacionId}`);
+    lista.innerHTML = `<p class="text-muted small mb-2">Cargando comentarios...</p>`;
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/comments`);
+        const data = await respuesta.json();
+        const comentarios = data.success ? data.comentarios : [];
+
+        if (!comentarios.length) {
+            lista.innerHTML = `<p class="text-muted small mb-2">Se el primero en comentar.</p>`;
+            return;
+        }
+
+        lista.innerHTML = comentarios.map(tarjetaComentario).join("");
+    } catch (error) {
+        lista.innerHTML = `<p class="text-muted small mb-2">No se pudieron cargar comentarios.</p>`;
+    }
+}
+
+function tarjetaComentario(comentario) {
+    const autor = comentario.autor || {};
+    const fecha = comentario.fecha ? new Date(comentario.fecha).toLocaleString("es-EC") : "Hoy";
+
+    return `
+        <div class="comentario-item">
+            <img src="${autor.fotoPerfil || "images/icono.png"}" alt="${autor.nombre || "Usuario"}">
+            <div>
+                <strong>${autor.nombre || "Usuario"}</strong>
+                <p>${escaparHtml(comentario.contenido)}</p>
+                <small>${fecha}</small>
+            </div>
+        </div>
+    `;
+}
+
+async function crearComentario(evento, publicacionId) {
+    evento.preventDefault();
+
+    const input = document.getElementById(`comentario-input-${publicacionId}`);
+    const contenido = input.value.trim();
+
+    if (!contenido) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/comments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                usuarioId: usuario.id,
+                contenido
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo comentar");
+        }
+
+        input.value = "";
+        await cargarComentarios(publicacionId);
+        await cargarFeed();
+        const caja = document.getElementById(`comentarios-${publicacionId}`);
+        if (caja) {
+            caja.classList.add("activo");
+            await cargarComentarios(publicacionId);
+        }
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 function escaparHtml(texto) {

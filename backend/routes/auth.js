@@ -62,11 +62,26 @@ const publicacionPublica = (publicacion) => ({
     contenido: publicacion.contenido,
     imagenUrl: publicacion.imagen_url,
     fecha: publicacion.fecha,
+    totalLikes: Number(publicacion.total_likes || 0),
+    totalComentarios: Number(publicacion.total_comentarios || 0),
+    likedByMe: Boolean(publicacion.liked_by_me),
     autor: {
         id: publicacion.usuario_id,
         nombre: publicacion.nombre,
         usuario: publicacion.usuario,
         fotoPerfil: publicacion.foto_perfil
+    }
+});
+
+const comentarioPublico = (comentario) => ({
+    id: comentario.id,
+    contenido: comentario.contenido,
+    fecha: comentario.fecha,
+    autor: {
+        id: comentario.usuario_id,
+        nombre: comentario.nombre,
+        usuario: comentario.usuario,
+        fotoPerfil: comentario.foto_perfil
     }
 });
 
@@ -132,6 +147,60 @@ const enviarCorreoVerificacion = async (email, codigo) => {
         return Array.isArray(info.accepted) && info.accepted.includes(email);
     } catch (error) {
         console.error('Error al enviar email:', error);
+        return false;
+    }
+};
+
+const enviarCorreoRecuperacion = async (email, codigo) => {
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h2 style="color: #061A38; text-align: center;">Recuperacion de cuenta</h2>
+            <p style="color: #333; font-size: 16px;">Usa este codigo para cambiar tu contrasena:</p>
+            <div style="background-color: #FFC107; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                <h1 style="color: #061A38; font-size: 32px; letter-spacing: 5px; margin: 0;">${codigo}</h1>
+            </div>
+            <p style="color: #666; font-size: 14px;">Este codigo expira en 10 minutos.</p>
+            <p style="color: #666; font-size: 14px;">Si no solicitaste este cambio, ignora este email.</p>
+        </div>
+    `;
+
+    try {
+        if (BREVO_API_KEY) {
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': BREVO_API_KEY,
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sender: { email: EMAIL_FROM, name: 'ISTLC Zone' },
+                    to: [{ email }],
+                    subject: 'Recuperacion de cuenta - ISTLC Zone',
+                    htmlContent
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                console.error('Error al enviar recuperacion con Brevo API:', response.status, data);
+                return false;
+            }
+
+            return true;
+        }
+
+        const info = await transporter.sendMail({
+            from: EMAIL_FROM,
+            to: email,
+            subject: 'Recuperacion de cuenta - ISTLC Zone',
+            html: htmlContent
+        });
+
+        return Array.isArray(info.accepted) && info.accepted.includes(email);
+    } catch (error) {
+        console.error('Error al enviar recuperacion:', error);
         return false;
     }
 };
@@ -299,6 +368,86 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({ success: false, message: 'Error al iniciar sesion' });
+    }
+});
+
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const email = String(req.body.email || '').trim().toLowerCase();
+        const db = getDb();
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Ingresa tu correo' });
+        }
+
+        const usuario = await get(
+            db,
+            'SELECT id FROM usuarios WHERE email = ? AND email_verificado = TRUE',
+            [email]
+        );
+
+        if (!usuario) {
+            return res.status(404).json({ success: false, message: 'No existe una cuenta con ese correo' });
+        }
+
+        const codigo = generarCodigo();
+        const expiracion = new Date(Date.now() + 10 * 60000);
+
+        await run(db, 'UPDATE codigos_recuperacion SET usado = TRUE WHERE email = ?', [email]);
+        await run(
+            db,
+            'INSERT INTO codigos_recuperacion (email, codigo, fecha_expiracion) VALUES (?, ?, ?)',
+            [email, codigo, expiracion.toISOString()]
+        );
+
+        const enviado = await enviarCorreoRecuperacion(email, codigo);
+
+        if (!enviado) {
+            return res.status(502).json({
+                success: false,
+                message: 'No se pudo enviar el codigo de recuperacion'
+            });
+        }
+
+        res.json({ success: true, message: 'Codigo enviado a tu correo' });
+    } catch (error) {
+        console.error('Error en recuperacion:', error);
+        res.status(500).json({ success: false, message: 'Error al solicitar recuperacion' });
+    }
+});
+
+router.post('/reset-password', async (req, res) => {
+    try {
+        const email = String(req.body.email || '').trim().toLowerCase();
+        const { codigo, password } = req.body;
+        const db = getDb();
+
+        if (!email || !codigo || !password) {
+            return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+
+        const codigoValido = await get(
+            db,
+            `SELECT * FROM codigos_recuperacion
+             WHERE email = ? AND codigo = ? AND usado = FALSE
+             AND fecha_expiracion > NOW()
+             ORDER BY id DESC LIMIT 1`,
+            [email, codigo]
+        );
+
+        if (!codigoValido) {
+            return res.status(400).json({ success: false, message: 'Codigo invalido o expirado' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        await run(db, 'UPDATE usuarios SET password = ? WHERE email = ?', [hashedPassword, email]);
+        await run(db, 'UPDATE codigos_recuperacion SET usado = TRUE WHERE id = ?', [codigoValido.id]);
+
+        res.json({ success: true, message: 'Contrasena actualizada correctamente' });
+    } catch (error) {
+        console.error('Error al cambiar contrasena:', error);
+        res.status(500).json({ success: false, message: 'Error al cambiar contrasena' });
     }
 });
 
@@ -564,13 +713,22 @@ router.get('/posts/user/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil
+            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil,
+                    COUNT(DISTINCT l.id)::int AS total_likes,
+                    COUNT(DISTINCT c.id)::int AS total_comentarios,
+                    EXISTS (
+                        SELECT 1 FROM likes_publicaciones lm
+                        WHERE lm.publicacion_id = p.id AND lm.usuario_id = ?
+                    ) AS liked_by_me
              FROM publicaciones p
              JOIN usuarios u ON u.id = p.usuario_id
+             LEFT JOIN likes_publicaciones l ON l.publicacion_id = p.id
+             LEFT JOIN comentarios c ON c.publicacion_id = p.id
              WHERE p.usuario_id = ?
+             GROUP BY p.id, u.nombre, u.usuario, u.foto_perfil
              ORDER BY p.fecha DESC
              LIMIT 30`,
-            [req.params.id]
+            [req.query.currentUserId || req.params.id, req.params.id]
         );
 
         res.json({
@@ -587,16 +745,25 @@ router.get('/feed/:id', async (req, res) => {
     try {
         const db = getDb();
         const result = await db.run(
-            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil
+            `SELECT p.*, u.nombre, u.usuario, u.foto_perfil,
+                    COUNT(DISTINCT l.id)::int AS total_likes,
+                    COUNT(DISTINCT c.id)::int AS total_comentarios,
+                    EXISTS (
+                        SELECT 1 FROM likes_publicaciones lm
+                        WHERE lm.publicacion_id = p.id AND lm.usuario_id = ?
+                    ) AS liked_by_me
              FROM publicaciones p
              JOIN usuarios u ON u.id = p.usuario_id
+             LEFT JOIN likes_publicaciones l ON l.publicacion_id = p.id
+             LEFT JOIN comentarios c ON c.publicacion_id = p.id
              WHERE p.usuario_id = ?
                 OR p.usuario_id IN (
                     SELECT seguido_id FROM seguidores WHERE seguidor_id = ?
                 )
+             GROUP BY p.id, u.nombre, u.usuario, u.foto_perfil
              ORDER BY p.fecha DESC
              LIMIT 50`,
-            [req.params.id, req.params.id]
+            [req.params.id, req.params.id, req.params.id]
         );
 
         res.json({
@@ -606,6 +773,97 @@ router.get('/feed/:id', async (req, res) => {
     } catch (error) {
         console.error('Error al cargar feed:', error);
         res.status(500).json({ success: false, message: 'Error al cargar publicaciones' });
+    }
+});
+
+router.post('/posts/:id/like', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+
+        if (!usuarioId) {
+            return res.status(400).json({ success: false, message: 'Falta usuario' });
+        }
+
+        await run(
+            db,
+            'INSERT INTO likes_publicaciones (publicacion_id, usuario_id) VALUES (?, ?) ON CONFLICT DO NOTHING',
+            [req.params.id, usuarioId]
+        );
+
+        res.json({ success: true, message: 'Like agregado' });
+    } catch (error) {
+        console.error('Error al dar like:', error);
+        res.status(500).json({ success: false, message: 'Error al dar like' });
+    }
+});
+
+router.delete('/posts/:id/like', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const db = getDb();
+
+        await run(
+            db,
+            'DELETE FROM likes_publicaciones WHERE publicacion_id = ? AND usuario_id = ?',
+            [req.params.id, usuarioId]
+        );
+
+        res.json({ success: true, message: 'Like eliminado' });
+    } catch (error) {
+        console.error('Error al quitar like:', error);
+        res.status(500).json({ success: false, message: 'Error al quitar like' });
+    }
+});
+
+router.get('/posts/:id/comments', async (req, res) => {
+    try {
+        const db = getDb();
+        const result = await db.run(
+            `SELECT c.*, u.nombre, u.usuario, u.foto_perfil
+             FROM comentarios c
+             JOIN usuarios u ON u.id = c.usuario_id
+             WHERE c.publicacion_id = ?
+             ORDER BY c.fecha ASC
+             LIMIT 40`,
+            [req.params.id]
+        );
+
+        res.json({
+            success: true,
+            comentarios: result.rows.map(comentarioPublico)
+        });
+    } catch (error) {
+        console.error('Error al cargar comentarios:', error);
+        res.status(500).json({ success: false, message: 'Error al cargar comentarios' });
+    }
+});
+
+router.post('/posts/:id/comments', async (req, res) => {
+    try {
+        const { usuarioId, contenido } = req.body;
+        const db = getDb();
+        const texto = String(contenido || '').trim();
+
+        if (!usuarioId || !texto) {
+            return res.status(400).json({ success: false, message: 'Escribe un comentario' });
+        }
+
+        const result = await db.run(
+            `INSERT INTO comentarios (publicacion_id, usuario_id, contenido)
+             VALUES (?, ?, ?)
+             RETURNING id`,
+            [req.params.id, usuarioId, texto]
+        );
+
+        res.json({
+            success: true,
+            message: 'Comentario agregado',
+            id: result.rows[0]?.id
+        });
+    } catch (error) {
+        console.error('Error al comentar:', error);
+        res.status(500).json({ success: false, message: 'Error al comentar' });
     }
 });
 
