@@ -107,22 +107,16 @@ function crearCentroNotificaciones() {
     const centro = document.createElement("div");
     centro.className = "notificaciones-app";
     centro.innerHTML = `
-        <button id="btnTemaApp" class="btn btn-light btn-tema-app" type="button" title="Cambiar color">
+        <button id="btnTemaApp" class="btn btn-light btn-tema-app" type="button" title="Cambiar tema">
             <span class="material-symbols-outlined">palette</span>
         </button>
         <section id="panelTemaApp" class="panel-tema-app d-none">
-            <strong>Color de tema</strong>
-            <button type="button" class="tema-opcion" data-tema="gold">
-                <span class="tema-color tema-gold"></span>Dorado
+            <strong>Tema de apariencia</strong>
+            <button type="button" class="tema-opcion" data-tema="tradicional">
+                <span class="material-symbols-outlined tema-icono">light_mode</span>Tradicional
             </button>
-            <button type="button" class="tema-opcion" data-tema="cyan">
-                <span class="tema-color tema-cyan"></span>Azul neon
-            </button>
-            <button type="button" class="tema-opcion" data-tema="green">
-                <span class="tema-color tema-green"></span>Verde
-            </button>
-            <button type="button" class="tema-opcion" data-tema="rose">
-                <span class="tema-color tema-rose"></span>Rosa
+            <button type="button" class="tema-opcion" data-tema="neon">
+                <span class="material-symbols-outlined tema-icono">dark_mode</span>Negro neon
             </button>
         </section>
         <button id="btnNotificacionesApp" class="btn btn-warning btn-notificaciones-app" type="button">
@@ -155,7 +149,13 @@ function crearCentroNotificaciones() {
 }
 
 function aplicarTemaGuardado() {
-    const tema = localStorage.getItem("temaIstlcColor") || "gold";
+    const temaAnterior = localStorage.getItem("temaIstlcColor");
+    const tema = localStorage.getItem("temaIstlcModo")
+        || (temaAnterior && temaAnterior !== "tradicional" ? "neon" : "tradicional");
+
+    localStorage.setItem("temaIstlcModo", tema);
+    localStorage.removeItem("temaIstlcColor");
+    document.documentElement.dataset.temaIstlc = tema;
     document.body.dataset.temaIstlc = tema;
 }
 
@@ -166,10 +166,10 @@ function alternarPanelTema(evento) {
 }
 
 function seleccionarTema(tema) {
-    localStorage.setItem("temaIstlcColor", tema);
+    localStorage.setItem("temaIstlcModo", tema);
     aplicarTemaGuardado();
     document.getElementById("panelTemaApp")?.classList.add("d-none");
-    mostrarToastApp("Color actualizado");
+    mostrarToastApp("Tema actualizado");
 }
 
 async function cargarNotificacionesApp() {

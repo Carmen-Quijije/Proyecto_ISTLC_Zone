@@ -29,6 +29,11 @@ body[data-tema-istlc="rose"]{
     --neon-cyan:#ffd166;
 }
 
+body[data-tema-istlc="neon"]{
+    --neon-gold:#FFC107;
+    --neon-cyan:#25d7ff;
+}
+
 html,
 body{
     background:
@@ -299,6 +304,10 @@ hr,
     background:rgba(255,193,7,.1);
 }
 
+.tema-icono{
+    color:var(--neon-gold);
+}
+
 .tema-color{
     width:18px;
     height:18px;
@@ -318,4 +327,183 @@ hr,
     border-radius:10px;
     color:var(--neon-muted);
     background:rgba(5,14,28,.55);
+}
+
+html[data-tema-istlc="tradicional"],
+body[data-tema-istlc="tradicional"]{
+    background:#f1f3f6 !important;
+    color:#212529 !important;
+}
+
+body[data-tema-istlc="tradicional"] .muro-page,
+body[data-tema-istlc="tradicional"] .perfil-page,
+body[data-tema-istlc="tradicional"] .registro-main,
+body[data-tema-istlc="tradicional"] .main-login{
+    background:#f1f3f6 !important;
+}
+
+body[data-tema-istlc="tradicional"] .navbar-custom,
+body[data-tema-istlc="tradicional"] footer{
+    background:#061A38 !important;
+    border-color:#FFC107 !important;
+    box-shadow:none !important;
+}
+
+body[data-tema-istlc="tradicional"] .logo-navbar{
+    filter:drop-shadow(0 0 8px rgba(255,255,255,.65)) !important;
+}
+
+body[data-tema-istlc="tradicional"] .texto-logo,
+body[data-tema-istlc="tradicional"] .texto-logo::after{
+    text-shadow:none !important;
+}
+
+body[data-tema-istlc="tradicional"] .card,
+body[data-tema-istlc="tradicional"] .login-card,
+body[data-tema-istlc="tradicional"] .registro-card,
+body[data-tema-istlc="tradicional"] .modal-content,
+body[data-tema-istlc="tradicional"] .mensajes-sidebar,
+body[data-tema-istlc="tradicional"] .mensajes-chat,
+body[data-tema-istlc="tradicional"] .panel-notificaciones-app,
+body[data-tema-istlc="tradicional"] .amigo-mini,
+body[data-tema-istlc="tradicional"] .usuario-card{
+    background:#fff !important;
+    color:#212529 !important;
+    border:1px solid #d5dbe3 !important;
+    box-shadow:0 4px 10px rgba(0,0,0,.12) !important;
+}
+
+body[data-tema-istlc="tradicional"] .card h1,
+body[data-tema-istlc="tradicional"] .card h2,
+body[data-tema-istlc="tradicional"] .card h3,
+body[data-tema-istlc="tradicional"] .card h4,
+body[data-tema-istlc="tradicional"] .card h5,
+body[data-tema-istlc="tradicional"] .card h6,
+body[data-tema-istlc="tradicional"] .login-card h1,
+body[data-tema-istlc="tradicional"] .login-card h3,
+body[data-tema-istlc="tradicional"] .registro-card h3,
+body[data-tema-istlc="tradicional"] .muro-perfil-card h3,
+body[data-tema-istlc="tradicional"] .mensajes-sidebar-header h2,
+body[data-tema-istlc="tradicional"] .mensajes-chat-contacto h3,
+body[data-tema-istlc="tradicional"] .mensajes-vacio h3,
+body[data-tema-istlc="tradicional"] .usuario-card h5,
+body[data-tema-istlc="tradicional"] .amigo-mini strong,
+body[data-tema-istlc="tradicional"] .form-label,
+body[data-tema-istlc="tradicional"] .forgot-link{
+    color:#061A38 !important;
+}
+
+body[data-tema-istlc="tradicional"] .text-muted,
+body[data-tema-istlc="tradicional"] .form-text,
+body[data-tema-istlc="tradicional"] .sugerido-linea small,
+body[data-tema-istlc="tradicional"] .mensaje-contacto small,
+body[data-tema-istlc="tradicional"] .mensajes-chat-contacto p,
+body[data-tema-istlc="tradicional"] .perfil-publicacion-resumen,
+body[data-tema-istlc="tradicional"] .comentario-item small{
+    color:#5d6675 !important;
+}
+
+body[data-tema-istlc="tradicional"] .form-control,
+body[data-tema-istlc="tradicional"] .form-select,
+body[data-tema-istlc="tradicional"] textarea{
+    background:#fff !important;
+    border:1px solid #d5dbe3 !important;
+    color:#212529 !important;
+    box-shadow:none !important;
+}
+
+body[data-tema-istlc="tradicional"] .form-control::placeholder,
+body[data-tema-istlc="tradicional"] textarea::placeholder{
+    color:#5d6675 !important;
+}
+
+body[data-tema-istlc="tradicional"] .form-control:focus,
+body[data-tema-istlc="tradicional"] .form-select:focus,
+body[data-tema-istlc="tradicional"] textarea:focus{
+    border-color:#FFC107 !important;
+    box-shadow:0 0 0 .18rem rgba(255,193,7,.22) !important;
+}
+
+body[data-tema-istlc="tradicional"] .btn-primary,
+body[data-tema-istlc="tradicional"] .btn-warning{
+    background:#FFC107 !important;
+    border-color:#FFC107 !important;
+    color:#061A38 !important;
+    box-shadow:none !important;
+}
+
+body[data-tema-istlc="tradicional"] .btn-light,
+body[data-tema-istlc="tradicional"] .btn-outline-secondary,
+body[data-tema-istlc="tradicional"] .btn-secondary{
+    background:#eef1f5 !important;
+    border:1px solid #cfd6df !important;
+    color:#212529 !important;
+}
+
+body[data-tema-istlc="tradicional"] .publicacion-imagen-label,
+body[data-tema-istlc="tradicional"] .mensaje-contacto,
+body[data-tema-istlc="tradicional"] .sugerido-linea,
+body[data-tema-istlc="tradicional"] .notificacion-item,
+body[data-tema-istlc="tradicional"] .comentario-item div,
+body[data-tema-istlc="tradicional"] .mensajes-lista,
+body[data-tema-istlc="tradicional"] .mensajes-form,
+body[data-tema-istlc="tradicional"] .perfil-tabs{
+    background:#fff !important;
+    border-color:#d5dbe3 !important;
+    color:#212529 !important;
+}
+
+body[data-tema-istlc="tradicional"] .mensaje-contacto:hover,
+body[data-tema-istlc="tradicional"] .mensaje-contacto.activo,
+body[data-tema-istlc="tradicional"] .sugerido-linea:hover,
+body[data-tema-istlc="tradicional"] .notificacion-item:hover,
+body[data-tema-istlc="tradicional"] .publicacion-imagen-label:hover{
+    background:#fff8df !important;
+    border-color:#FFC107 !important;
+}
+
+body[data-tema-istlc="tradicional"] .publicacion-img,
+body[data-tema-istlc="tradicional"] .publicacion-preview-grid img{
+    background:#fff !important;
+    border-color:#d5dbe3 !important;
+}
+
+body[data-tema-istlc="tradicional"] .muro-avatar,
+body[data-tema-istlc="tradicional"] .perfil-form-foto,
+body[data-tema-istlc="tradicional"] .usuario-card img,
+body[data-tema-istlc="tradicional"] .mensaje-contacto img,
+body[data-tema-istlc="tradicional"] .mensajes-chat-contacto img,
+body[data-tema-istlc="tradicional"] .comentario-item img,
+body[data-tema-istlc="tradicional"] .sugerido-linea img{
+    border-color:#FFC107 !important;
+    box-shadow:none !important;
+}
+
+body[data-tema-istlc="tradicional"] .panel-notificaciones-header,
+body[data-tema-istlc="tradicional"] .modal-header.bg-primary{
+    background:#061A38 !important;
+    border-bottom:1px solid #FFC107 !important;
+}
+
+body[data-tema-istlc="tradicional"] .texto-carrusel p,
+body[data-tema-istlc="tradicional"] .texto-carrusel h4,
+body[data-tema-istlc="tradicional"] .modal-body p,
+body[data-tema-istlc="tradicional"] .confirmacion-card p,
+body[data-tema-istlc="tradicional"] .publicacion-card p,
+body[data-tema-istlc="tradicional"] .perfil-publicacion p,
+body[data-tema-istlc="tradicional"] .comentario-item p{
+    color:#212529 !important;
+}
+
+body[data-tema-istlc="tradicional"] hr,
+body[data-tema-istlc="tradicional"] .comentarios-box,
+body[data-tema-istlc="tradicional"] .perfil-publicacion,
+body[data-tema-istlc="tradicional"] .sugerido-linea{
+    border-color:#d5dbe3 !important;
+}
+
+body[data-tema-istlc="tradicional"] .estado-vacio-red{
+    color:#5d6675;
+    background:#fff;
+    border-color:#d5dbe3;
 }
