@@ -363,11 +363,18 @@ router.post('/register', async (req, res) => {
     try {
         const { nombre, password, privacidad } = req.body;
         const email = String(req.body.email || '').trim().toLowerCase();
-        const usuario = String(req.body.usuario || '').trim();
+        const usuario = String(req.body.usuario || '').trim().toLowerCase();
         const db = getDb();
 
         if (!nombre || !email || !usuario || !password) {
             return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+
+        if (!/^[a-z0-9_-]{3,30}$/.test(usuario)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El usuario debe tener entre 3 y 30 caracteres. Usa letras, numeros, guion o guion bajo.'
+            });
         }
 
         if (!email.endsWith('@tecnologicoliceocristiano.edu.ec')) {
@@ -379,15 +386,32 @@ router.post('/register', async (req, res) => {
 
         const usuarioExistente = await get(
             db,
-            'SELECT id FROM usuarios WHERE email = ? OR usuario = ?',
+            'SELECT email, usuario FROM usuarios WHERE email = ? OR LOWER(usuario) = ?',
             [email, usuario]
         );
 
         if (usuarioExistente) {
-            return res.status(400).json({ success: false, message: 'El email o usuario ya esta registrado' });
+            const campo = usuarioExistente.email === email ? 'correo' : 'usuario';
+            return res.status(400).json({
+                success: false,
+                message: `Ese ${campo} ya esta registrado. Prueba con otro o inicia sesion.`
+            });
         }
 
-        await run(db, 'DELETE FROM registros_pendientes WHERE email = ? OR usuario = ?', [email, usuario]);
+        const registroPendiente = await get(
+            db,
+            'SELECT email, usuario FROM registros_pendientes WHERE email = ? OR LOWER(usuario) = ?',
+            [email, usuario]
+        );
+
+        if (registroPendiente) {
+            const campo = registroPendiente.email === email ? 'correo' : 'usuario';
+            return res.status(400).json({
+                success: false,
+                message: `Ese ${campo} ya tiene un registro pendiente. Revisa el codigo enviado o usa otro ${campo}.`
+            });
+        }
+
         await run(db, 'UPDATE codigos_verificacion SET usado = TRUE WHERE email = ?', [email]);
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -441,27 +465,30 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { password } = req.body;
+        const identificador = String(req.body.identificador || req.body.email || '').trim().toLowerCase();
         const db = getDb();
 
-        if (!email || !password) {
+        if (!identificador || !password) {
             return res.status(400).json({ success: false, message: 'Faltan datos' });
         }
 
         const usuario = await get(
             db,
-            'SELECT * FROM usuarios WHERE email = ? AND email_verificado = TRUE',
-            [email]
+            `SELECT * FROM usuarios
+             WHERE email_verificado = TRUE
+               AND (LOWER(email) = ? OR LOWER(usuario) = ?)`,
+            [identificador, identificador]
         );
 
         if (!usuario) {
-            return res.status(401).json({ success: false, message: 'Correo o contrasena incorrectos' });
+            return res.status(401).json({ success: false, message: 'Usuario, correo o contrasena incorrectos' });
         }
 
         const passwordCorrecta = await bcrypt.compare(password, usuario.password);
 
         if (!passwordCorrecta) {
-            return res.status(401).json({ success: false, message: 'Correo o contrasena incorrectos' });
+            return res.status(401).json({ success: false, message: 'Usuario, correo o contrasena incorrectos' });
         }
 
         res.json({

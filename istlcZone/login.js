@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     formulario.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const email = document.getElementById("correo").value.trim();
+        const identificador = document.getElementById("correo").value.trim();
         const password = document.getElementById("contrasena").value;
 
         try {
@@ -21,13 +21,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ identificador, password })
             });
 
             const data = await respuesta.json();
 
             if (!respuesta.ok || !data.success) {
-                alert(data.message || "Correo o contrasena incorrectos");
+                alert(data.message || "Usuario, correo o contrasena incorrectos");
                 return;
             }
 

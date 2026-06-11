@@ -6,6 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
     modalConfirmacion = new bootstrap.Modal(
         document.getElementById("modalConfirmacion")
     );
+
+    const inputUsuario = document.getElementById("usuario");
+    if (inputUsuario) {
+        inputUsuario.addEventListener("input", () => {
+            inputUsuario.value = inputUsuario.value
+                .toLowerCase()
+                .replace(/[^a-z0-9_-]/g, "");
+        });
+    }
 });
 
 function handleCredentialResponse(response) {
@@ -40,13 +49,18 @@ document.getElementById("registroForm").addEventListener("submit", async functio
     const botonRegistro = this.querySelector('button[type="submit"]');
     const nombre = document.getElementById("nombre").value.trim();
     const email = document.getElementById("email").value.trim();
-    const usuario = document.getElementById("usuario").value.trim();
+    const usuario = document.getElementById("usuario").value.trim().toLowerCase();
     const password = document.getElementById("password").value;
     const passwordConfirm = document.getElementById("passwordConfirm").value;
     const privacidad = document.getElementById("privacidad").checked;
 
     if (password !== passwordConfirm) {
         alert("Las contrasenas no coinciden");
+        return;
+    }
+
+    if (!/^[a-z0-9_-]{3,30}$/.test(usuario)) {
+        alert("El usuario debe tener entre 3 y 30 caracteres. Usa letras, numeros, guion o guion bajo.");
         return;
     }
 
