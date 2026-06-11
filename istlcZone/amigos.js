@@ -4,6 +4,8 @@ const API_BASE =
         : "http://localhost:3000";
 
 const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+const parametros = new URLSearchParams(window.location.search);
+const perfilConsultadoId = Number(parametros.get("id")) || Number(usuario?.id);
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -11,8 +13,51 @@ if (!usuario) {
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("busqueda").addEventListener("input", buscarUsuarios);
+    cargarMiRed();
     buscarUsuarios();
 });
+
+async function cargarMiRed() {
+    const contenedor = document.getElementById("listaMisAmigos");
+    const titulo = document.getElementById("tituloRed");
+    const descripcion = document.getElementById("descripcionRed");
+
+    if (!contenedor) {
+        return;
+    }
+
+    const esMiPerfil = Number(perfilConsultadoId) === Number(usuario.id);
+    titulo.textContent = esMiPerfil ? "Mis amigos" : "Amigos de este perfil";
+    descripcion.textContent = esMiPerfil
+        ? "Personas que ya forman parte de tu red."
+        : "Personas que este usuario sigue dentro de ISTLC Zone.";
+    contenedor.innerHTML = `<div class="col-12 text-muted">Cargando amigos...</div>`;
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/following/${perfilConsultadoId}`);
+        const data = await respuesta.json();
+        const amigos = data.success ? data.usuarios : [];
+
+        if (!amigos.length) {
+            contenedor.innerHTML = `
+                <div class="col-12">
+                    <div class="estado-vacio-red">
+                        ${esMiPerfil ? "Aun no sigues a nadie. Busca companeros abajo." : "Este perfil aun no sigue a nadie."}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        contenedor.innerHTML = amigos.map((persona) => tarjetaUsuario({
+            ...persona,
+            siguiendo: true,
+            solicitudPendiente: false
+        })).join("");
+    } catch (error) {
+        contenedor.innerHTML = `<div class="col-12"><div class="estado-vacio-red">No se pudo cargar la red.</div></div>`;
+    }
+}
 
 async function buscarUsuarios() {
     const termino = document.getElementById("busqueda").value.trim();
@@ -24,7 +69,9 @@ async function buscarUsuarios() {
             `${API_BASE}/api/auth/users?q=${encodeURIComponent(termino)}&currentUserId=${usuario.id}`
         );
         const data = await respuesta.json();
-        const usuarios = data.success ? data.usuarios : [];
+        const usuarios = data.success
+            ? data.usuarios.filter((persona) => !persona.siguiendo)
+            : [];
 
         if (!usuarios.length) {
             contenedor.innerHTML = `<div class="col-12"><div class="card p-4">No se encontraron usuarios.</div></div>`;
@@ -88,6 +135,7 @@ async function alternarSeguimiento(seguidoId, estaSiguiendo) {
         }
 
         mostrarToastAppSeguro(data.message || "Seguimiento actualizado");
+        cargarMiRed();
         buscarUsuarios();
     } catch (error) {
         mostrarToastAppSeguro(error.message || "No se pudo actualizar el seguimiento", "error");

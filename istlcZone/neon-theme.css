@@ -9,6 +9,26 @@
     --neon-cyan:#25d7ff;
 }
 
+body[data-tema-istlc="gold"]{
+    --neon-gold:#FFC107;
+    --neon-cyan:#25d7ff;
+}
+
+body[data-tema-istlc="cyan"]{
+    --neon-gold:#33d6ff;
+    --neon-cyan:#9ee7ff;
+}
+
+body[data-tema-istlc="green"]{
+    --neon-gold:#40f29a;
+    --neon-cyan:#b7ff63;
+}
+
+body[data-tema-istlc="rose"]{
+    --neon-gold:#ff6aa2;
+    --neon-cyan:#ffd166;
+}
+
 html,
 body{
     background:
@@ -226,4 +246,76 @@ hr,
 .perfil-publicacion,
 .sugerido-linea{
     border-color:rgba(255,193,7,.2) !important;
+}
+
+.notificaciones-app{
+    gap:8px;
+    align-items:flex-start;
+}
+
+.btn-tema-app{
+    width:46px;
+    height:44px;
+    display:inline-grid !important;
+    place-items:center;
+}
+
+.panel-tema-app{
+    position:absolute;
+    top:54px;
+    right:54px;
+    z-index:2100;
+    min-width:190px;
+    padding:14px;
+    background:linear-gradient(180deg, rgba(15,23,36,.98), rgba(11,31,54,.96));
+    border:1px solid rgba(255,193,7,.42);
+    border-radius:10px;
+    box-shadow:0 16px 34px rgba(0,0,0,.45), 0 0 22px rgba(255,193,7,.14);
+}
+
+.panel-tema-app strong{
+    display:block;
+    margin-bottom:10px;
+    color:var(--neon-text);
+}
+
+.tema-opcion{
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+    padding:9px 10px;
+    border:1px solid rgba(37,215,255,.22);
+    border-radius:8px;
+    background:rgba(5,14,28,.72);
+    color:var(--neon-text);
+    font-weight:700;
+    text-align:left;
+}
+
+.tema-opcion:hover{
+    border-color:var(--neon-gold);
+    background:rgba(255,193,7,.1);
+}
+
+.tema-color{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,.78);
+    box-shadow:0 0 12px currentColor;
+}
+
+.tema-gold{background:#FFC107;color:#FFC107}
+.tema-cyan{background:#33d6ff;color:#33d6ff}
+.tema-green{background:#40f29a;color:#40f29a}
+.tema-rose{background:#ff6aa2;color:#ff6aa2}
+
+.estado-vacio-red{
+    padding:18px;
+    border:1px dashed rgba(255,193,7,.32);
+    border-radius:10px;
+    color:var(--neon-muted);
+    background:rgba(5,14,28,.55);
 }

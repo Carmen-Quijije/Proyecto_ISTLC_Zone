@@ -34,7 +34,13 @@
 
     <main class="perfil-page py-4">
       <section class="container">
-        <div class="card shadow-sm p-4 mb-4">
+        <section class="card shadow-sm p-4 mb-4">
+          <h2 id="tituloRed" class="mb-2">Mis amigos</h2>
+          <p id="descripcionRed" class="text-muted">Personas que ya forman parte de tu red.</p>
+          <div class="row g-3" id="listaMisAmigos"></div>
+        </section>
+
+        <section class="card shadow-sm p-4 mb-4">
           <h2 class="mb-2">Buscar companeros</h2>
           <p class="text-muted">Encuentra estudiantes registrados y agregalos a tu red.</p>
           <input
@@ -42,7 +48,7 @@
             class="form-control"
             placeholder="Buscar por nombre, usuario o correo"
           />
-        </div>
+        </section>
 
         <div class="row g-3" id="resultadosUsuarios"></div>
       </section>

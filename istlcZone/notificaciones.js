@@ -1,6 +1,8 @@
 const usuarioNotificaciones = JSON.parse(localStorage.getItem("usuarioLogueado"));
 
 document.addEventListener("DOMContentLoaded", () => {
+    aplicarTemaGuardado();
+
     if (!usuarioNotificaciones) {
         return;
     }
@@ -105,6 +107,24 @@ function crearCentroNotificaciones() {
     const centro = document.createElement("div");
     centro.className = "notificaciones-app";
     centro.innerHTML = `
+        <button id="btnTemaApp" class="btn btn-light btn-tema-app" type="button" title="Cambiar color">
+            <span class="material-symbols-outlined">palette</span>
+        </button>
+        <section id="panelTemaApp" class="panel-tema-app d-none">
+            <strong>Color de tema</strong>
+            <button type="button" class="tema-opcion" data-tema="gold">
+                <span class="tema-color tema-gold"></span>Dorado
+            </button>
+            <button type="button" class="tema-opcion" data-tema="cyan">
+                <span class="tema-color tema-cyan"></span>Azul neon
+            </button>
+            <button type="button" class="tema-opcion" data-tema="green">
+                <span class="tema-color tema-green"></span>Verde
+            </button>
+            <button type="button" class="tema-opcion" data-tema="rose">
+                <span class="tema-color tema-rose"></span>Rosa
+            </button>
+        </section>
         <button id="btnNotificacionesApp" class="btn btn-warning btn-notificaciones-app" type="button">
             <span class="material-symbols-outlined">notifications</span>
             <span id="contadorNotificacionesApp" class="contador-notificaciones d-none">0</span>
@@ -122,11 +142,34 @@ function crearCentroNotificaciones() {
 
     contenedorNav.prepend(centro);
     document.getElementById("btnNotificacionesApp").addEventListener("click", alternarPanelNotificaciones);
+    document.getElementById("btnTemaApp").addEventListener("click", alternarPanelTema);
+    centro.querySelectorAll(".tema-opcion").forEach((boton) => {
+        boton.addEventListener("click", () => seleccionarTema(boton.dataset.tema));
+    });
     document.addEventListener("click", (evento) => {
         if (!centro.contains(evento.target)) {
             document.getElementById("panelNotificacionesApp")?.classList.add("d-none");
+            document.getElementById("panelTemaApp")?.classList.add("d-none");
         }
     });
+}
+
+function aplicarTemaGuardado() {
+    const tema = localStorage.getItem("temaIstlcColor") || "gold";
+    document.body.dataset.temaIstlc = tema;
+}
+
+function alternarPanelTema(evento) {
+    evento.stopPropagation();
+    document.getElementById("panelTemaApp")?.classList.toggle("d-none");
+    document.getElementById("panelNotificacionesApp")?.classList.add("d-none");
+}
+
+function seleccionarTema(tema) {
+    localStorage.setItem("temaIstlcColor", tema);
+    aplicarTemaGuardado();
+    document.getElementById("panelTemaApp")?.classList.add("d-none");
+    mostrarToastApp("Color actualizado");
 }
 
 async function cargarNotificacionesApp() {
@@ -270,6 +313,7 @@ async function marcarNotificacionesLeidas() {
 }
 
 function alternarPanelNotificaciones() {
+    document.getElementById("panelTemaApp")?.classList.add("d-none");
     document.getElementById("panelNotificacionesApp")?.classList.toggle("d-none");
 }
 
