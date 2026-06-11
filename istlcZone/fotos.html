@@ -29,52 +29,64 @@
 
 <main class="perfil-page">
 
-<section class="perfil-header">
-  <div class="perfil-portada"></div>
+  <section class="perfil-header">
+    <div class="perfil-portada"></div>
 
-  <div class="perfil-info container">
-    <div class="perfil-foto-box">
-      <img src="images/icono.png" id="fotoPerfil" class="perfil-foto" alt="Foto perfil">
+    <div class="perfil-info container">
+      <div class="perfil-foto-box">
+        <img src="images/icono.png" id="fotoPerfil" class="perfil-foto" alt="Foto perfil">
+      </div>
+
+      <div class="perfil-datos">
+        <h1 id="nombrePerfil">Usuario</h1>
+
+        <p class="perfil-seguidores" id="contadorSeguidores">
+          0 seguidores - 0 seguidos
+        </p>
+
+        <p class="perfil-frase" id="bioPerfil">
+          Bienvenido a mi perfil de ISTLC Zone.
+        </p>
+
+        <p class="perfil-detalles">
+          <span class="material-symbols-outlined">location_on</span>
+          <span id="detalleViveEn">No registrado</span>
+
+          <span class="material-symbols-outlined">school</span>
+          <span id="detalleCarrera">No registrado</span>
+
+          <span class="material-symbols-outlined">book_6</span>
+          <span id="detalleSemestre">No registrado</span>
+        </p>
+      </div>
     </div>
+  </section>
 
-    <div class="perfil-datos">
-      <h1 id="nombrePerfil">Usuario</h1>
-      <p class="perfil-seguidores" id="contadorSeguidores">0 seguidores - 0 seguidos</p>
-      <p class="perfil-frase" id="bioPerfil">Bienvenido a mi perfil de ISTLC Zone.</p>
+  <section class="perfil-tabs container">
+    <a href="perfil.html">Todo</a>
+    <a href="informacion.html">Información</a>
+    <a href="fotos.html" class="activo">Fotos</a>
+    <a href="amigos.html">Amigos</a>
 
-      <p class="perfil-detalles">
-        <span class="material-symbols-outlined">location_on</span>
-        <span id="detalleViveEn">No registrado</span>
-        <span class="material-symbols-outlined">school</span>
-        <span id="detalleCarrera">No registrado</span>
-        <span class="material-symbols-outlined">book_6</span>
-        <span id="detalleSemestre">No registrado</span>
-      </p>
+    <div class="dropdown">
+      <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">Más</a>
+      <ul class="dropdown-menu">
+        <li>
+          <a class="dropdown-item" href="cumpleaños.html">Cumpleaños</a>
+        </li>
+      </ul>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="perfil-tabs container">
-  <a href="perfil.html">Todo</a>
-  <a href="informacion.html">Información</a>
-  <a href="fotos.html" class="activo">Fotos</a>
-  <a href="amigos.html">Amigos</a>
+  <section class="container my-4">
+    <div class="card shadow-sm p-4">
+      <h3 class="mb-4">Fotos</h3>
 
-  <div class="dropdown">
-    <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">Más</a>
-    <ul class="dropdown-menu">
-      <li><a class="dropdown-item" href="cumpleaños.html">Cumpleaños</a></li>
-    </ul>
-  </div>
-</section>
-
-<section class="container my-4">
-  <div class="card shadow-sm p-4">
-    <h3 class="mb-4">Fotos</h3>
-
-    <div id="listaFotos" class="fotos-grid"></div>
-  </div>
-</section>
+      <div id="listaFotos">
+        <p class="text-muted">Cargando fotos...</p>
+      </div>
+    </div>
+  </section>
 
 </main>
 
@@ -84,5 +96,6 @@
 
 <script src="fotos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
