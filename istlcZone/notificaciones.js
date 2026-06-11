@@ -118,6 +118,9 @@ function crearCentroNotificaciones() {
             <button type="button" class="tema-opcion" data-tema="neon">
                 <span class="material-symbols-outlined tema-icono">dark_mode</span>Negro neon
             </button>
+            <button type="button" class="tema-opcion" data-tema="oceano">
+                <span class="material-symbols-outlined tema-icono">water_drop</span>Azul oceano
+            </button>
         </section>
         <button id="btnNotificacionesApp" class="btn btn-warning btn-notificaciones-app" type="button">
             <span class="material-symbols-outlined">notifications</span>
