@@ -21,13 +21,19 @@
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
       <div class="container">
         <a class="navbar-brand logo-istlc" href="muro.html">
-          <img src="images/logo.png" alt="Logo ISTLC Zone" class="logo-navbar" />
+          <img
+            src="images/logo.png"
+            alt="Logo ISTLC Zone"
+            class="logo-navbar"
+          />
           <span class="texto-logo"> ISTLC </span>
         </a>
 
         <div class="ms-auto">
           <a href="mensajes.html" class="btn btn-warning me-2">Mensajes</a>
-          <button class="btn btn-light" onclick="cerrarSesion()">Cerrar sesion</button>
+          <button class="btn btn-light" onclick="cerrarSesion()">
+            Cerrar sesion
+          </button>
         </div>
       </div>
     </nav>
@@ -44,12 +50,45 @@
                 alt="Foto perfil"
               />
               <h3 id="nombrePerfil">Usuario</h3>
-              <p class="text-muted mb-2">Miembro de ISTLC Zone</p>
+              <p class="perfil-frase" id="bioPerfil">Miembro de ISTLC Zone</p>
               <p class="text-muted small mb-3" id="contadorSeguidores">
                 0 seguidores - 0 seguidos
               </p>
-              <a href="perfil.html" class="btn btn-warning w-100 mb-2">Perfil</a>
-              <a href="amigos.html" class="btn btn-light w-100">Buscar amigos</a>
+              <a href="perfil.html" class="btn btn-warning w-100 mb-2"
+                >Perfil</a
+              >
+              <a href="amigos.html" class="btn btn-light w-100"
+                >Buscar amigos</a
+              >
+            </div>
+
+            <div class="card shadow-sm p-4 mt-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h4 class="mb-0">Plataformas</h4>
+                <a href="plataformas.html">Ver más</a>
+              </div>
+
+              <div class="plataformas-mini">
+                <a
+                  href="https://moodle.tecnologicoliceocristiano.edu.ec/campus/"
+                  target="_blank"
+                  class="plataforma-mini-item"
+                >
+                  <img src="images/moodle.JPG" alt="Moodle" />
+                  <span>Moodle</span>
+                </a>
+
+                <a
+                  href="https://sga.tecnologicoliceocristiano.edu.ec/Login/Login"
+                  target="_blank"
+                  class="plataforma-mini-item"
+                >
+                  <img src="images/sga.JPG" alt="SGA" />
+                  <span>SGA</span>
+                </a>
+              </div>
             </div>
           </aside>
 
@@ -65,17 +104,32 @@
                   required
                 ></textarea>
 
-                <label class="publicacion-imagen-label mb-3" for="imagenPublicacion">
+                <label
+                  class="publicacion-imagen-label mb-3"
+                  for="imagenPublicacion"
+                >
                   <span class="material-symbols-outlined">image</span>
-                  <span id="textoImagenPublicacion">Añadir foto desde el ordenador</span>
+                  <span id="textoImagenPublicacion"
+                    >Añadir foto desde el ordenador</span
+                  >
                 </label>
-                <input id="imagenPublicacion" type="file" accept="image/*" multiple hidden />
+                <input
+                  id="imagenPublicacion"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  hidden
+                />
                 <div
                   id="previewImagenPublicacion"
                   class="publicacion-preview-grid d-none"
                 ></div>
 
-                <button id="btnPublicar" class="btn btn-warning w-100 fw-bold" type="submit">
+                <button
+                  id="btnPublicar"
+                  class="btn btn-warning w-100 fw-bold"
+                  type="submit"
+                >
                   Publicar
                 </button>
               </form>
@@ -88,17 +142,23 @@
             <div class="card shadow-sm p-4 mb-4">
               <h4>Notificaciones</h4>
               <p class="mb-2">
-                <span class="material-symbols-outlined icono-muro">notifications</span>
+                <span class="material-symbols-outlined icono-muro"
+                  >notifications</span
+                >
                 Tienes nuevas publicaciones.
               </p>
               <p class="mb-0">
-                <span class="material-symbols-outlined icono-muro">chat_bubble</span>
+                <span class="material-symbols-outlined icono-muro"
+                  >chat_bubble</span
+                >
                 Revisa tus mensajes.
               </p>
             </div>
 
             <div class="card shadow-sm p-4">
-              <div class="d-flex justify-content-between align-items-center mb-3">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
                 <h4 class="mb-0">Amigos sugeridos</h4>
                 <a href="amigos.html">Ver</a>
               </div>
