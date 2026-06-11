@@ -3,191 +3,120 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <title>Muro | ISTLC Zone</title>
-
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
-
+    <link rel="stylesheet" href="neon-theme.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
     <link rel="icon" type="image/x-icon" href="images/iconoRed.ico" />
   </head>
+
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
       <div class="container">
-        <a class="navbar-brand logo-istlc" href="javascript:void(0)">
-          <img
-            src="images/logo.png"
-            alt="Logo ISTLC Zone"
-            class="logo-navbar"
-          />
+        <a class="navbar-brand logo-istlc" href="muro.html">
+          <img src="images/logo.png" alt="Logo ISTLC Zone" class="logo-navbar" />
           <span class="texto-logo"> ISTLC </span>
         </a>
 
         <div class="ms-auto">
           <a href="mensajes.html" class="btn btn-warning me-2">Mensajes</a>
-          <button class="btn btn-light" onclick="cerrarSesion()">
-            Cerrar sesión
-          </button>
+          <button class="btn btn-light" onclick="cerrarSesion()">Cerrar sesion</button>
         </div>
       </div>
     </nav>
 
-    <main class="container my-4">
-      <div class="row">
-        <!-- PERFIL IZQUIERDO -->
-        <aside class="col-md-3">
-          <div class="card shadow-sm p-3 text-center">
-            <img
-              src="images/icono.png"
-              class="rounded-circle mx-auto mb-3"
-              width="120"
-              height="120"
-              alt="Foto perfil"
-            />
-
-            <h4 id="nombreUsuario">Usuario</h4>
-            <p class="text-muted">Miembro de ISTLC Zone</p>
-
-            <a href="perfil.html" class="btn btn-warning w-100 mb-2">Perfil</a>
-            <a href="amigos.html" class="btn btn-light w-100">Buscar amigos</a>
-          </div>
-        </aside>
-
-        <!-- MURO CENTRAL -->
-        <section class="col-md-6">
-          <!-- CREAR PUBLICACIÓN -->
-          <div class="card shadow-sm p-3 mb-4">
-            <h5>Crear publicación</h5>
-
-            <textarea
-              id="textoPublicacion"
-              class="form-control mb-3"
-              rows="3"
-              placeholder="¿Qué estás pensando?"
-            ></textarea>
-
-            <input
-              type="file"
-              class="form-control mb-3"
-              accept="image/*,video/*"
-            />
-
-            <button class="btn btn-primary w-100">Publicar</button>
-          </div>
-
-          <!-- PUBLICACIÓN 1 -->
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-3">
-                <img
-                  src="images/icono.png"
-                  class="rounded-circle me-2"
-                  width="45"
-                  height="45"
-                  alt="perfil"
-                />
-                <div>
-                  <h6 class="mb-0">Carmen Quijije</h6>
-                  <small class="text-muted">Hace unos minutos</small>
-                </div>
-              </div>
-
-              <p>
-                Bienvenidos a ISTLC Zone, nuestra comunidad digital para
-                compartir ideas y publicaciones.
+    <main class="muro-page">
+      <section class="container py-4">
+        <div class="row g-4">
+          <aside class="col-lg-3">
+            <div class="card shadow-sm p-4 muro-perfil-card">
+              <img
+                src="images/icono.png"
+                id="fotoPerfil"
+                class="muro-avatar"
+                alt="Foto perfil"
+              />
+              <h3 id="nombrePerfil">Usuario</h3>
+              <p class="text-muted mb-2">Miembro de ISTLC Zone</p>
+              <p class="text-muted small mb-3" id="contadorSeguidores">
+                0 seguidores - 0 seguidos
               </p>
+              <a href="perfil.html" class="btn btn-warning w-100 mb-2">Perfil</a>
+              <a href="amigos.html" class="btn btn-light w-100">Buscar amigos</a>
+            </div>
+          </aside>
 
-              <div class="border-top pt-2 d-flex justify-content-around">
-                <button class="btn btn-light">👍 Me gusta</button>
-                <button class="btn btn-light">❤️ Me encanta</button>
-                <button class="btn btn-light">😡 Me molesta</button>
+          <section class="col-lg-6">
+            <div class="card shadow-sm p-3 mb-4">
+              <h4 class="mb-3">Crear publicacion</h4>
+              <form id="formPublicacion">
+                <textarea
+                  id="contenidoPublicacion"
+                  class="form-control mb-3"
+                  rows="3"
+                  placeholder="Que estas pensando?"
+                  required
+                ></textarea>
+
+                <label class="publicacion-imagen-label mb-3" for="imagenPublicacion">
+                  <span class="material-symbols-outlined">image</span>
+                  <span id="textoImagenPublicacion">Añadir foto desde el ordenador</span>
+                </label>
+                <input id="imagenPublicacion" type="file" accept="image/*" multiple hidden />
+                <div
+                  id="previewImagenPublicacion"
+                  class="publicacion-preview-grid d-none"
+                ></div>
+
+                <button id="btnPublicar" class="btn btn-warning w-100 fw-bold" type="submit">
+                  Publicar
+                </button>
+              </form>
+            </div>
+
+            <div id="listaPublicaciones"></div>
+          </section>
+
+          <aside class="col-lg-3">
+            <div class="card shadow-sm p-4 mb-4">
+              <h4>Notificaciones</h4>
+              <p class="mb-2">
+                <span class="material-symbols-outlined icono-muro">notifications</span>
+                Tienes nuevas publicaciones.
+              </p>
+              <p class="mb-0">
+                <span class="material-symbols-outlined icono-muro">chat_bubble</span>
+                Revisa tus mensajes.
+              </p>
+            </div>
+
+            <div class="card shadow-sm p-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">Amigos sugeridos</h4>
+                <a href="amigos.html">Ver</a>
               </div>
-
-              <div class="mt-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Escribe un comentario..."
-                />
+              <div id="amigosSugeridos">
+                <p class="text-muted mb-0">Cargando...</p>
               </div>
             </div>
-          </div>
-
-          <!-- PUBLICACIÓN 2 -->
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-3">
-                <img
-                  src="images/icono.png"
-                  class="rounded-circle me-2"
-                  width="45"
-                  height="45"
-                  alt="perfil"
-                />
-                <div>
-                  <h6 class="mb-0">Administrador</h6>
-                  <small class="text-muted">Hoy</small>
-                </div>
-              </div>
-
-              <p>Recuerda completar tu perfil y conectar con tus compañeros.</p>
-
-              <div class="border-top pt-2 d-flex justify-content-around">
-                <button class="btn btn-light">👍 Me gusta</button>
-                <button class="btn btn-light">❤️ Me encanta</button>
-                <button class="btn btn-light">😡 Me molesta</button>
-              </div>
-
-              <div class="mt-3">
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Escribe un comentario..."
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- PANEL DERECHO -->
-        <aside class="col-md-3">
-          <div class="card shadow-sm p-3 mb-4">
-            <h5>Notificaciones</h5>
-            <p class="mb-1">🔔 Tienes nuevas publicaciones.</p>
-            <p class="mb-0">💬 Revisa tus mensajes.</p>
-          </div>
-
-          <div class="card shadow-sm p-3">
-            <h5>Amigos sugeridos</h5>
-            <p class="mb-1">Juan Pérez</p>
-            <p class="mb-1">María López</p>
-            <p class="mb-0">Carlos Mendoza</p>
-          </div>
-        </aside>
-      </div>
+          </aside>
+        </div>
+      </section>
     </main>
 
     <footer>
       <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
     </footer>
 
-    <script>
-      const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
-
-      if (usuario) {
-        document.getElementById("nombreUsuario").textContent =
-          usuario.nombreCompleto;
-      }
-
-      function cerrarSesion() {
-        localStorage.removeItem("usuarioLogueado");
-        window.location.href = "index.html";
-      }
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="postEditor.js"></script>
+    <script src="muro.js"></script>
+    <script src="notificaciones.js"></script>
   </body>
 </html>
