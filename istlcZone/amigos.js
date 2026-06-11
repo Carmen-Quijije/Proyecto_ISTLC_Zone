@@ -12,10 +12,29 @@ if (!usuario) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    configurarLinksPerfil();
     document.getElementById("busqueda").addEventListener("input", buscarUsuarios);
     cargarMiRed();
     buscarUsuarios();
 });
+
+function configurarLinksPerfil() {
+    const sufijoPerfil = perfilConsultadoId ? `?id=${perfilConsultadoId}` : "";
+    const links = {
+        linkTodo: `perfil.html${sufijoPerfil}`,
+        linkInformacion: `informacion.html${sufijoPerfil}`,
+        linkFotos: `fotos.html${sufijoPerfil}`,
+        linkAmigos: `amigos.html${sufijoPerfil}`,
+        linkCumpleanos: `cumpleaños.html${sufijoPerfil}`
+    };
+
+    Object.entries(links).forEach(([id, href]) => {
+        const link = document.getElementById(id);
+        if (link) {
+            link.href = href;
+        }
+    });
+}
 
 async function cargarMiRed() {
     const contenedor = document.getElementById("listaMisAmigos");
