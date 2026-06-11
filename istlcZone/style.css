@@ -1483,7 +1483,9 @@ footer p{
     }
 }
 
-
+.perfil-cargando{
+    visibility: hidden;
+}
 
 
 

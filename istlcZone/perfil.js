@@ -103,6 +103,8 @@ function cargarDatosUsuario(datosUsuario) {
     ponerTexto("bioPerfil", bio);
 
     ponerImagen("#fotoPerfil, .foto-usuario", datosUsuario?.fotoPerfil);
+
+    document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
 }
 
 function cargarContadores(seguidores = usuario?.seguidores || 0, seguidos = usuario?.seguidos || 0) {

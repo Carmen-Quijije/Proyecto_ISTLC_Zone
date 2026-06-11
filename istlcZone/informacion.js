@@ -102,6 +102,8 @@ function pintarInformacion() {
 
     document.getElementById("seguidosInfo").textContent =
         usuario.seguidos || 0;
+    
+    document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
 }
 
 function cerrarSesion() {

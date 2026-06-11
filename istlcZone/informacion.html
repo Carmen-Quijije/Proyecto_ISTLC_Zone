@@ -1,194 +1,197 @@
 <!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<title>Información | ISTLC Zone</title>
+    <title>Información | ISTLC Zone</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
-<link rel="icon" type="image/x-icon" href="images/iconoRed.ico">
-</head>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined"
+    />
+    <link rel="icon" type="image/x-icon" href="images/iconoRed.ico" />
+  </head>
 
-<body>
-
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
-  <div class="container">
-    <a class="navbar-brand logo-istlc" href="muro.html">
-      <img src="images/logo.png" class="logo-navbar" alt="Logo">
-      <span class="texto-logo">ISTLC</span>
-    </a>
-
-    <div class="ms-auto">
-      <a href="muro.html" class="btn btn-warning me-2">Volver al muro</a>
-      <button class="btn btn-light" onclick="cerrarSesion()">Cerrar sesión</button>
-    </div>
-  </div>
-</nav>
-
-<main class="perfil-page">
-
-  <!-- CABECERA IGUAL AL PERFIL -->
-  <section class="perfil-header">
-    <div class="perfil-portada"></div>
-
-    <div class="perfil-info container">
-      <div class="perfil-foto-box">
-        <img
-          src="images/icono.png"
-          id="fotoPerfil"
-          class="perfil-foto"
-          alt="Foto perfil">
-      </div>
-
-      <div class="perfil-datos">
-        <h1 id="nombrePerfil">Usuario</h1>
-
-        <p class="perfil-seguidores" id="contadorSeguidores">
-          0 seguidores - 0 seguidos
-        </p>
-
-        <p class="perfil-frase" id="bioPerfil">
-          Bienvenido a mi perfil de ISTLC Zone.
-        </p>
-
-        <p class="perfil-detalles">
-          <span class="material-symbols-outlined">location_on</span>
-          <span id="detalleViveEn">No registrado</span>
-
-          <span class="material-symbols-outlined">school</span>
-          <span id="detalleCarrera">No registrado</span>
-
-          <span class="material-symbols-outlined">book_6</span>
-          <span id="detalleSemestre">No registrado</span>
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- PESTAÑAS -->
-  <section class="perfil-tabs container">
-  <a href="#" id="linkTodo">Todo</a>
-  <a href="#" id="linkInformacion" class="activo">Información</a>
-  <a href="#" id="linkFotos">Fotos</a>
-  <a href="#" id="linkAmigos">Amigos</a>
-
-  <div class="dropdown">
-    <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">Más</a>
-    <ul class="dropdown-menu">
-      <li>
-        <a class="dropdown-item" href="#" id="linkCumpleanos">Cumpleaños</a>
-      </li>
-    </ul>
-  </div>
-</section>
-
-  <!-- INFORMACIÓN EN UN SOLO CUADRO -->
-  <section class="container my-4">
-    <div class="card shadow-sm p-4">
-
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">Información del perfil</h3>
-
-        <a href="editarPerfil.html" class="btn btn-warning">
-          Editar perfil
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+      <div class="container">
+        <a class="navbar-brand logo-istlc" href="muro.html">
+          <img src="images/logo.png" class="logo-navbar" alt="Logo" />
+          <span class="texto-logo">ISTLC</span>
         </a>
-      </div>
 
-      <h5 class="mb-3">Sobre mí</h5>
-      <div class="alert alert-light border mb-4">
-        <span id="bioInfo">Bienvenido a mi perfil de ISTLC Zone.</span>
-      </div>
-
-      <div class="row">
-
-        <div class="col-md-6">
-          <h5 class="mb-3">Datos personales</h5>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">person</span>
-            Nombre:
-            <strong id="nombreInfo">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">alternate_email</span>
-            Usuario:
-            <strong id="usuarioInfo">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">location_on</span>
-            Vive en:
-            <strong id="viveEn">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">house</span>
-            De:
-            <strong id="lugarOrigen">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">cake</span>
-            Fecha de nacimiento:
-            <strong id="fechaNacimiento">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">person</span>
-            Estado civil:
-            <strong id="estadoCivil">No registrado</strong>
-          </p>
+        <div class="ms-auto">
+          <a href="muro.html" class="btn btn-warning me-2">Volver al muro</a>
+          <button class="btn btn-light" onclick="cerrarSesion()">
+            Cerrar sesión
+          </button>
         </div>
-
-        <div class="col-md-6">
-          <h5 class="mb-3">Formación académica</h5>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">school</span>
-            Carrera:
-            <strong id="carrera">No registrado</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">book_6</span>
-            Semestre:
-            <strong id="semestre">No registrado</strong>
-          </p>
-
-          <hr>
-
-          <h5 class="mb-3">Comunidad</h5>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">group</span>
-            Seguidores:
-            <strong id="seguidoresInfo">0</strong>
-          </p>
-
-          <p class="dato-linea">
-            <span class="material-symbols-outlined">group_add</span>
-            Seguidos:
-            <strong id="seguidosInfo">0</strong>
-          </p>
-        </div>
-
       </div>
+    </nav>
 
-    </div>
-  </section>
+    <main class="perfil-page">
+      <!-- CABECERA IGUAL AL PERFIL -->
+      <section class="perfil-header perfil-cargando" id="perfilHeader">
+        <div class="perfil-portada"></div>
 
-</main>
+        <div class="perfil-info container">
+          <div class="perfil-foto-box">
+            <img
+              src="images/icono.png"
+              id="fotoPerfil"
+              class="perfil-foto"
+              alt="Foto perfil"
+            />
+          </div>
 
-<footer>
-  <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
-</footer>
+          <div class="perfil-datos">
+            <h1 id="nombrePerfil">Usuario</h1>
 
-<script src="informacion.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+            <p class="perfil-seguidores" id="contadorSeguidores">
+              0 seguidores - 0 seguidos
+            </p>
 
-</body>
+            <p class="perfil-frase" id="bioPerfil">
+              Bienvenido a mi perfil de ISTLC Zone.
+            </p>
+
+            <p class="perfil-detalles">
+              <span class="material-symbols-outlined">location_on</span>
+              <span id="detalleViveEn">No registrado</span>
+
+              <span class="material-symbols-outlined">school</span>
+              <span id="detalleCarrera">No registrado</span>
+
+              <span class="material-symbols-outlined">book_6</span>
+              <span id="detalleSemestre">No registrado</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PESTAÑAS -->
+      <section class="perfil-tabs container">
+        <a href="#" id="linkTodo">Todo</a>
+        <a href="#" id="linkInformacion" class="activo">Información</a>
+        <a href="#" id="linkFotos">Fotos</a>
+        <a href="#" id="linkAmigos">Amigos</a>
+
+        <div class="dropdown">
+          <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown">Más</a>
+          <ul class="dropdown-menu">
+            <li>
+              <a class="dropdown-item" href="#" id="linkCumpleanos"
+                >Cumpleaños</a
+              >
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- INFORMACIÓN EN UN SOLO CUADRO -->
+      <section class="container my-4">
+        <div class="card shadow-sm p-4">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="mb-0">Información del perfil</h3>
+
+            <a href="editarPerfil.html" class="btn btn-warning">
+              Editar perfil
+            </a>
+          </div>
+
+          <h5 class="mb-3">Sobre mí</h5>
+          <div class="alert alert-light border mb-4">
+            <span id="bioInfo">Bienvenido a mi perfil de ISTLC Zone.</span>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <h5 class="mb-3">Datos personales</h5>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">person</span>
+                Nombre:
+                <strong id="nombreInfo">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">alternate_email</span>
+                Usuario:
+                <strong id="usuarioInfo">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">location_on</span>
+                Vive en:
+                <strong id="viveEn">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">house</span>
+                De:
+                <strong id="lugarOrigen">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">cake</span>
+                Fecha de nacimiento:
+                <strong id="fechaNacimiento">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">person</span>
+                Estado civil:
+                <strong id="estadoCivil">No registrado</strong>
+              </p>
+            </div>
+
+            <div class="col-md-6">
+              <h5 class="mb-3">Formación académica</h5>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">school</span>
+                Carrera:
+                <strong id="carrera">No registrado</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">book_6</span>
+                Semestre:
+                <strong id="semestre">No registrado</strong>
+              </p>
+
+              <hr />
+
+              <h5 class="mb-3">Comunidad</h5>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">group</span>
+                Seguidores:
+                <strong id="seguidoresInfo">0</strong>
+              </p>
+
+              <p class="dato-linea">
+                <span class="material-symbols-outlined">group_add</span>
+                Seguidos:
+                <strong id="seguidosInfo">0</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
+    </footer>
+
+    <script src="informacion.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

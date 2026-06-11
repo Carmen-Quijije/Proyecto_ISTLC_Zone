@@ -70,6 +70,8 @@ function cargarDatosCabecera() {
 
     document.getElementById("detalleSemestre").textContent =
         usuario.semestre || "No registrado";
+    
+    document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
 }
 
 async function cargarFotosUsuario() {
