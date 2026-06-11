@@ -418,6 +418,7 @@ function configurarLinksPerfil() {
     document.getElementById("linkFotos").href = `fotos.html?id=${idPerfil}`;
     document.getElementById("linkAmigos").href = `amigos.html?id=${idPerfil}`;
     document.getElementById("linkCumpleanos").href = `cumpleaños.html?id=${idPerfil}`;
+    document.getElementById("linkActividad").href = `actividad.html?id=${idPerfil}`;
 }
 
 function cerrarSesion() {
