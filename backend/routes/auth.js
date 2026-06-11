@@ -14,13 +14,22 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const SMTP_HOST = process.env.EMAIL_HOST || 'smtp-relay.brevo.com';
+const SMTP_PORT = Number(process.env.EMAIL_PORT || 587);
+
 const transporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    tls: {
+        servername: SMTP_HOST
     }
 });
 
@@ -30,6 +39,8 @@ const db = () => getDb();
 const all = async (sql, params = []) => (await db().run(sql, params)).rows || [];
 const one = (sql, params = []) => db().get(sql, params);
 const exec = (sql, params = []) => db().run(sql, params);
+const esperar = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const esErrorTemporalCorreo = (error) => ['ETIMEDOUT', 'ECONNECTION', 'ECONNRESET', 'ESOCKET'].includes(error?.code);
 
 const normalizarUsuario = (usuario = {}) => ({
     id: usuario.id,
@@ -68,13 +79,31 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
 };
 
 const enviarCorreo = async (email, asunto, html) => {
-    try {
-        const info = await transporter.sendMail({ from: EMAIL_FROM, to: email, subject: asunto, html });
-        return Array.isArray(info.accepted) && info.accepted.includes(email);
-    } catch (error) {
-        console.error('Error al enviar email:', error);
-        return false;
+    const maxIntentos = 2;
+
+    for (let intento = 1; intento <= maxIntentos; intento++) {
+        try {
+            const info = await transporter.sendMail({ from: EMAIL_FROM, to: email, subject: asunto, html });
+            const aceptados = Array.isArray(info.accepted) ? info.accepted.map(String) : [];
+            const rechazados = Array.isArray(info.rejected) ? info.rejected.map(String) : [];
+
+            console.log('Brevo messageId:', info.messageId || 'sin messageId');
+            console.log('Brevo accepted:', aceptados);
+            console.log('Brevo rejected:', rechazados);
+
+            if (aceptados.length > 0 && rechazados.length === 0) return true;
+            return !!info.messageId && rechazados.length === 0;
+        } catch (error) {
+            console.error(`Error al enviar email (intento ${intento}/${maxIntentos}):`, error);
+            if (intento < maxIntentos && esErrorTemporalCorreo(error)) {
+                await esperar(1500);
+                continue;
+            }
+            return false;
+        }
     }
+
+    return false;
 };
 
 const enviarCorreoVerificacion = (email, codigo) => enviarCorreo(
@@ -220,6 +249,7 @@ router.post('/register', async (req, res) => {
         );
 
         if (!(await enviarCorreoVerificacion(email, codigo))) {
+            await exec('UPDATE codigos_verificacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
             await exec('DELETE FROM registros_pendientes WHERE email = ?', [email]);
             return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Revisa Brevo.' });
         }
@@ -280,6 +310,7 @@ router.post('/resend-code', async (req, res) => {
         );
 
         if (!(await enviarCorreoVerificacion(email, codigo))) {
+            await exec('UPDATE codigos_verificacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
             return res.status(502).json({ success: false, message: 'No se pudo reenviar el codigo. Revisa Brevo.' });
         }
 
@@ -304,7 +335,12 @@ router.post('/forgot-password', async (req, res) => {
             'INSERT INTO codigos_recuperacion (email, codigo, fecha_expiracion) VALUES (?, ?, ?)',
             [email, codigo, new Date(Date.now() + 10 * 60000).toISOString()]
         );
-        await enviarCorreoRecuperacion(email, codigo);
+
+        if (!(await enviarCorreoRecuperacion(email, codigo))) {
+            await exec('UPDATE codigos_recuperacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
+            return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Revisa Brevo.' });
+        }
+
         res.json({ success: true, message: 'Codigo enviado al correo' });
     } catch (error) {
         console.error('Error recuperacion:', error);
