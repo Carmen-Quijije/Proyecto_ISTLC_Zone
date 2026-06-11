@@ -1487,6 +1487,67 @@ footer p{
     visibility: hidden;
 }
 
+.actividad-link{
+    text-decoration: none;
+    color: inherit;
+}
 
+.actividad-link:hover{
+    color: inherit;
+}
+
+.actividad-item{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 16px 0;
+    transition: background-color .2s ease, padding-left .2s ease;
+}
+
+.actividad-link:hover .actividad-item{
+    background-color: #fff8df;
+    padding-left: 10px;
+}
+
+.actividad-icono{
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background-color: #FFC107;
+    color: #061A38;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.actividad-icono .material-symbols-outlined{
+    font-size: 25px;
+}
+
+.actividad-foto{
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #FFC107;
+    background-color: white;
+    flex-shrink: 0;
+}
+
+.actividad-item h6{
+    color: #061A38;
+    font-weight: 700;
+}
+
+.actividad-item p{
+    color: #333;
+}
+
+.publicacion-resaltada{
+    border: 3px solid #FFC107 !important;
+    box-shadow: 0 0 18px rgba(255,193,7,.75) !important;
+}
 
 

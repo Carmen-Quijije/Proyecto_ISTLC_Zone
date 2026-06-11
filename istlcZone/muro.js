@@ -172,6 +172,7 @@ async function cargarFeed() {
         }
 
         contenedor.innerHTML = publicaciones.map(tarjetaPublicacion).join("");
+        enfocarPublicacionDesdeUrl();
     } catch (error) {
         contenedor.innerHTML = `
             <div class="card shadow-sm p-4">
@@ -207,7 +208,7 @@ function tarjetaPublicacion(publicacion) {
     const likeTexto = publicacion.likedByMe ? "Te gusta" : "Me gusta";
 
     return `
-        <article class="card shadow-sm mb-4 publicacion-card">
+        <article class="card shadow-sm mb-4 publicacion-card" id="publicacion-${publicacion.id}">
             <div class="card-body">
                 <div class="d-flex align-items-start justify-content-between mb-3">
                     <div class="d-flex align-items-center">
@@ -761,6 +762,38 @@ async function cargarSugerencias() {
         contenedor.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar sugerencias.</p>`;
     }
 }
+
+async function enfocarPublicacionDesdeUrl() {
+    const parametros = new URLSearchParams(window.location.search);
+    const publicacionId = parametros.get("post");
+    const abrirComentarios = parametros.get("comentarios");
+
+    if (!publicacionId) {
+        return;
+    }
+
+    const publicacion = document.getElementById(`publicacion-${publicacionId}`);
+
+    if (!publicacion) {
+        return;
+    }
+
+    publicacion.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+
+    publicacion.classList.add("publicacion-resaltada");
+
+    setTimeout(() => {
+        publicacion.classList.remove("publicacion-resaltada");
+    }, 2500);
+
+    if (abrirComentarios === "1") {
+        await mostrarComentarios(publicacionId);
+    }
+}
+
 
 function cerrarSesion() {
     localStorage.removeItem("usuarioLogueado");
