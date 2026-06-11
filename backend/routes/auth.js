@@ -68,8 +68,13 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
 };
 
 const enviarCorreo = async (email, asunto, html) => {
-    const info = await transporter.sendMail({ from: EMAIL_FROM, to: email, subject: asunto, html });
-    return Array.isArray(info.accepted) && info.accepted.includes(email);
+    try {
+        const info = await transporter.sendMail({ from: EMAIL_FROM, to: email, subject: asunto, html });
+        return Array.isArray(info.accepted) && info.accepted.includes(email);
+    } catch (error) {
+        console.error('Error al enviar email:', error);
+        return false;
+    }
 };
 
 const enviarCorreoVerificacion = (email, codigo) => enviarCorreo(
