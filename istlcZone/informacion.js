@@ -3,23 +3,60 @@ const API_BASE =
         ? window.location.origin
         : "http://localhost:3000";
 
-const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+const usuarioLogueado = JSON.parse(localStorage.getItem("usuarioLogueado"));
 
-if (!usuario) {
+if (!usuarioLogueado) {
     window.location.href = "index.html";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    cargarDatosPerfil();
-    cargarContadores();
+const parametros = new URLSearchParams(window.location.search);
+const idPerfil = parametros.get("id") || usuarioLogueado.id;
+
+let usuario = null;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    configurarLinksPerfil();
+    await cargarPerfilVisto();
 });
 
-function cargarDatosPerfil() {
+function configurarLinksPerfil() {
+    document.getElementById("linkTodo").href = `perfil.html?id=${idPerfil}`;
+    document.getElementById("linkInformacion").href = `informacion.html?id=${idPerfil}`;
+    document.getElementById("linkFotos").href = `fotos.html?id=${idPerfil}`;
+    document.getElementById("linkAmigos").href = `amigos.html?id=${idPerfil}`;
+    document.getElementById("linkCumpleanos").href = `cumpleaños.html?id=${idPerfil}`;
+}
+
+async function cargarPerfilVisto() {
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${idPerfil}`);
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error("No se pudo cargar el perfil");
+        }
+
+        usuario = data.usuario;
+        usuario.seguidores = data.seguidores;
+        usuario.seguidos = data.seguidos;
+
+        pintarInformacion();
+
+    } catch (error) {
+        console.error(error);
+        alert("No se pudo cargar la información del usuario.");
+    }
+}
+
+function pintarInformacion() {
     document.getElementById("fotoPerfil").src =
         usuario.fotoPerfil || "images/icono.png";
 
     document.getElementById("nombrePerfil").textContent =
         usuario.nombre || "Usuario";
+
+    document.getElementById("contadorSeguidores").textContent =
+        `${usuario.seguidores || 0} seguidores - ${usuario.seguidos || 0} seguidos`;
 
     document.getElementById("bioPerfil").textContent =
         usuario.bio || "Bienvenido a mi perfil de ISTLC Zone.";
@@ -59,43 +96,12 @@ function cargarDatosPerfil() {
 
     document.getElementById("semestre").textContent =
         usuario.semestre || "No registrado";
-}
 
-async function cargarContadores() {
-    try {
-        const respuesta = await fetch(
-            `${API_BASE}/api/auth/users?q=&currentUserId=${usuario.id}`
-        );
+    document.getElementById("seguidoresInfo").textContent =
+        usuario.seguidores || 0;
 
-        const data = await respuesta.json();
-
-        if (!respuesta.ok || !data.success) {
-            throw new Error("No se pudieron cargar los seguidores");
-        }
-
-        const usuarioActual = data.usuarios.find((u) => u.id === usuario.id);
-
-        const seguidores = usuarioActual?.seguidores || usuario.seguidores || 0;
-        const seguidos = usuarioActual?.seguidos || usuario.seguidos || 0;
-
-        document.getElementById("contadorSeguidores").textContent =
-            `${seguidores} seguidores - ${seguidos} seguidos`;
-
-        document.getElementById("seguidoresInfo").textContent = seguidores;
-        document.getElementById("seguidosInfo").textContent = seguidos;
-
-    } catch (error) {
-        console.error(error);
-
-        document.getElementById("contadorSeguidores").textContent =
-            `${usuario.seguidores || 0} seguidores - ${usuario.seguidos || 0} seguidos`;
-
-        document.getElementById("seguidoresInfo").textContent =
-            usuario.seguidores || 0;
-
-        document.getElementById("seguidosInfo").textContent =
-            usuario.seguidos || 0;
-    }
+    document.getElementById("seguidosInfo").textContent =
+        usuario.seguidos || 0;
 }
 
 function cerrarSesion() {

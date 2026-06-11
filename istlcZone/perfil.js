@@ -15,6 +15,7 @@ if (!usuario) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+    configurarLinksPerfil();
     prepararVistaPerfil();
     cargarDatosUsuario(perfilMostrado);
     await cargarPerfilActualizado();
@@ -404,6 +405,17 @@ function confirmarAppSeguro(mensaje) {
     }
 
     return Promise.resolve(window.confirm(mensaje));
+}
+
+function configurarLinksPerfil() {
+    const parametros = new URLSearchParams(window.location.search);
+    const idPerfil = parametros.get("id") || usuario.id;
+
+    document.getElementById("linkTodo").href = `perfil.html?id=${idPerfil}`;
+    document.getElementById("linkInformacion").href = `informacion.html?id=${idPerfil}`;
+    document.getElementById("linkFotos").href = `fotos.html?id=${idPerfil}`;
+    document.getElementById("linkAmigos").href = `amigos.html?id=${idPerfil}`;
+    document.getElementById("linkCumpleanos").href = `cumpleaños.html?id=${idPerfil}`;
 }
 
 function cerrarSesion() {

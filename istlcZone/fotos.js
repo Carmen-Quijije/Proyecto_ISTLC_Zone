@@ -3,17 +3,51 @@ const API_BASE =
         ? window.location.origin
         : "http://localhost:3000";
 
-let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+const usuarioLogueado = JSON.parse(localStorage.getItem("usuarioLogueado"));
 
-if (!usuario) {
+if (!usuarioLogueado) {
     window.location.href = "index.html";
 }
 
+const parametros = new URLSearchParams(window.location.search);
+const idPerfil = parametros.get("id") || usuarioLogueado.id;
+
+let usuario = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
-    cargarDatosCabecera();
-    await cargarPerfil();
+    configurarLinksPerfil();
+    await cargarPerfilVisto();
     await cargarFotosUsuario();
 });
+
+function configurarLinksPerfil() {
+    document.getElementById("linkTodo").href = `perfil.html?id=${idPerfil}`;
+    document.getElementById("linkInformacion").href = `informacion.html?id=${idPerfil}`;
+    document.getElementById("linkFotos").href = `fotos.html?id=${idPerfil}`;
+    document.getElementById("linkAmigos").href = `amigos.html?id=${idPerfil}`;
+    document.getElementById("linkCumpleanos").href = `cumpleaños.html?id=${idPerfil}`;
+}
+
+async function cargarPerfilVisto() {
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${idPerfil}`);
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error("No se pudo cargar el perfil");
+        }
+
+        usuario = data.usuario;
+        usuario.seguidores = data.seguidores;
+        usuario.seguidos = data.seguidos;
+
+        cargarDatosCabecera();
+
+    } catch (error) {
+        console.error(error);
+        alert("No se pudo cargar el perfil.");
+    }
+}
 
 function cargarDatosCabecera() {
     document.getElementById("fotoPerfil").src =
@@ -21,6 +55,9 @@ function cargarDatosCabecera() {
 
     document.getElementById("nombrePerfil").textContent =
         usuario.nombre || "Usuario";
+
+    document.getElementById("contadorSeguidores").textContent =
+        `${usuario.seguidores || 0} seguidores - ${usuario.seguidos || 0} seguidos`;
 
     document.getElementById("bioPerfil").textContent =
         usuario.bio || "Bienvenido a mi perfil de ISTLC Zone.";
@@ -33,37 +70,13 @@ function cargarDatosCabecera() {
 
     document.getElementById("detalleSemestre").textContent =
         usuario.semestre || "No registrado";
-
-    document.getElementById("contadorSeguidores").textContent =
-        `${usuario.seguidores || 0} seguidores - ${usuario.seguidos || 0} seguidos`;
-}
-
-async function cargarPerfil() {
-    try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${usuario.id}`);
-        const data = await respuesta.json();
-
-        if (!respuesta.ok || !data.success) {
-            return;
-        }
-
-        usuario = data.usuario;
-        usuario.seguidores = data.seguidores;
-        usuario.seguidos = data.seguidos;
-
-        localStorage.setItem("usuarioLogueado", JSON.stringify(usuario));
-        cargarDatosCabecera();
-
-    } catch (error) {
-        console.error("No se pudo cargar el perfil:", error);
-    }
 }
 
 async function cargarFotosUsuario() {
     const contenedor = document.getElementById("listaFotos");
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/feed/${usuario.id}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/feed/${usuarioLogueado.id}`);
         const data = await respuesta.json();
 
         if (!respuesta.ok || !data.success) {
@@ -71,13 +84,12 @@ async function cargarFotosUsuario() {
         }
 
         const publicaciones = data.publicaciones || [];
-
         const fotos = [];
 
         publicaciones.forEach((publicacion) => {
             const autor = publicacion.autor || {};
 
-            if (Number(autor.id) !== Number(usuario.id)) {
+            if (Number(autor.id) !== Number(idPerfil)) {
                 return;
             }
 
@@ -93,7 +105,7 @@ async function cargarFotosUsuario() {
                 year: "numeric"
             });
 
-            if (Array.isArray(publicacion.imagenes)) {
+            if (Array.isArray(publicacion.imagenes) && publicacion.imagenes.length) {
                 publicacion.imagenes.forEach((imagen) => {
                     fotos.push({
                         imagen,
@@ -115,7 +127,7 @@ async function cargarFotosUsuario() {
         if (!fotos.length) {
             contenedor.innerHTML = `
                 <p class="text-muted">
-                    Aún no has subido fotos.
+                    Este usuario aún no ha subido fotos.
                 </p>
             `;
             return;
