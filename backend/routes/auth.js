@@ -16,24 +16,50 @@ cloudinary.config({
 
 const SMTP_HOST = process.env.EMAIL_HOST || 'smtp-relay.brevo.com';
 const SMTP_PORT = Number(process.env.EMAIL_PORT || 587);
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'ISTLC Zone';
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-const transporter = nodemailer.createTransport({
+const hayCredencialesSmtp = () => Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
+const crearTransporter = () => nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
     secure: SMTP_PORT === 465,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
+    auth: hayCredencialesSmtp()
+        ? {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+        : undefined,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 30000,
     tls: {
         servername: SMTP_HOST
     }
 });
 
-const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const obtenerRemitente = () => {
+    if (!EMAIL_FROM) return null;
+
+    const remitente = String(EMAIL_FROM).trim();
+    const match = remitente.match(/^(.*)<(.+)>$/);
+
+    if (match) {
+        return {
+            name: match[1].trim().replace(/^"|"$/g, '') || EMAIL_FROM_NAME,
+            email: match[2].trim()
+        };
+    }
+
+    return {
+        name: EMAIL_FROM_NAME,
+        email: remitente
+    };
+};
+
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
 const db = () => getDb();
 const all = async (sql, params = []) => (await db().run(sql, params)).rows || [];
@@ -78,23 +104,75 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
     );
 };
 
-const enviarCorreo = async (email, asunto, html) => {
+const enviarCorreoBrevoApi = async (email, asunto, html) => {
+    const sender = obtenerRemitente();
+    if (!BREVO_API_KEY || !sender?.email) return false;
+
+    try {
+        const response = await fetch(BREVO_API_URL, {
+            method: 'POST',
+            headers: {
+                accept: 'application/json',
+                'api-key': BREVO_API_KEY,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                sender,
+                to: [{ email }],
+                subject: asunto,
+                htmlContent: html
+            })
+        });
+
+        const text = await response.text();
+        let data = {};
+        if (text) {
+            try {
+                data = JSON.parse(text);
+            } catch (_) {
+                data = { raw: text };
+            }
+        }
+
+        if (!response.ok) {
+            console.error('Brevo API error:', response.status, typeof data.raw === 'string' ? data.raw.slice(0, 500) : data);
+            return false;
+        }
+
+        console.log('Brevo API accepted:', email, data.messageId || 'sin messageId');
+        return true;
+    } catch (error) {
+        console.error('Error al enviar email por API Brevo:', error);
+        return false;
+    }
+};
+
+const enviarCorreoSmtp = async (email, asunto, html) => {
+    const sender = obtenerRemitente();
+    if (!sender?.email || !hayCredencialesSmtp()) return false;
+
     const maxIntentos = 2;
+    const transporter = crearTransporter();
 
     for (let intento = 1; intento <= maxIntentos; intento++) {
         try {
-            const info = await transporter.sendMail({ from: EMAIL_FROM, to: email, subject: asunto, html });
+            const info = await transporter.sendMail({
+                from: { name: sender.name, address: sender.email },
+                to: email,
+                subject: asunto,
+                html
+            });
             const aceptados = Array.isArray(info.accepted) ? info.accepted.map(String) : [];
             const rechazados = Array.isArray(info.rejected) ? info.rejected.map(String) : [];
 
-            console.log('Brevo messageId:', info.messageId || 'sin messageId');
-            console.log('Brevo accepted:', aceptados);
-            console.log('Brevo rejected:', rechazados);
+            console.log('Brevo SMTP messageId:', info.messageId || 'sin messageId');
+            console.log('Brevo SMTP accepted:', aceptados);
+            console.log('Brevo SMTP rejected:', rechazados);
 
             if (aceptados.length > 0 && rechazados.length === 0) return true;
             return !!info.messageId && rechazados.length === 0;
         } catch (error) {
-            console.error(`Error al enviar email (intento ${intento}/${maxIntentos}):`, error);
+            console.error(`Error al enviar email por SMTP (intento ${intento}/${maxIntentos}):`, error);
             if (intento < maxIntentos && esErrorTemporalCorreo(error)) {
                 await esperar(1500);
                 continue;
@@ -104,6 +182,16 @@ const enviarCorreo = async (email, asunto, html) => {
     }
 
     return false;
+};
+
+const enviarCorreo = async (email, asunto, html) => {
+    if (await enviarCorreoBrevoApi(email, asunto, html)) return true;
+
+    if (BREVO_API_KEY) {
+        console.warn('Brevo API no pudo enviar, intentando SMTP...');
+    }
+
+    return enviarCorreoSmtp(email, asunto, html);
 };
 
 const enviarCorreoVerificacion = (email, codigo) => enviarCorreo(
