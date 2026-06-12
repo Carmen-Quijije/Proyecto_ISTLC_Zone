@@ -25,7 +25,8 @@ function configurarLinksPerfil() {
         linkInformacion: `informacion.html${sufijoPerfil}`,
         linkFotos: `fotos.html${sufijoPerfil}`,
         linkAmigos: `amigos.html${sufijoPerfil}`,
-        linkCumpleanos: `cumpleaños.html${sufijoPerfil}`
+        linkCumpleanos: `cumpleaños.html${sufijoPerfil}`,
+        linkActividad: `actividad.html${sufijoPerfil}`        
     };
 
     Object.entries(links).forEach(([id, href]) => {
