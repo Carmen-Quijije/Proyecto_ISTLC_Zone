@@ -14,14 +14,16 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const SMTP_HOST = process.env.EMAIL_HOST || 'smtp-relay.brevo.com';
-const SMTP_PORT = Number(process.env.EMAIL_PORT || 587);
-const EMAIL_FROM = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const SMTP_HOST = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp-relay.brevo.com';
+const SMTP_PORT = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 587);
+const EMAIL_USER = process.env.EMAIL_USER || process.env.SMTP_USER || process.env.BREVO_SMTP_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS || process.env.SMTP_PASS || process.env.BREVO_SMTP_PASS;
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.SMTP_FROM || EMAIL_USER;
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || 'ISTLC Zone';
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-const hayCredencialesSmtp = () => Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+const hayCredencialesSmtp = () => Boolean(EMAIL_USER && EMAIL_PASS);
 
 const crearTransporter = () => nodemailer.createTransport({
     host: SMTP_HOST,
@@ -29,10 +31,11 @@ const crearTransporter = () => nodemailer.createTransport({
     secure: SMTP_PORT === 465,
     auth: hayCredencialesSmtp()
         ? {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            user: EMAIL_USER,
+            pass: EMAIL_PASS
         }
         : undefined,
+    requireTLS: SMTP_PORT === 587,
     connectionTimeout: 15000,
     greetingTimeout: 15000,
     socketTimeout: 30000,
@@ -59,6 +62,15 @@ const obtenerRemitente = () => {
         email: remitente
     };
 };
+
+const diagnosticoCorreo = () => ({
+    brevoApiKey: Boolean(BREVO_API_KEY),
+    smtpHost: SMTP_HOST,
+    smtpPort: SMTP_PORT,
+    smtpUsuario: Boolean(EMAIL_USER),
+    smtpClave: Boolean(EMAIL_PASS),
+    remitente: Boolean(obtenerRemitente()?.email)
+});
 
 const generarCodigo = () => Math.floor(100000 + Math.random() * 900000).toString();
 const db = () => getDb();
@@ -106,7 +118,13 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
 
 const enviarCorreoBrevoApi = async (email, asunto, html) => {
     const sender = obtenerRemitente();
-    if (!BREVO_API_KEY || !sender?.email) return false;
+    if (!BREVO_API_KEY || !sender?.email) {
+        console.warn('Brevo API omitida:', {
+            brevoApiKey: Boolean(BREVO_API_KEY),
+            remitente: Boolean(sender?.email)
+        });
+        return false;
+    }
 
     try {
         const response = await fetch(BREVO_API_URL, {
@@ -185,13 +203,19 @@ const enviarCorreoSmtp = async (email, asunto, html) => {
 };
 
 const enviarCorreo = async (email, asunto, html) => {
-    if (await enviarCorreoBrevoApi(email, asunto, html)) return true;
+    const envioApi = await enviarCorreoBrevoApi(email, asunto, html);
+    if (envioApi) return true;
 
     if (BREVO_API_KEY) {
         console.warn('Brevo API no pudo enviar, intentando SMTP...');
     }
 
-    return enviarCorreoSmtp(email, asunto, html);
+    const envioSmtp = await enviarCorreoSmtp(email, asunto, html);
+    if (!envioSmtp) {
+        console.error('No se pudo enviar correo. Configuracion detectada:', diagnosticoCorreo());
+    }
+
+    return envioSmtp;
 };
 
 const enviarCorreoVerificacion = (email, codigo) => enviarCorreo(
@@ -339,7 +363,7 @@ router.post('/register', async (req, res) => {
         if (!(await enviarCorreoVerificacion(email, codigo))) {
             await exec('UPDATE codigos_verificacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
             await exec('DELETE FROM registros_pendientes WHERE email = ?', [email]);
-            return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Revisa Brevo.' });
+            return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Configura BREVO_API_KEY en Render o revisa las credenciales SMTP de Brevo.' });
         }
 
         res.json({ success: true, message: 'Verifica tu email para completar el registro' });
@@ -399,7 +423,7 @@ router.post('/resend-code', async (req, res) => {
 
         if (!(await enviarCorreoVerificacion(email, codigo))) {
             await exec('UPDATE codigos_verificacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
-            return res.status(502).json({ success: false, message: 'No se pudo reenviar el codigo. Revisa Brevo.' });
+            return res.status(502).json({ success: false, message: 'No se pudo reenviar el codigo. Configura BREVO_API_KEY en Render o revisa las credenciales SMTP de Brevo.' });
         }
 
         res.json({ success: true, message: 'Codigo reenviado a tu email' });
@@ -426,13 +450,13 @@ router.post('/forgot-password', async (req, res) => {
 
         if (!(await enviarCorreoRecuperacion(email, codigo))) {
             await exec('UPDATE codigos_recuperacion SET usado = TRUE WHERE email = ? AND codigo = ?', [email, codigo]);
-            return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Revisa Brevo.' });
+            return res.status(502).json({ success: false, message: 'No se pudo enviar el codigo. Configura BREVO_API_KEY en Render o revisa las credenciales SMTP de Brevo.' });
         }
 
         res.json({ success: true, message: 'Codigo enviado al correo' });
     } catch (error) {
         console.error('Error recuperacion:', error);
-        res.status(500).json({ success: false, message: 'No se pudo enviar el codigo' });
+        res.status(500).json({ success: false, message: 'No se pudo enviar el codigo. Revisa Brevo.' });
     }
 });
 
