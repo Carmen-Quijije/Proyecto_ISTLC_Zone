@@ -5,7 +5,10 @@
     padding-top: 10px;
     padding-bottom: 10px;
     flex-shrink: 0;
-    z-index: 100;
+
+    position: sticky;
+    top: 0;
+    z-index: 9999;
 }
 
 .navbar-brand{
@@ -618,8 +621,6 @@ footer p{
 
 .muro-perfil-card{
     text-align: center;
-    position: sticky;
-    top: 20px;
 }
 
 .muro-avatar{
