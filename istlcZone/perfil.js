@@ -17,7 +17,6 @@ if (!usuario) {
 document.addEventListener("DOMContentLoaded", async () => {
     configurarLinksPerfil();
     prepararVistaPerfil();
-    cargarDatosUsuario(perfilMostrado);
     await cargarPerfilActualizado();
     await cargarAmigosPerfil();
     await cargarPublicacionesPerfil();
@@ -44,6 +43,9 @@ async function cargarPerfilActualizado() {
         const data = await respuesta.json();
 
         if (!respuesta.ok || !data.success) {
+            document
+                .getElementById("perfilHeader")
+                ?.classList.remove("perfil-cargando");
             return;
         }
 
@@ -60,6 +62,10 @@ async function cargarPerfilActualizado() {
         cargarContadores(data.seguidores, data.seguidos);
     } catch (error) {
         console.error("No se pudo cargar el perfil:", error);
+
+        document
+            .getElementById("perfilHeader")
+            ?.classList.remove("perfil-cargando");
     }
 }
 
@@ -103,7 +109,7 @@ function cargarDatosUsuario(datosUsuario) {
     ponerTexto("bioPerfil", bio);
 
     ponerImagen("#fotoPerfil, .foto-usuario", datosUsuario?.fotoPerfil);
-
+    
     document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
 }
 
