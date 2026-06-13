@@ -99,7 +99,7 @@ async function guardarPerfil(evento) {
 
         localStorage.setItem("usuarioLogueado", JSON.stringify(data.usuario));
         mostrarToastAppSeguro("Perfil actualizado correctamente");
-        window.location.href = "muro.html";
+        window.location.href = "perfil.html";
     } catch (error) {
         mostrarToastAppSeguro(error.message, "error");
         boton.disabled = false;
