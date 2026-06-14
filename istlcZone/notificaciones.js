@@ -175,6 +175,25 @@ function seleccionarTema(tema) {
     mostrarToastApp("Tema actualizado");
 }
 
+async function leerRespuestaJson(respuesta, mensajeFallback) {
+    const texto = await respuesta.text();
+    let data = {};
+
+    if (texto) {
+        try {
+            data = JSON.parse(texto);
+        } catch (error) {
+            throw new Error(mensajeFallback || "La API devolvio una respuesta no valida");
+        }
+    }
+
+    if (!respuesta.ok || data.success === false) {
+        throw new Error(data.message || mensajeFallback || "No se pudo completar la accion");
+    }
+
+    return data;
+}
+
 async function cargarNotificacionesApp() {
     const lista = document.getElementById("listaNotificacionesApp");
     const contador = document.getElementById("contadorNotificacionesApp");
@@ -188,11 +207,17 @@ async function cargarNotificacionesApp() {
             fetch(`${API_BASE}/api/auth/notifications/${usuarioNotificaciones.id}`),
             fetch(`${API_BASE}/api/auth/follow-requests/${usuarioNotificaciones.id}`)
         ]);
-        const notificacionesData = await notificacionesRespuesta.json();
-        const solicitudesData = await solicitudesRespuesta.json();
-        const solicitudes = solicitudesData.success ? solicitudesData.solicitudes : [];
-        const notificaciones = notificacionesData.success ? notificacionesData.notificaciones : [];
-        const sinLeer = Number(notificacionesData.sinLeer || 0) + solicitudes.length;
+        const notificacionesData = await leerRespuestaJson(notificacionesRespuesta, "No se pudieron cargar las notificaciones");
+        const solicitudesData = await leerRespuestaJson(solicitudesRespuesta, "No se pudieron cargar las solicitudes");
+        const solicitudes = solicitudesData.success ? (solicitudesData.solicitudes || []) : [];
+        const notificaciones = notificacionesData.success
+            ? (notificacionesData.notificaciones || []).filter((notificacion) => {
+                const tipo = String(notificacion.tipo || "").toLowerCase();
+                const mensaje = String(notificacion.mensaje || "").toLowerCase();
+                return !tipo.includes("solicitud") && !mensaje.includes("quiere seguirte");
+            })
+            : [];
+        const sinLeer = notificaciones.filter((notificacion) => !notificacion.leida).length + solicitudes.length;
 
         contador.textContent = sinLeer > 9 ? "9+" : sinLeer;
         contador.classList.toggle("d-none", sinLeer === 0);
@@ -211,19 +236,28 @@ async function cargarNotificacionesApp() {
 }
 
 function renderSolicitudNotificacion(solicitud) {
-    const persona = solicitud.usuario || {};
+    const persona = typeof solicitud.usuario === "object" && solicitud.usuario
+        ? solicitud.usuario
+        : {
+            id: solicitud.usuario_id,
+            nombre: solicitud.nombre,
+            usuario: solicitud.usuario,
+            fotoPerfil: solicitud.fotoPerfil || solicitud.foto_perfil
+        };
+    const nombre = escaparTextoNotificacion(persona.nombre || persona.usuario || "Usuario");
+    const fotoPerfil = persona.fotoPerfil || persona.foto_perfil || "images/icono.png";
 
     return `
-        <article class="notificacion-item solicitud">
-            <img src="${persona.fotoPerfil || "images/icono.png"}" alt="${persona.nombre || "Usuario"}">
+        <article class="notificacion-item solicitud" data-solicitud-id="${solicitud.id}">
+            <img src="${fotoPerfil}" alt="${nombre}">
             <div>
-                <strong>${persona.nombre || "Usuario"}</strong>
+                <strong>${nombre}</strong>
                 <p>Quiere seguirte.</p>
                 <div class="notificacion-acciones">
-                    <button class="btn btn-sm btn-warning" onclick="responderSolicitudSeguimiento(${solicitud.id}, 'accept')">
+                    <button class="btn btn-sm btn-warning" onclick="responderSolicitudSeguimiento(event, ${solicitud.id}, 'accept')">
                         Aceptar
                     </button>
-                    <button class="btn btn-sm btn-light" onclick="responderSolicitudSeguimiento(${solicitud.id}, 'reject')">
+                    <button class="btn btn-sm btn-light" onclick="responderSolicitudSeguimiento(event, ${solicitud.id}, 'reject')">
                         Rechazar
                     </button>
                 </div>
@@ -252,12 +286,18 @@ function renderNotificacion(notificacion) {
 }
 
 function obtenerDestinoNotificacion(notificacion) {
-    if (notificacion.tipo === "mensaje" && notificacion.referenciaId) {
-        return `mensajes.html?contacto=${notificacion.referenciaId}`;
+    const referenciaId = notificacion.referenciaId || notificacion.referencia_id;
+
+    if (notificacion.tipo === "mensaje" && referenciaId) {
+        return `mensajes.html?contacto=${referenciaId}`;
     }
 
-    if (notificacion.tipo === "solicitud_aceptada" && notificacion.referenciaId) {
-        return `perfil.html?id=${notificacion.referenciaId}`;
+    if ((notificacion.tipo === "solicitud_aceptada" || notificacion.tipo === "seguimiento") && referenciaId) {
+        return `perfil.html?id=${referenciaId}`;
+    }
+
+    if ((notificacion.tipo === "comentario" || notificacion.tipo === "respuesta_comentario" || notificacion.tipo === "like") && referenciaId) {
+        return `muro.html#post-${referenciaId}`;
     }
 
     return "muro.html";
@@ -279,32 +319,27 @@ function obtenerIconoNotificacion(tipo) {
     return "notifications";
 }
 
-async function leerJsonSeguro(respuesta) {
-    const texto = await respuesta.text();
-
-    try {
-        return JSON.parse(texto);
-    } catch (error) {
-        throw new Error("La API no respondió correctamente. Revisa la ruta en el backend.");
+async function responderSolicitudSeguimiento(evento, solicitudId, accion) {
+    if (typeof evento === "number") {
+        accion = solicitudId;
+        solicitudId = evento;
+        evento = null;
     }
-}
 
-async function responderSolicitudSeguimiento(solicitudId, accion) {
+    if (evento?.stopPropagation) {
+        evento.stopPropagation();
+        evento.preventDefault();
+    }
+
     try {
         const respuesta = await fetch(`${API_BASE}/api/auth/follow-requests/${solicitudId}/${accion}`, {
-            method: "POST",
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
         });
-
-        const data = await leerJsonSeguro(respuesta);
-
-        if (!respuesta.ok || !data.success) {
-            throw new Error(data.message || "No se pudo responder la solicitud");
-        }
+        await leerRespuestaJson(respuesta, "No se pudo responder la solicitud");
 
         mostrarToastApp(accion === "accept" ? "Solicitud aceptada" : "Solicitud rechazada");
-
         await cargarNotificacionesApp();
 
         if (typeof cargarPerfil === "function") {
@@ -322,20 +357,18 @@ async function marcarNotificacionesLeidas() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
         });
-
-        const data = await leerJsonSeguro(respuesta);
-
-        if (!respuesta.ok || !data.success) {
-            throw new Error(data.message || "No se pudieron marcar como leídas");
-        }
-
+        await leerRespuestaJson(respuesta, "No se pudieron marcar las notificaciones");
         await cargarNotificacionesApp();
-        mostrarToastApp("Notificaciones marcadas como leídas");
+        mostrarToastApp("Notificaciones marcadas como leidas");
     } catch (error) {
         mostrarToastApp(error.message, "error");
     }
 }
 
+function alternarPanelNotificaciones() {
+    document.getElementById("panelTemaApp")?.classList.add("d-none");
+    document.getElementById("panelNotificacionesApp")?.classList.toggle("d-none");
+}
 function mostrarToastApp(mensaje, tipo = "ok") {
     let toast = document.getElementById("toastApp");
     if (!toast) {

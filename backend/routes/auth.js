@@ -659,12 +659,20 @@ const responderSolicitudSeguimientoHandler = async (req, res) => {
                 [solicitud.solicitante_id, solicitud.receptor_id]
             );
             await exec('UPDATE solicitudes_seguimiento SET estado = ? WHERE id = ?', ['aceptada', req.params.id]);
+            await exec(
+                'DELETE FROM notificaciones WHERE usuario_id = ? AND tipo = ? AND referencia_id = ?',
+                [solicitud.receptor_id, 'solicitud', solicitud.solicitante_id]
+            );
             const receptor = await one('SELECT nombre FROM usuarios WHERE id = ?', [solicitud.receptor_id]);
             await crearNotificacion(solicitud.solicitante_id, 'seguimiento', `${receptor?.nombre || 'Un usuario'} acepto tu solicitud`, solicitud.receptor_id);
             return res.json({ success: true, message: 'Solicitud aceptada' });
         }
 
         await exec('UPDATE solicitudes_seguimiento SET estado = ? WHERE id = ?', ['rechazada', req.params.id]);
+        await exec(
+            'DELETE FROM notificaciones WHERE usuario_id = ? AND tipo = ? AND referencia_id = ?',
+            [solicitud.receptor_id, 'solicitud', solicitud.solicitante_id]
+        );
         res.json({ success: true, message: 'Solicitud rechazada' });
     } catch (error) {
         console.error('Error solicitud:', error);
@@ -934,10 +942,14 @@ router.post('/messages', async (req, res) => {
 router.get('/notifications/:usuarioId', async (req, res) => {
     try {
         const notificaciones = await all(
-            'SELECT * FROM notificaciones WHERE usuario_id = ? ORDER BY fecha DESC LIMIT 50',
-            [req.params.usuarioId]
+            'SELECT * FROM notificaciones WHERE usuario_id = ? AND tipo <> ? ORDER BY fecha DESC LIMIT 50',
+            [req.params.usuarioId, 'solicitud']
         );
-        res.json({ success: true, notificaciones });
+        const contador = await one(
+            'SELECT COUNT(*) AS total FROM notificaciones WHERE usuario_id = ? AND leida = FALSE AND tipo <> ?',
+            [req.params.usuarioId, 'solicitud']
+        );
+        res.json({ success: true, notificaciones, sinLeer: Number(contador?.total || 0) });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudieron cargar notificaciones' });
     }
@@ -945,7 +957,7 @@ router.get('/notifications/:usuarioId', async (req, res) => {
 
 router.put('/notifications/read', async (req, res) => {
     try {
-        await exec('UPDATE notificaciones SET leida = TRUE WHERE usuario_id = ?', [req.body.usuarioId]);
+        await exec('UPDATE notificaciones SET leida = TRUE WHERE usuario_id = ? AND tipo <> ?', [req.body.usuarioId, 'solicitud']);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudieron marcar notificaciones' });
