@@ -647,7 +647,7 @@ router.get('/follow-requests/:usuarioId', async (req, res) => {
     }
 });
 
-router.put('/follow-requests/:id/:accion', async (req, res) => {
+const responderSolicitudSeguimientoHandler = async (req, res) => {
     try {
         const solicitud = await one('SELECT * FROM solicitudes_seguimiento WHERE id = ?', [req.params.id]);
         if (!solicitud) return res.status(404).json({ success: false, message: 'Solicitud no encontrada' });
@@ -670,7 +670,10 @@ router.put('/follow-requests/:id/:accion', async (req, res) => {
         console.error('Error solicitud:', error);
         res.status(500).json({ success: false, message: 'No se pudo responder la solicitud' });
     }
-});
+};
+
+router.put('/follow-requests/:id/:accion', responderSolicitudSeguimientoHandler);
+router.post('/follow-requests/:id/:accion', responderSolicitudSeguimientoHandler);
 
 router.post('/posts', async (req, res) => {
     try {

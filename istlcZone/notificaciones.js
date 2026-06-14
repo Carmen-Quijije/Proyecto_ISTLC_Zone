@@ -279,6 +279,16 @@ function obtenerIconoNotificacion(tipo) {
     return "notifications";
 }
 
+async function leerJsonSeguro(respuesta) {
+    const texto = await respuesta.text();
+
+    try {
+        return JSON.parse(texto);
+    } catch (error) {
+        throw new Error("La API no respondió correctamente. Revisa la ruta en el backend.");
+    }
+}
+
 async function responderSolicitudSeguimiento(solicitudId, accion) {
     try {
         const respuesta = await fetch(`${API_BASE}/api/auth/follow-requests/${solicitudId}/${accion}`, {
@@ -286,14 +296,17 @@ async function responderSolicitudSeguimiento(solicitudId, accion) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
         });
-        const data = await respuesta.json();
+
+        const data = await leerJsonSeguro(respuesta);
 
         if (!respuesta.ok || !data.success) {
             throw new Error(data.message || "No se pudo responder la solicitud");
         }
 
         mostrarToastApp(accion === "accept" ? "Solicitud aceptada" : "Solicitud rechazada");
+
         await cargarNotificacionesApp();
+
         if (typeof cargarPerfil === "function") {
             await cargarPerfil();
         }
@@ -304,20 +317,23 @@ async function responderSolicitudSeguimiento(solicitudId, accion) {
 
 async function marcarNotificacionesLeidas() {
     try {
-        await fetch(`${API_BASE}/api/auth/notifications/read`, {
+        const respuesta = await fetch(`${API_BASE}/api/auth/notifications/read`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuarioId: usuarioNotificaciones.id })
         });
-        await cargarNotificacionesApp();
-    } catch (error) {
-        mostrarToastApp("No se pudieron marcar las notificaciones", "error");
-    }
-}
 
-function alternarPanelNotificaciones() {
-    document.getElementById("panelTemaApp")?.classList.add("d-none");
-    document.getElementById("panelNotificacionesApp")?.classList.toggle("d-none");
+        const data = await leerJsonSeguro(respuesta);
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudieron marcar como leídas");
+        }
+
+        await cargarNotificacionesApp();
+        mostrarToastApp("Notificaciones marcadas como leídas");
+    } catch (error) {
+        mostrarToastApp(error.message, "error");
+    }
 }
 
 function mostrarToastApp(mensaje, tipo = "ok") {
