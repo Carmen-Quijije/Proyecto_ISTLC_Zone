@@ -587,15 +587,28 @@ router.get('/users', async (req, res) => {
 
 router.get('/following/:id', async (req, res) => {
     try {
+        const currentUserId = Number(req.query.currentUserId || 0);
         const usuarios = await all(
-            `SELECT ${usuarioSelectConAlias('u')}
+            `SELECT ${usuarioSelectConAlias('u')},
+                CASE WHEN sf.id IS NULL THEN FALSE ELSE TRUE END AS siguiendo,
+                CASE WHEN ss.id IS NULL THEN FALSE ELSE TRUE END AS solicitud_pendiente
              FROM seguidores s
              JOIN usuarios u ON u.id = s.seguido_id
+             LEFT JOIN seguidores sf ON sf.seguidor_id = ? AND sf.seguido_id = u.id
+             LEFT JOIN solicitudes_seguimiento ss
+                ON ss.solicitante_id = ? AND ss.receptor_id = u.id AND ss.estado = 'pendiente'
              WHERE s.seguidor_id = ?
              ORDER BY u.nombre ASC`,
-            [req.params.id]
+            [currentUserId, currentUserId, req.params.id]
         );
-        res.json({ success: true, usuarios: usuarios.map(normalizarUsuario) });
+        res.json({
+            success: true,
+            usuarios: usuarios.map((u) => ({
+                ...normalizarUsuario(u),
+                siguiendo: !!u.siguiendo,
+                solicitudPendiente: !!u.solicitud_pendiente
+            }))
+        });
     } catch (error) {
         console.error('Error following:', error);
         res.status(500).json({ success: false, message: 'No se pudo cargar la red' });
