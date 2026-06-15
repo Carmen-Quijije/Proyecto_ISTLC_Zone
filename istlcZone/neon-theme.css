@@ -188,6 +188,25 @@ textarea:focus{
     box-shadow:0 0 24px rgba(255,193,7,.42);
 }
 
+.empleo-card,
+.empleo-card p,
+.empleo-card strong{
+    color:var(--neon-text) !important;
+}
+
+.empleo-card .text-muted{
+    color:var(--neon-muted) !important;
+}
+
+.empleo-link,
+.empleo-link:visited{
+    color:var(--neon-gold) !important;
+}
+
+.empleo-link:hover{
+    color:#ffdf62 !important;
+}
+
 .btn-light,
 .btn-outline-secondary,
 .btn-secondary{

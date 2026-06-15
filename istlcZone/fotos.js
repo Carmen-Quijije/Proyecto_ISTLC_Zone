@@ -79,7 +79,9 @@ async function cargarFotosUsuario() {
     const contenedor = document.getElementById("listaFotos");
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/feed/${usuarioLogueado.id}`);
+        const respuesta = await fetch(
+            `${API_BASE}/api/auth/posts/user/${idPerfil}?currentUserId=${usuarioLogueado.id}`
+        );
         const data = await respuesta.json();
 
         if (!respuesta.ok || !data.success) {
@@ -90,12 +92,6 @@ async function cargarFotosUsuario() {
         const fotos = [];
 
         publicaciones.forEach((publicacion) => {
-            const autor = publicacion.autor || {};
-
-            if (Number(autor.id) !== Number(idPerfil)) {
-                return;
-            }
-
             const fecha = publicacion.fecha
                 ? new Date(publicacion.fecha)
                 : new Date();

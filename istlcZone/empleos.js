@@ -110,7 +110,7 @@ function tarjetaEmpleo(empleo) {
             </p>
 
             <p class="mb-0 text-muted">
-                <strong>Fecha de publicación:</strong>
+                <strong>Fecha de publicacion:</strong>
                 ${fecha}
             </p>
         </div>
