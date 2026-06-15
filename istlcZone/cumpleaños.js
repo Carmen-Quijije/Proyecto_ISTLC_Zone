@@ -10,6 +10,7 @@ let estadoSeguimientoPerfil = {
     siguiendo: false,
     solicitudPendiente: false
 };
+let perfilMostrado = null;
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -59,6 +60,7 @@ async function cargarPerfilConsultado() {
         }
 
         const perfil = data.usuario;
+        perfilMostrado = perfil;
         const nombrePerfil = perfil?.nombre || perfil?.usuario || "Usuario";
         estadoSeguimientoPerfil = {
             siguiendo: !!data.siguiendo,
@@ -187,9 +189,25 @@ function mostrarToastAppSeguro(mensaje, tipo) {
 }
 
 async function cargarCumpleañosAmigos() {
+    const esMiPerfil = Number(perfilConsultadoId) === Number(usuario.id);
+    ponerTexto("tituloCumpleanos", esMiPerfil ? "Próximos cumpleaños" : "Cumpleaños del perfil");
     listaCumpleaños.innerHTML = `
         <p class="text-muted">Cargando cumpleaños...</p>
     `;
+
+    if (!esMiPerfil) {
+        if (!perfilMostrado?.fechaNacimiento) {
+            listaCumpleaños.innerHTML = `
+                <p class="text-muted">
+                    Este perfil aún no tiene fecha de cumpleaños registrada.
+                </p>
+            `;
+            return;
+        }
+
+        listaCumpleaños.innerHTML = tarjetaCumpleaños(perfilMostrado);
+        return;
+    }
 
     try {
         const respuesta = await fetch(
@@ -210,7 +228,7 @@ async function cargarCumpleañosAmigos() {
         if (!amigos.length) {
             listaCumpleaños.innerHTML = `
                 <p class="text-muted">
-                    Este perfil aún no tiene amigos con fecha de cumpleaños registrada.
+                    Tus amigos aún no tienen fecha de cumpleaños registrada.
                 </p>
             `;
             return;
