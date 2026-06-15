@@ -9,6 +9,10 @@ const parametrosPerfil = new URLSearchParams(window.location.search);
 const perfilObjetivoId = Number(parametrosPerfil.get("id") || usuario?.id || 0);
 let perfilMostrado = usuario;
 let esPerfilPropio = Number(perfilObjetivoId) === Number(usuario?.id);
+let estadoSeguimientoPerfil = {
+    siguiendo: false,
+    solicitudPendiente: false
+};
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -26,10 +30,11 @@ function prepararVistaPerfil() {
     esPerfilPropio = Number(perfilObjetivoId) === Number(usuario?.id);
 
     if (!esPerfilPropio) {
-        document.querySelectorAll(".perfil-acciones, .perfil-editar-link, .perfil-publicar-box").forEach((elemento) => {
+        document.querySelectorAll(".perfil-editar-link, .perfil-publicar-box").forEach((elemento) => {
             elemento.classList.add("d-none");
         });
         ponerTexto("tituloPublicacionesPerfil", "Publicaciones");
+        renderAccionesPerfilAjeno();
     }
 }
 
@@ -39,7 +44,7 @@ async function cargarPerfilActualizado() {
     }
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${perfilObjetivoId}`);
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${perfilObjetivoId}?currentUserId=${usuario.id}`);
         const data = await respuesta.json();
 
         if (!respuesta.ok || !data.success) {
@@ -52,6 +57,10 @@ async function cargarPerfilActualizado() {
         perfilMostrado = data.usuario;
         perfilMostrado.seguidores = data.seguidores;
         perfilMostrado.seguidos = data.seguidos;
+        estadoSeguimientoPerfil = {
+            siguiendo: !!data.siguiendo,
+            solicitudPendiente: !!data.solicitudPendiente
+        };
 
         if (esPerfilPropio) {
             usuario = perfilMostrado;
@@ -60,12 +69,93 @@ async function cargarPerfilActualizado() {
 
         cargarDatosUsuario(perfilMostrado);
         cargarContadores(data.seguidores, data.seguidos);
+        renderAccionesPerfilAjeno();
     } catch (error) {
         console.error("No se pudo cargar el perfil:", error);
 
         document
             .getElementById("perfilHeader")
             ?.classList.remove("perfil-cargando");
+    }
+}
+
+function renderAccionesPerfilAjeno() {
+    if (esPerfilPropio) {
+        return;
+    }
+
+    const contenedor = document.querySelector(".perfil-acciones");
+    if (!contenedor) {
+        return;
+    }
+
+    let textoBoton = "Enviar solicitud";
+    let claseBoton = "btn-warning";
+    let deshabilitado = "";
+
+    if (estadoSeguimientoPerfil.siguiendo) {
+        textoBoton = "Siguiendo";
+        claseBoton = "btn-light";
+        deshabilitado = "disabled";
+    } else if (estadoSeguimientoPerfil.solicitudPendiente) {
+        textoBoton = "Solicitud enviada";
+        claseBoton = "btn-light";
+        deshabilitado = "disabled";
+    }
+
+    contenedor.classList.remove("d-none");
+    contenedor.innerHTML = `
+        <button
+            id="btnSolicitudPerfil"
+            class="btn ${claseBoton} fw-bold"
+            type="button"
+            onclick="enviarSolicitudPerfil()"
+            ${deshabilitado}
+        >
+            ${textoBoton}
+        </button>
+        <a href="mensajes.html?contacto=${perfilObjetivoId}" class="btn btn-light fw-bold">
+            Mensaje
+        </a>
+    `;
+}
+
+async function enviarSolicitudPerfil() {
+    if (estadoSeguimientoPerfil.siguiendo || estadoSeguimientoPerfil.solicitudPendiente) {
+        return;
+    }
+
+    const boton = document.getElementById("btnSolicitudPerfil");
+    if (boton) {
+        boton.disabled = true;
+        boton.textContent = "Enviando...";
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/follow`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                seguidorId: usuario.id,
+                seguidoId: perfilObjetivoId
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo enviar la solicitud");
+        }
+
+        estadoSeguimientoPerfil.solicitudPendiente = true;
+        renderAccionesPerfilAjeno();
+        mostrarToastAppSeguro(data.message || "Solicitud enviada");
+
+        if (typeof cargarNotificacionesApp === "function") {
+            await cargarNotificacionesApp();
+        }
+    } catch (error) {
+        mostrarToastAppSeguro(error.message || "No se pudo enviar la solicitud", "error");
+        renderAccionesPerfilAjeno();
     }
 }
 

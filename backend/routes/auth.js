@@ -484,17 +484,30 @@ router.post('/reset-password', async (req, res) => {
 
 router.get('/profile/:id', async (req, res) => {
     try {
+        const currentUserId = Number(req.query.currentUserId || 0);
         const usuario = await one(`SELECT ${usuarioSelect} FROM usuarios WHERE id = ?`, [req.params.id]);
         if (!usuario) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
 
         const seguidores = await one('SELECT COUNT(*) AS total FROM seguidores WHERE seguido_id = ?', [req.params.id]);
         const seguidos = await one('SELECT COUNT(*) AS total FROM seguidores WHERE seguidor_id = ?', [req.params.id]);
+        const seguimiento = currentUserId
+            ? await one('SELECT id FROM seguidores WHERE seguidor_id = ? AND seguido_id = ?', [currentUserId, req.params.id])
+            : null;
+        const solicitud = currentUserId
+            ? await one(
+                `SELECT id FROM solicitudes_seguimiento
+                 WHERE solicitante_id = ? AND receptor_id = ? AND estado = 'pendiente'`,
+                [currentUserId, req.params.id]
+            )
+            : null;
 
         res.json({
             success: true,
             usuario: normalizarUsuario(usuario),
             seguidores: Number(seguidores.total || 0),
-            seguidos: Number(seguidos.total || 0)
+            seguidos: Number(seguidos.total || 0),
+            siguiendo: !!seguimiento,
+            solicitudPendiente: !!solicitud
         });
     } catch (error) {
         console.error('Error perfil:', error);
