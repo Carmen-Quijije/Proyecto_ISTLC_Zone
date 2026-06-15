@@ -31,57 +31,6 @@
 
     <div class="ms-auto d-flex align-items-center gap-2">
 
-      <button
-        id="btnTema"
-        class="btn btn-light"
-        title="Cambiar tema"
-      >
-        🎨
-      </button>
-
-      <div class="dropdown">
-        <button
-          class="btn btn-warning position-relative"
-          id="btnNotificaciones"
-          data-bs-toggle="dropdown"
-        >
-          🔔
-          <span
-            id="contadorNotificaciones"
-            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-          >
-            0
-          </span>
-        </button>
-
-        <div
-          class="dropdown-menu dropdown-menu-end p-0"
-          style="width: 420px;"
-        >
-          <div
-            class="d-flex justify-content-between align-items-center p-3 border-bottom"
-          >
-            <strong>Notificaciones</strong>
-
-            <button
-              id="btnMarcarLeidas"
-              class="btn btn-sm btn-light"
-            >
-              Marcar leídas
-            </button>
-          </div>
-
-          <div
-            id="listaNotificaciones"
-            style="max-height: 450px; overflow-y: auto;"
-          >
-            <div class="p-3 text-muted">
-              Cargando...
-            </div>
-          </div>
-        </div>
-      </div>
-
       <a href="muro.html" class="btn btn-warning">
         Muro
       </a>
@@ -151,6 +100,7 @@
     </footer>
 
     <script src="mensajes.js"></script>
+    <script src="notificaciones.js"></script>
     <script src="proyecto_front_4_semestre.js"></script>
   </body>
 </html>
