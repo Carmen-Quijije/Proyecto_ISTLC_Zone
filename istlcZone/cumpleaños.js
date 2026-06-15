@@ -4,6 +4,12 @@ const API_BASE =
         : "http://localhost:3000";
 
 const usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
+const parametros = new URLSearchParams(window.location.search);
+const perfilConsultadoId = Number(parametros.get("id")) || Number(usuario?.id);
+let estadoSeguimientoPerfil = {
+    siguiendo: false,
+    solicitudPendiente: false
+};
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -11,9 +17,174 @@ if (!usuario) {
 
 const listaCumpleaños = document.getElementById("listaCumpleaños");
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    configurarLinksPerfil();
+    await cargarPerfilConsultado();
     cargarCumpleañosAmigos();
 });
+
+function configurarLinksPerfil() {
+    const sufijoPerfil = perfilConsultadoId ? `?id=${perfilConsultadoId}` : "";
+    const links = {
+        linkVolverPerfil: `perfil.html${sufijoPerfil}`,
+        linkTodo: `perfil.html${sufijoPerfil}`,
+        linkInformacion: `informacion.html${sufijoPerfil}`,
+        linkFotos: `fotos.html${sufijoPerfil}`,
+        linkAmigos: `amigos.html${sufijoPerfil}`,
+        linkCumpleanos: `cumpleaños.html${sufijoPerfil}`,
+        linkActividad: `actividad.html${sufijoPerfil}`
+    };
+
+    Object.entries(links).forEach(([id, href]) => {
+        const link = document.getElementById(id);
+        if (link) {
+            link.href = href;
+        }
+    });
+}
+
+async function cargarPerfilConsultado() {
+    if (!perfilConsultadoId) {
+        document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/profile/${perfilConsultadoId}?currentUserId=${usuario.id}`);
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
+            return;
+        }
+
+        const perfil = data.usuario;
+        const nombrePerfil = perfil?.nombre || perfil?.usuario || "Usuario";
+        estadoSeguimientoPerfil = {
+            siguiendo: !!data.siguiendo,
+            solicitudPendiente: !!data.solicitudPendiente
+        };
+
+        ponerTexto("nombrePerfil", nombrePerfil);
+        ponerTexto("contadorSeguidores", `${data.seguidores || 0} seguidores - ${data.seguidos || 0} seguidos`);
+        ponerTexto("bioPerfil", perfil?.bio || "Bienvenido a mi perfil de ISTLC Zone.");
+        ponerTexto("detalleViveEn", texto(perfil?.viveEn));
+        ponerTexto("detalleCarrera", texto(perfil?.carrera));
+        ponerTexto("detalleSemestre", texto(perfil?.semestre));
+
+        const fotoPerfil = document.getElementById("fotoPerfil");
+        if (fotoPerfil) {
+            fotoPerfil.src = perfil?.fotoPerfil || "images/icono.png";
+            fotoPerfil.alt = `Foto de ${nombrePerfil}`;
+        }
+
+        renderAccionesPerfil();
+    } catch (error) {
+        console.error("No se pudo cargar el perfil:", error);
+    } finally {
+        document.getElementById("perfilHeader")?.classList.remove("perfil-cargando");
+    }
+}
+
+function renderAccionesPerfil() {
+    const contenedor = document.querySelector(".perfil-acciones");
+    if (!contenedor) {
+        return;
+    }
+
+    const esMiPerfil = Number(perfilConsultadoId) === Number(usuario.id);
+    if (esMiPerfil) {
+        contenedor.innerHTML = `<a href="editarPerfil.html" class="btn btn-warning">Editar perfil</a>`;
+        return;
+    }
+
+    let textoBoton = "Enviar solicitud";
+    let claseBoton = "btn-warning";
+    let deshabilitado = "";
+
+    if (estadoSeguimientoPerfil.siguiendo) {
+        textoBoton = "Siguiendo";
+        claseBoton = "btn-light";
+        deshabilitado = "disabled";
+    } else if (estadoSeguimientoPerfil.solicitudPendiente) {
+        textoBoton = "Solicitud enviada";
+        claseBoton = "btn-light";
+        deshabilitado = "disabled";
+    }
+
+    contenedor.innerHTML = `
+        <button
+            id="btnSolicitudPerfil"
+            class="btn ${claseBoton} fw-bold"
+            type="button"
+            onclick="enviarSolicitudPerfil()"
+            ${deshabilitado}
+        >
+            ${textoBoton}
+        </button>
+        <a href="mensajes.html?contacto=${perfilConsultadoId}" class="btn btn-light fw-bold">
+            Mensaje
+        </a>
+    `;
+}
+
+async function enviarSolicitudPerfil() {
+    if (estadoSeguimientoPerfil.siguiendo || estadoSeguimientoPerfil.solicitudPendiente) {
+        return;
+    }
+
+    const boton = document.getElementById("btnSolicitudPerfil");
+    if (boton) {
+        boton.disabled = true;
+        boton.textContent = "Enviando...";
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/follow`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                seguidorId: usuario.id,
+                seguidoId: perfilConsultadoId
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo enviar la solicitud");
+        }
+
+        estadoSeguimientoPerfil.solicitudPendiente = true;
+        renderAccionesPerfil();
+        mostrarToastAppSeguro(data.message || "Solicitud enviada");
+
+        if (typeof cargarNotificacionesApp === "function") {
+            await cargarNotificacionesApp();
+        }
+    } catch (error) {
+        mostrarToastAppSeguro(error.message || "No se pudo enviar la solicitud", "error");
+        renderAccionesPerfil();
+    }
+}
+
+function texto(valor) {
+    return valor && String(valor).trim() ? valor : "No registrado";
+}
+
+function ponerTexto(id, valor) {
+    const elemento = document.getElementById(id);
+    if (elemento) {
+        elemento.textContent = valor;
+    }
+}
+
+function mostrarToastAppSeguro(mensaje, tipo) {
+    if (typeof mostrarToastApp === "function") {
+        mostrarToastApp(mensaje, tipo);
+    } else {
+        alert(mensaje);
+    }
+}
 
 async function cargarCumpleañosAmigos() {
     listaCumpleaños.innerHTML = `
@@ -22,7 +193,7 @@ async function cargarCumpleañosAmigos() {
 
     try {
         const respuesta = await fetch(
-            `${API_BASE}/api/auth/users?q=&currentUserId=${usuario.id}`
+            `${API_BASE}/api/auth/following/${perfilConsultadoId}?currentUserId=${usuario.id}`
         );
 
         const data = await respuesta.json();
@@ -34,13 +205,12 @@ async function cargarCumpleañosAmigos() {
         }
 
         const amigos = data.usuarios
-            .filter((persona) => persona.siguiendo === true)
             .filter((persona) => persona.fechaNacimiento);
 
         if (!amigos.length) {
             listaCumpleaños.innerHTML = `
                 <p class="text-muted">
-                    Tus amigos aún no tienen fecha de cumpleaños registrada.
+                    Este perfil aún no tiene amigos con fecha de cumpleaños registrada.
                 </p>
             `;
             return;
