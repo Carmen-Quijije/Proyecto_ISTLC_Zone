@@ -207,6 +207,50 @@ textarea:focus{
     color:#ffdf62 !important;
 }
 
+#detalleEmpleo,
+#detalleEmpleo p,
+#detalleEmpleo strong,
+#detalleEmpleo span,
+#detalleEmpleo div,
+#detalleEmpleo li,
+#detalleEmpleo section,
+.empleo-descripcion,
+.empleo-descripcion *{
+    color:var(--neon-text) !important;
+}
+
+#detalleEmpleo .text-muted,
+.empleo-descripcion small{
+    color:var(--neon-muted) !important;
+}
+
+.empleo-descripcion a,
+.empleo-descripcion a *{
+    color:var(--neon-gold) !important;
+    font-weight:700;
+}
+
+.empleo-descripcion h1,
+.empleo-descripcion h2,
+.empleo-descripcion h3,
+.empleo-descripcion h4,
+.empleo-descripcion h5,
+.empleo-descripcion h6{
+    color:var(--neon-text) !important;
+    margin-top:1rem;
+}
+
+.empleo-descripcion ul,
+.empleo-descripcion ol{
+    padding-left:1.35rem;
+}
+
+.empleo-descripcion hr,
+#detalleEmpleo hr{
+    border-color:rgba(255,193,7,.22) !important;
+    opacity:1;
+}
+
 .btn-light,
 .btn-outline-secondary,
 .btn-secondary{

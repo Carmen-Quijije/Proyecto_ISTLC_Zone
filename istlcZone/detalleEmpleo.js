@@ -17,7 +17,7 @@ function limpiarTitulo(titulo) {
 
 if (!empleo) {
     contenedor.innerHTML = `
-        <h3>No se encontró la vacante</h3>
+        <h3>No se encontro la vacante</h3>
 
         <p class="text-muted">
             Regresa a la bolsa de empleos y selecciona una oferta.
@@ -53,7 +53,7 @@ if (!empleo) {
         </p>
 
         <p>
-            <strong>Fecha de publicación:</strong>
+            <strong>Fecha de publicacion:</strong>
             ${fecha}
         </p>
 
@@ -62,7 +62,7 @@ if (!empleo) {
         <h4>Detalle de la vacante</h4>
 
         <div class="empleo-descripcion">
-            ${empleo.description || "No hay descripción disponible."}
+            ${empleo.description || "No hay descripcion disponible."}
         </div>
 
         <div class="mt-4 d-flex gap-2 flex-wrap">
