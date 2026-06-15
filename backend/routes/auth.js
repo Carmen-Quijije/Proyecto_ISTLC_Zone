@@ -759,6 +759,135 @@ router.get('/posts/user/:usuarioId', async (req, res) => {
     }
 });
 
+router.get('/activity/:usuarioId', async (req, res) => {
+    try {
+        const usuarioId = Number(req.params.usuarioId);
+        const usuario = await one(
+            'SELECT id, nombre, usuario, foto_perfil, fecha_registro FROM usuarios WHERE id = ?',
+            [usuarioId]
+        );
+
+        if (!usuario) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        const actividades = [];
+        const fotoUsuario = usuario.foto_perfil || '';
+
+        if (usuario.fecha_registro) {
+            actividades.push({
+                clave: `registro-${usuario.id}`,
+                tipo: 'registro',
+                titulo: `${usuario.nombre} se unio a ISTLC Zone`,
+                descripcion: 'Inicio su perfil en la comunidad.',
+                fecha: usuario.fecha_registro,
+                destino: `perfil.html?id=${usuario.id}`,
+                nombrePersona: usuario.nombre,
+                foto: fotoUsuario
+            });
+        }
+
+        const publicaciones = await all(
+            `SELECT id, contenido, imagen_url, fecha
+             FROM publicaciones
+             WHERE usuario_id = ?
+             ORDER BY fecha DESC
+             LIMIT 50`,
+            [usuarioId]
+        );
+
+        publicaciones.forEach((publicacion) => {
+            actividades.push({
+                clave: `publicacion-${publicacion.id}`,
+                tipo: 'publicacion',
+                titulo: `${usuario.nombre} publico en su perfil`,
+                descripcion: publicacion.contenido || (publicacion.imagen_url ? 'Publicacion con foto' : 'Nueva publicacion'),
+                fecha: publicacion.fecha,
+                destino: `perfil.html?id=${usuario.id}#publicacion-${publicacion.id}`,
+                nombrePersona: usuario.nombre,
+                foto: fotoUsuario
+            });
+        });
+
+        const comentarios = await all(
+            `SELECT c.id, c.contenido, c.fecha, p.id AS publicacion_id, pu.nombre AS autor_publicacion
+             FROM comentarios c
+             JOIN publicaciones p ON p.id = c.publicacion_id
+             JOIN usuarios pu ON pu.id = p.usuario_id
+             WHERE c.usuario_id = ?
+             ORDER BY c.fecha DESC
+             LIMIT 50`,
+            [usuarioId]
+        );
+
+        comentarios.forEach((comentario) => {
+            actividades.push({
+                clave: `comentario-${comentario.id}`,
+                tipo: 'comentario',
+                titulo: `${usuario.nombre} comento una publicacion`,
+                descripcion: comentario.contenido || `Comentario en una publicacion de ${comentario.autor_publicacion || 'un usuario'}`,
+                fecha: comentario.fecha,
+                destino: `muro.html?post=${comentario.publicacion_id}&comentarios=1`,
+                nombrePersona: usuario.nombre,
+                foto: fotoUsuario
+            });
+        });
+
+        const likes = await all(
+            `SELECT lp.id, lp.fecha, p.id AS publicacion_id, p.contenido, pu.nombre AS autor_publicacion
+             FROM likes_publicaciones lp
+             JOIN publicaciones p ON p.id = lp.publicacion_id
+             JOIN usuarios pu ON pu.id = p.usuario_id
+             WHERE lp.usuario_id = ?
+             ORDER BY lp.fecha DESC
+             LIMIT 50`,
+            [usuarioId]
+        );
+
+        likes.forEach((like) => {
+            actividades.push({
+                clave: `like-${like.id}`,
+                tipo: 'like',
+                titulo: `${usuario.nombre} reacciono a una publicacion`,
+                descripcion: `Le gusto una publicacion de ${like.autor_publicacion || 'un usuario'}: ${like.contenido || 'Publicacion con foto'}`,
+                fecha: like.fecha,
+                destino: `muro.html?post=${like.publicacion_id}`,
+                nombrePersona: usuario.nombre,
+                foto: fotoUsuario
+            });
+        });
+
+        const seguimientos = await all(
+            `SELECT s.id, s.fecha, u.id AS seguido_id, u.nombre AS seguido_nombre, u.foto_perfil AS seguido_foto
+             FROM seguidores s
+             JOIN usuarios u ON u.id = s.seguido_id
+             WHERE s.seguidor_id = ?
+             ORDER BY s.fecha DESC
+             LIMIT 50`,
+            [usuarioId]
+        );
+
+        seguimientos.forEach((seguimiento) => {
+            actividades.push({
+                clave: `seguimiento-${seguimiento.id}`,
+                tipo: 'seguimiento',
+                titulo: `${usuario.nombre} empezo a seguir a ${seguimiento.seguido_nombre || 'un usuario'}`,
+                descripcion: 'Nueva conexion dentro de ISTLC Zone.',
+                fecha: seguimiento.fecha,
+                destino: `perfil.html?id=${seguimiento.seguido_id}`,
+                nombrePersona: seguimiento.seguido_nombre || usuario.nombre,
+                foto: seguimiento.seguido_foto || fotoUsuario
+            });
+        });
+
+        actividades.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        res.json({ success: true, actividades });
+    } catch (error) {
+        console.error('Error activity:', error);
+        res.status(500).json({ success: false, message: 'No se pudo cargar el historial de actividades' });
+    }
+});
+
 router.put('/posts/:id', async (req, res) => {
     try {
         const { usuarioId, contenido, imagenesUrls = [] } = req.body;
