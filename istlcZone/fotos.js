@@ -90,6 +90,20 @@ async function cargarFotosUsuario() {
 
         const publicaciones = data.publicaciones || [];
         const fotos = [];
+        const fotosAgregadas = new Set();
+
+        function agregarFoto(imagen, fechaClave, fechaTexto) {
+            if (!imagen || fotosAgregadas.has(imagen)) {
+                return;
+            }
+
+            fotosAgregadas.add(imagen);
+            fotos.push({
+                imagen,
+                fechaClave,
+                fechaTexto
+            });
+        }
 
         publicaciones.forEach((publicacion) => {
             const fecha = publicacion.fecha
@@ -106,21 +120,11 @@ async function cargarFotosUsuario() {
 
             if (Array.isArray(publicacion.imagenes) && publicacion.imagenes.length) {
                 publicacion.imagenes.forEach((imagen) => {
-                    fotos.push({
-                        imagen,
-                        fechaClave,
-                        fechaTexto
-                    });
+                    agregarFoto(imagen, fechaClave, fechaTexto);
                 });
             }
 
-            if (publicacion.imagenUrl) {
-                fotos.push({
-                    imagen: publicacion.imagenUrl,
-                    fechaClave,
-                    fechaTexto
-                });
-            }
+            agregarFoto(publicacion.imagenUrl, fechaClave, fechaTexto);
         });
 
         if (!fotos.length) {
