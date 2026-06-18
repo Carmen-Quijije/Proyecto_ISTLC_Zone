@@ -23,22 +23,69 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function cargarConversaciones() {
     const contenedor = document.getElementById("listaContactos");
-    contenedor.innerHTML = `<p class="text-muted mb-0">Cargando conversaciones...</p>`;
+    contenedor.innerHTML = `<p class="text-muted mb-0">Cargando amigos...</p>`;
 
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/messages/conversations/${usuario.id}`);
-        const data = await respuesta.json();
-        const conversaciones = data.success ? data.conversaciones : [];
+        const [conversacionesRespuesta, amigosRespuesta] = await Promise.all([
+            fetch(`${API_BASE}/api/auth/messages/conversations/${usuario.id}`),
+            fetch(`${API_BASE}/api/auth/following/${usuario.id}?currentUserId=${usuario.id}`)
+        ]);
 
-        if (!conversaciones.length) {
-            contenedor.innerHTML = `<p class="text-muted mb-0">Busca un companero para iniciar un chat.</p>`;
+        const conversacionesData = await conversacionesRespuesta.json();
+        const amigosData = await amigosRespuesta.json();
+        const conversaciones = conversacionesData.success ? conversacionesData.conversaciones : [];
+        const amigos = amigosData.success ? amigosData.usuarios : [];
+        const contactos = unirConversacionesYAmigos(conversaciones, amigos);
+
+        if (!contactos.length) {
+            contenedor.innerHTML = `<p class="text-muted mb-0">Aun no tienes amigos para enviar mensajes.</p>`;
             return;
         }
 
-        contenedor.innerHTML = conversaciones.map(tarjetaContacto).join("");
+        contenedor.innerHTML = contactos.map(tarjetaContacto).join("");
     } catch (error) {
         contenedor.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar los mensajes.</p>`;
     }
+}
+
+function unirConversacionesYAmigos(conversaciones, amigos) {
+    const contactos = new Map();
+
+    conversaciones.forEach((contacto) => {
+        contactos.set(Number(contacto.id), {
+            ...contacto,
+            origen: "conversacion"
+        });
+    });
+
+    amigos.forEach((amigo) => {
+        const id = Number(amigo.id);
+
+        if (!contactos.has(id)) {
+            contactos.set(id, {
+                ...amigo,
+                origen: "amigo"
+            });
+        }
+    });
+
+    return Array.from(contactos.values()).sort((a, b) => {
+        const noLeidosA = Number(a.mensajesNoLeidos || 0);
+        const noLeidosB = Number(b.mensajesNoLeidos || 0);
+
+        if (noLeidosA !== noLeidosB) {
+            return noLeidosB - noLeidosA;
+        }
+
+        if (a.ultimaFecha && b.ultimaFecha) {
+            return new Date(b.ultimaFecha) - new Date(a.ultimaFecha);
+        }
+
+        if (a.ultimaFecha) return -1;
+        if (b.ultimaFecha) return 1;
+
+        return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+    });
 }
 
 async function buscarContactos(evento) {
@@ -71,7 +118,9 @@ async function buscarContactos(evento) {
 function tarjetaContacto(contacto) {
     const ultimo = contacto.ultimoMensaje
         ? `<small>${escaparHtml(contacto.ultimoMensaje)}</small>`
-        : `<small>@${escaparHtml(contacto.usuario)}</small>`;
+        : contacto.origen === "amigo"
+            ? `<small>Amigo - @${escaparHtml(contacto.usuario)}</small>`
+            : `<small>@${escaparHtml(contacto.usuario)}</small>`;
     const activo = contactoActual && Number(contactoActual.id) === Number(contacto.id) ? "activo" : "";
     const noLeidos = Number(contacto.mensajesNoLeidos || 0);
     const badge = noLeidos > 0
