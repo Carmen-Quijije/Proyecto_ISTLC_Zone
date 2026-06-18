@@ -73,6 +73,13 @@ function tarjetaContacto(contacto) {
         ? `<small>${escaparHtml(contacto.ultimoMensaje)}</small>`
         : `<small>@${escaparHtml(contacto.usuario)}</small>`;
     const activo = contactoActual && Number(contactoActual.id) === Number(contacto.id) ? "activo" : "";
+    const noLeidos = Number(contacto.mensajesNoLeidos || 0);
+    const badge = noLeidos > 0
+        ? `<b class="mensajes-no-leidos">${noLeidos > 9 ? "9+" : noLeidos}</b>`
+        : "";
+    const fecha = contacto.ultimaFecha
+        ? `<em>${new Date(contacto.ultimaFecha).toLocaleDateString("es-EC", { day: "2-digit", month: "short" })}</em>`
+        : "";
 
     return `
         <button class="mensaje-contacto ${activo}" onclick="abrirChat(${contacto.id})">
@@ -80,6 +87,10 @@ function tarjetaContacto(contacto) {
             <span>
                 <strong>${escaparHtml(contacto.nombre)}</strong>
                 ${ultimo}
+            </span>
+            <span class="mensajes-contacto-meta">
+                ${fecha}
+                ${badge}
             </span>
         </button>
     `;

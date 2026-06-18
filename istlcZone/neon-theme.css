@@ -188,6 +188,16 @@ textarea:focus{
     box-shadow:0 0 24px rgba(255,193,7,.42);
 }
 
+.mensajes-contacto-meta em{
+    color:var(--neon-muted) !important;
+}
+
+.mensajes-no-leidos{
+    background:var(--neon-gold) !important;
+    color:#061A38 !important;
+    box-shadow:0 0 14px rgba(255,193,7,.32);
+}
+
 .empleo-card,
 .empleo-card p,
 .empleo-card strong{

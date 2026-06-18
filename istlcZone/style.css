@@ -885,6 +885,11 @@ footer p{
     text-align: left;
 }
 
+.mensaje-contacto > span:first-of-type{
+    flex: 1;
+    min-width: 0;
+}
+
 .mensaje-contacto:hover,
 .mensaje-contacto.activo{
     border-color: #FFC107;
@@ -916,6 +921,35 @@ footer p{
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 230px;
+}
+
+.mensajes-contacto-meta{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.mensajes-contacto-meta em{
+    color: #6c757d;
+    font-size: 12px;
+    font-style: normal;
+    white-space: nowrap;
+}
+
+.mensajes-no-leidos{
+    min-width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #FFC107;
+    color: #061A38;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 0 7px;
 }
 
 .mensajes-chat{

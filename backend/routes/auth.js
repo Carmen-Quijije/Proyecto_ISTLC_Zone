@@ -1097,16 +1097,28 @@ router.get('/messages/conversations/:usuarioId', async (req, res) => {
             `SELECT DISTINCT ON (otro.id)
                 ${usuarioSelectConAlias('otro')},
                 m.contenido AS ultimo_mensaje,
-                m.fecha AS ultima_fecha
+                m.fecha AS ultima_fecha,
+                (
+                    SELECT COUNT(*)
+                    FROM mensajes mn
+                    WHERE mn.emisor_id = otro.id
+                      AND mn.receptor_id = ?
+                      AND mn.leido = FALSE
+                ) AS mensajes_no_leidos
              FROM mensajes m
              JOIN usuarios otro ON otro.id = CASE WHEN m.emisor_id = ? THEN m.receptor_id ELSE m.emisor_id END
              WHERE m.emisor_id = ? OR m.receptor_id = ?
              ORDER BY otro.id, m.fecha DESC`,
-            [usuarioId, usuarioId, usuarioId]
+            [usuarioId, usuarioId, usuarioId, usuarioId]
         );
         res.json({
             success: true,
-            conversaciones: conversaciones.map((u) => ({ ...normalizarUsuario(u), ultimoMensaje: u.ultimo_mensaje }))
+            conversaciones: conversaciones.map((u) => ({
+                ...normalizarUsuario(u),
+                ultimoMensaje: u.ultimo_mensaje,
+                ultimaFecha: u.ultima_fecha,
+                mensajesNoLeidos: Number(u.mensajes_no_leidos || 0)
+            }))
         });
     } catch (error) {
         console.error('Error conversaciones:', error);
@@ -1170,6 +1182,18 @@ router.put('/notifications/read', async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudieron marcar notificaciones' });
+    }
+});
+
+router.put('/notifications/:id/read', async (req, res) => {
+    try {
+        await exec(
+            'UPDATE notificaciones SET leida = TRUE WHERE id = ? AND usuario_id = ?',
+            [req.params.id, req.body.usuarioId]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'No se pudo marcar la notificacion' });
     }
 });
 
