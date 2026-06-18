@@ -207,6 +207,16 @@ textarea:focus{
     color:#ffdf62 !important;
 }
 
+.plataforma-mini-item,
+.plataforma-mini-item:visited{
+    color:var(--neon-text) !important;
+}
+
+.plataforma-mini-item:hover{
+    background:rgba(255,193,7,.12) !important;
+    color:var(--neon-gold) !important;
+}
+
 #detalleEmpleo,
 #detalleEmpleo p,
 #detalleEmpleo strong,

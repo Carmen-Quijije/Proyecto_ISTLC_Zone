@@ -1587,11 +1587,15 @@ footer p{
     align-items: center;
     gap: 10px;
     text-decoration: none;
-    color: #061A38;
+    color: inherit;
     font-weight: 700;
     padding: 8px;
     border-radius: 10px;
     transition: background-color .2s ease, transform .2s ease;
+}
+
+.plataforma-mini-item:visited{
+    color: inherit;
 }
 
 .plataforma-mini-item:hover{
