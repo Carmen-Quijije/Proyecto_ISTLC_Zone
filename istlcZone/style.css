@@ -780,6 +780,23 @@ footer p{
     margin-bottom: 12px;
 }
 
+.perfil-link{
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.perfil-link:hover{
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+.perfil-avatar-link,
+.comentario-avatar-link{
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
 .comentario-item img{
     width: 38px;
     height: 38px;

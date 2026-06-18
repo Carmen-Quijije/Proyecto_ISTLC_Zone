@@ -206,21 +206,29 @@ function tarjetaPublicacion(publicacion) {
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
     const likeClase = publicacion.likedByMe ? "btn-warning" : "btn-light";
     const likeTexto = publicacion.likedByMe ? "Te gusta" : "Me gusta";
+    const autorUrl = autor.id ? `perfil.html?id=${autor.id}` : "perfil.html";
+    const nombreAutor = escaparHtml(autor.nombre || "Usuario");
 
     return `
         <article class="card shadow-sm mb-4 publicacion-card" id="publicacion-${publicacion.id}">
             <div class="card-body">
                 <div class="d-flex align-items-start justify-content-between mb-3">
                     <div class="d-flex align-items-center">
-                        <img
-                            src="${autor.fotoPerfil || "images/icono.png"}"
-                            class="rounded-circle me-2"
-                            width="50"
-                            height="50"
-                            alt="${autor.nombre || "Usuario"}"
-                        />
+                        <a href="${autorUrl}" class="perfil-link perfil-avatar-link" title="Ver perfil de ${nombreAutor}">
+                            <img
+                                src="${autor.fotoPerfil || "images/icono.png"}"
+                                class="rounded-circle me-2"
+                                width="50"
+                                height="50"
+                                alt="${nombreAutor}"
+                            />
+                        </a>
                         <div>
-                            <h6 class="mb-0">${escaparHtml(autor.nombre || "Usuario")}</h6>
+                            <h6 class="mb-0">
+                                <a href="${autorUrl}" class="perfil-link" title="Ver perfil de ${nombreAutor}">
+                                    ${nombreAutor}
+                                </a>
+                            </h6>
                             <small class="text-muted">${fecha}</small>
                         </div>
                     </div>
@@ -433,13 +441,21 @@ function tarjetaComentario(comentario, publicacionId) {
     const fecha = comentario.fecha ? new Date(comentario.fecha).toLocaleString("es-EC") : "Hoy";
     const nombreAutor = autor.nombre || "Usuario";
     const claseRespuesta = comentario.comentarioPadreId ? "respuesta" : "";
+    const autorUrl = autor.id ? `perfil.html?id=${autor.id}` : "perfil.html";
+    const nombreAutorSeguro = escaparHtml(nombreAutor);
 
     return `
         <div class="comentario-item ${claseRespuesta}">
-            <img src="${autor.fotoPerfil || "images/icono.png"}" alt="${autor.nombre || "Usuario"}">
+            <a href="${autorUrl}" class="perfil-link comentario-avatar-link" title="Ver perfil de ${nombreAutorSeguro}">
+                <img src="${autor.fotoPerfil || "images/icono.png"}" alt="${nombreAutorSeguro}">
+            </a>
             <div>
                 ${respuestaA ? `<small class="respuesta-a">Responde a ${escaparHtml(respuestaA.nombre || "Usuario")}</small>` : ""}
-                <strong>${escaparHtml(nombreAutor)}</strong>
+                <strong>
+                    <a href="${autorUrl}" class="perfil-link" title="Ver perfil de ${nombreAutorSeguro}">
+                        ${nombreAutorSeguro}
+                    </a>
+                </strong>
                 <p>${escaparHtml(comentario.contenido)}</p>
                 <small>${fecha}</small>
                 <button

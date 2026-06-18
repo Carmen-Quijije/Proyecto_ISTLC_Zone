@@ -266,6 +266,11 @@ textarea:focus{
     box-shadow:0 0 14px rgba(37,215,255,.22);
 }
 
+.perfil-link:hover{
+    color:var(--neon-gold) !important;
+    text-shadow:0 0 12px rgba(255,193,7,.35);
+}
+
 .publicacion-imagen-label,
 .mensaje-contacto,
 .sugerido-linea,
