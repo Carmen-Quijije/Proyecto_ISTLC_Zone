@@ -5,6 +5,9 @@ const API_BASE =
 
 let usuario = JSON.parse(localStorage.getItem("usuarioLogueado"));
 let contactoActual = null;
+let actualizandoMensajes = false;
+let firmaMensajesActual = "";
+let timerMensajes = null;
 
 if (!usuario) {
     window.location.href = "index.html";
@@ -19,11 +22,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (contactoUrl) {
         await abrirChat(contactoUrl);
     }
+
+    iniciarActualizacionAutomatica();
 });
 
 async function cargarConversaciones() {
     const contenedor = document.getElementById("listaContactos");
     contenedor.innerHTML = `<p class="text-muted mb-0">Cargando amigos...</p>`;
+
+    await actualizarListaContactos({ silencioso: false });
+}
+
+async function actualizarListaContactos({ silencioso = true } = {}) {
+    const contenedor = document.getElementById("listaContactos");
+    const buscando = document.getElementById("buscarMensajes")?.value.trim();
+
+    if (buscando) {
+        return;
+    }
 
     try {
         const [conversacionesRespuesta, amigosRespuesta] = await Promise.all([
@@ -44,7 +60,9 @@ async function cargarConversaciones() {
 
         contenedor.innerHTML = contactos.map(tarjetaContacto).join("");
     } catch (error) {
-        contenedor.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar los mensajes.</p>`;
+        if (!silencioso) {
+            contenedor.innerHTML = `<p class="text-muted mb-0">No se pudieron cargar los mensajes.</p>`;
+        }
     }
 }
 
@@ -147,22 +165,28 @@ function tarjetaContacto(contacto) {
 
 async function abrirChat(contactoId) {
     try {
-        const respuesta = await fetch(`${API_BASE}/api/auth/messages/${usuario.id}/${contactoId}`);
-        const data = await respuesta.json();
+        const data = await obtenerChat(contactoId);
 
-        if (!respuesta.ok || !data.success) {
-            throw new Error(data.message || "No se pudo abrir la conversacion");
-        }
-
-        contactoActual = data.contacto;
+        contactoActual = data.contacto || contactoActual;
         pintarEncabezado(data.contacto);
         pintarMensajes(data.mensajes);
         document.getElementById("formMensaje").classList.remove("d-none");
         await marcarMensajesComoLeidos(contactoId);
-        await cargarConversaciones();
+        await actualizarListaContactos();
     } catch (error) {
         alert(error.message);
     }
+}
+
+async function obtenerChat(contactoId) {
+    const respuesta = await fetch(`${API_BASE}/api/auth/messages/${usuario.id}/${contactoId}`);
+    const data = await respuesta.json();
+
+    if (!respuesta.ok || !data.success) {
+        throw new Error(data.message || "No se pudo abrir la conversacion");
+    }
+
+    return data;
 }
 
 async function marcarMensajesComoLeidos(contactoId) {
@@ -199,6 +223,7 @@ function pintarEncabezado(contacto) {
 
 function pintarMensajes(mensajes) {
     const contenedor = document.getElementById("chatMensajes");
+    firmaMensajesActual = crearFirmaMensajes(mensajes);
 
     if (!mensajes.length) {
         contenedor.innerHTML = `
@@ -217,6 +242,54 @@ function pintarMensajes(mensajes) {
         </div>
     `).join("");
     contenedor.scrollTop = contenedor.scrollHeight;
+}
+
+function crearFirmaMensajes(mensajes) {
+    return (mensajes || [])
+        .map((mensaje) => `${mensaje.id}:${mensaje.fecha}`)
+        .join("|");
+}
+
+async function refrescarChatAbierto() {
+    if (!contactoActual || actualizandoMensajes) {
+        return;
+    }
+
+    actualizandoMensajes = true;
+
+    try {
+        const data = await obtenerChat(contactoActual.id);
+        const nuevaFirma = crearFirmaMensajes(data.mensajes);
+
+        if (nuevaFirma !== firmaMensajesActual) {
+            contactoActual = data.contacto || contactoActual;
+            pintarEncabezado(contactoActual);
+            pintarMensajes(data.mensajes);
+        }
+
+        await marcarMensajesComoLeidos(contactoActual.id);
+    } catch (error) {
+        console.warn("No se pudo actualizar el chat:", error);
+    } finally {
+        actualizandoMensajes = false;
+    }
+}
+
+function iniciarActualizacionAutomatica() {
+    clearInterval(timerMensajes);
+
+    timerMensajes = setInterval(async () => {
+        if (document.hidden) {
+            return;
+        }
+
+        await refrescarChatAbierto();
+        await actualizarListaContactos();
+
+        if (typeof cargarNotificacionesApp === "function") {
+            await cargarNotificacionesApp();
+        }
+    }, 5000);
 }
 
 async function enviarMensaje(evento) {
