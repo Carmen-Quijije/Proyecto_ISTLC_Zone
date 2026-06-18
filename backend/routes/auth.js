@@ -993,7 +993,7 @@ router.post('/posts/:id/comments', async (req, res) => {
         if (comentarioPadreId) {
             const padre = await one('SELECT usuario_id FROM comentarios WHERE id = ?', [comentarioPadreId]);
             if (padre && Number(padre.usuario_id) !== Number(usuarioId)) {
-                await crearNotificacion(padre.usuario_id, 'comentario', `${autor?.nombre || 'Un usuario'} respondio tu comentario`, req.params.id);
+                await crearNotificacion(padre.usuario_id, 'respuesta_comentario', `${autor?.nombre || 'Un usuario'} respondio tu comentario`, req.params.id);
             }
         } else if (post && Number(post.usuario_id) !== Number(usuarioId)) {
             await crearNotificacion(post.usuario_id, 'comentario', `${autor?.nombre || 'Un usuario'} comento tu publicacion`, req.params.id);
@@ -1002,6 +1002,60 @@ router.post('/posts/:id/comments', async (req, res) => {
     } catch (error) {
         console.error('Error crear comentario:', error);
         res.status(500).json({ success: false, message: 'No se pudo comentar' });
+    }
+});
+
+router.put('/posts/:postId/comments/:commentId', async (req, res) => {
+    try {
+        const { usuarioId, contenido } = req.body;
+        const texto = String(contenido || '').trim();
+
+        if (!texto) {
+            return res.status(400).json({ success: false, message: 'El comentario no puede estar vacio' });
+        }
+
+        const comentario = await one(
+            'SELECT id FROM comentarios WHERE id = ? AND publicacion_id = ? AND usuario_id = ?',
+            [req.params.commentId, req.params.postId, usuarioId]
+        );
+
+        if (!comentario) {
+            return res.status(403).json({ success: false, message: 'No puedes editar este comentario' });
+        }
+
+        await exec(
+            'UPDATE comentarios SET contenido = ? WHERE id = ? AND publicacion_id = ? AND usuario_id = ?',
+            [texto, req.params.commentId, req.params.postId, usuarioId]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error editar comentario:', error);
+        res.status(500).json({ success: false, message: 'No se pudo editar el comentario' });
+    }
+});
+
+router.delete('/posts/:postId/comments/:commentId', async (req, res) => {
+    try {
+        const { usuarioId } = req.body;
+        const comentario = await one(
+            'SELECT id FROM comentarios WHERE id = ? AND publicacion_id = ? AND usuario_id = ?',
+            [req.params.commentId, req.params.postId, usuarioId]
+        );
+
+        if (!comentario) {
+            return res.status(403).json({ success: false, message: 'No puedes eliminar este comentario' });
+        }
+
+        await exec(
+            'DELETE FROM comentarios WHERE id = ? AND publicacion_id = ? AND usuario_id = ?',
+            [req.params.commentId, req.params.postId, usuarioId]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error eliminar comentario:', error);
+        res.status(500).json({ success: false, message: 'No se pudo eliminar el comentario' });
     }
 });
 

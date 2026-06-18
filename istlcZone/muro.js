@@ -15,6 +15,7 @@ if (!usuario) {
 document.addEventListener("DOMContentLoaded", async () => {
     prepararEstilosSocialesMuro();
     prepararModalCompartir();
+    prepararVisorImagenes();
     pintarUsuario(usuario);
     document.getElementById("formPublicacion").addEventListener("submit", crearPublicacion);
     document.getElementById("imagenPublicacion").addEventListener("change", actualizarPreviewPublicacion);
@@ -317,8 +318,15 @@ function renderImagenesPublicacion(publicacion) {
 
     return `
         <div class="${clase}">
-            ${imagenes.map((imagen) => `
-                <img class="publicacion-img" src="${imagen}" alt="Imagen de publicacion">
+            ${imagenes.map((imagen, indice) => `
+                <button
+                    class="publicacion-img-boton"
+                    type="button"
+                    onclick='abrirVisorImagenes(${JSON.stringify(imagenes)}, ${indice})'
+                    title="Ver imagen en grande"
+                >
+                    <img class="publicacion-img" src="${imagen}" alt="Imagen de publicacion">
+                </button>
             `).join("")}
         </div>
     `;
@@ -443,6 +451,26 @@ function tarjetaComentario(comentario, publicacionId) {
     const claseRespuesta = comentario.comentarioPadreId ? "respuesta" : "";
     const autorUrl = autor.id ? `perfil.html?id=${autor.id}` : "perfil.html";
     const nombreAutorSeguro = escaparHtml(nombreAutor);
+    const esComentarioMio = Number(autor.id) === Number(usuario.id);
+    const contenidoComentarioJson = JSON.stringify(comentario.contenido || "").replace(/'/g, "&#39;");
+    const accionesComentario = esComentarioMio
+        ? `
+            <button
+                class="comentario-accion"
+                type="button"
+                onclick='editarComentario(${publicacionId}, ${comentario.id}, ${contenidoComentarioJson})'
+            >
+                Editar
+            </button>
+            <button
+                class="comentario-accion peligro"
+                type="button"
+                onclick="eliminarComentario(${publicacionId}, ${comentario.id})"
+            >
+                Eliminar
+            </button>
+        `
+        : "";
 
     return `
         <div class="comentario-item ${claseRespuesta}">
@@ -465,9 +493,70 @@ function tarjetaComentario(comentario, publicacionId) {
                 >
                     Responder
                 </button>
+                ${accionesComentario}
             </div>
         </div>
     `;
+}
+
+async function editarComentario(publicacionId, comentarioId, contenidoActual) {
+    const nuevoContenido = window.prompt("Editar comentario", contenidoActual || "");
+
+    if (nuevoContenido === null) {
+        return;
+    }
+
+    const contenido = nuevoContenido.trim();
+
+    if (!contenido) {
+        mostrarToastAppSeguro("El comentario no puede quedar vacio", "error");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/comments/${comentarioId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id, contenido })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo editar el comentario");
+        }
+
+        await cargarComentarios(publicacionId);
+        mostrarToastAppSeguro("Comentario actualizado");
+    } catch (error) {
+        mostrarToastAppSeguro(error.message, "error");
+    }
+}
+
+async function eliminarComentario(publicacionId, comentarioId) {
+    const confirmar = await confirmarAppSeguro("Quieres eliminar este comentario?");
+
+    if (!confirmar) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/posts/${publicacionId}/comments/${comentarioId}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuarioId: usuario.id })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo eliminar el comentario");
+        }
+
+        await cargarComentarios(publicacionId);
+        await cargarFeed();
+        mostrarToastAppSeguro("Comentario eliminado");
+    } catch (error) {
+        mostrarToastAppSeguro(error.message, "error");
+    }
 }
 
 function prepararRespuestaComentario(publicacionId, comentarioId, nombreAutor) {
@@ -704,10 +793,25 @@ function prepararEstilosSocialesMuro() {
     const style = document.createElement("style");
     style.id = "estilosSocialesMuro";
     style.textContent = `
+        .publicacion-img-boton{display:block;width:100%;padding:0;border:0;background:transparent;border-radius:8px;cursor:zoom-in;overflow:hidden}
+        .publicacion-galeria.multiple .publicacion-img-boton{height:100%}
+        .publicacion-img-boton .publicacion-img{display:block;width:100%;height:100%}
+        .visor-imagenes{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:4000;display:flex;align-items:center;justify-content:center;padding:22px}
+        .visor-imagenes.d-none{display:none!important}
+        .visor-imagenes img{max-width:min(1100px,92vw);max-height:84vh;border-radius:8px;box-shadow:0 20px 70px rgba(0,0,0,.55);object-fit:contain;background:#050914}
+        .visor-imagenes-cerrar,.visor-imagenes-nav{position:absolute;border:1px solid rgba(255,193,7,.5);background:#061a38;color:white;border-radius:8px;font-weight:800}
+        .visor-imagenes-cerrar{top:18px;right:18px;width:42px;height:42px;font-size:24px}
+        .visor-imagenes-nav{top:50%;transform:translateY(-50%);width:46px;height:56px;font-size:30px}
+        .visor-imagenes-prev{left:18px}
+        .visor-imagenes-next{right:18px}
+        .visor-imagenes-contador{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);background:#061a38;color:white;border:1px solid rgba(255,193,7,.5);border-radius:999px;padding:6px 14px;font-weight:700}
         .comentario-item.respuesta{margin-left:46px;border-left:3px solid #ffc107;padding-left:10px}
         .respuesta-a{display:block;color:#6c757d;font-size:12px;margin-bottom:2px}
         .comentario-responder{border:0;background:transparent;color:#0d6efd;font-weight:700;font-size:13px;padding:0;margin-left:8px}
         .comentario-responder:hover{text-decoration:underline}
+        .comentario-accion{border:0;background:transparent;color:#0d6efd;font-weight:700;font-size:13px;padding:0;margin-left:8px}
+        .comentario-accion.peligro{color:#dc3545}
+        .comentario-accion:hover{text-decoration:underline}
         .respuesta-activa{background:#fff8df;border:1px solid #ffc107;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:14px}
         .respuesta-activa button{border:0;background:transparent;color:#a00000;font-weight:700;margin-left:8px}
         .modal-compartir{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:3000;display:flex;align-items:center;justify-content:center;padding:18px}
@@ -726,6 +830,83 @@ function prepararEstilosSocialesMuro() {
         .compartir-persona b{color:#061a38}
     `;
     document.head.appendChild(style);
+}
+
+function prepararVisorImagenes() {
+    if (document.getElementById("visorImagenesMuro")) {
+        return;
+    }
+
+    const visor = document.createElement("section");
+    visor.id = "visorImagenesMuro";
+    visor.className = "visor-imagenes d-none";
+    visor.innerHTML = `
+        <button class="visor-imagenes-cerrar" type="button" onclick="cerrarVisorImagenes()" title="Cerrar">&times;</button>
+        <button class="visor-imagenes-nav visor-imagenes-prev" type="button" onclick="moverVisorImagenes(-1)" title="Anterior">&#8249;</button>
+        <img id="visorImagenesImg" src="" alt="Imagen de publicacion ampliada">
+        <button class="visor-imagenes-nav visor-imagenes-next" type="button" onclick="moverVisorImagenes(1)" title="Siguiente">&#8250;</button>
+        <span id="visorImagenesContador" class="visor-imagenes-contador"></span>
+    `;
+    visor.addEventListener("click", (evento) => {
+        if (evento.target === visor) {
+            cerrarVisorImagenes();
+        }
+    });
+    document.addEventListener("keydown", (evento) => {
+        if (visor.classList.contains("d-none")) {
+            return;
+        }
+
+        if (evento.key === "Escape") {
+            cerrarVisorImagenes();
+        }
+
+        if (evento.key === "ArrowLeft") {
+            moverVisorImagenes(-1);
+        }
+
+        if (evento.key === "ArrowRight") {
+            moverVisorImagenes(1);
+        }
+    });
+    document.body.appendChild(visor);
+}
+
+function abrirVisorImagenes(imagenes, indice = 0) {
+    window.visorImagenesActual = {
+        imagenes: Array.isArray(imagenes) ? imagenes : [imagenes],
+        indice
+    };
+    actualizarVisorImagenes();
+    document.getElementById("visorImagenesMuro")?.classList.remove("d-none");
+}
+
+function moverVisorImagenes(direccion) {
+    const visor = window.visorImagenesActual;
+
+    if (!visor?.imagenes?.length) {
+        return;
+    }
+
+    visor.indice = (visor.indice + direccion + visor.imagenes.length) % visor.imagenes.length;
+    actualizarVisorImagenes();
+}
+
+function actualizarVisorImagenes() {
+    const visor = window.visorImagenesActual;
+    const imagen = document.getElementById("visorImagenesImg");
+    const contador = document.getElementById("visorImagenesContador");
+
+    if (!visor || !imagen || !contador) {
+        return;
+    }
+
+    imagen.src = visor.imagenes[visor.indice] || "";
+    contador.textContent = `${visor.indice + 1} / ${visor.imagenes.length}`;
+}
+
+function cerrarVisorImagenes() {
+    document.getElementById("visorImagenesMuro")?.classList.add("d-none");
 }
 
 function escaparHtml(texto) {

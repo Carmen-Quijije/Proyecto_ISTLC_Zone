@@ -296,8 +296,12 @@ function obtenerDestinoNotificacion(notificacion) {
         return `perfil.html?id=${referenciaId}`;
     }
 
-    if ((notificacion.tipo === "comentario" || notificacion.tipo === "respuesta_comentario" || notificacion.tipo === "like") && referenciaId) {
-        return `muro.html#post-${referenciaId}`;
+    if ((notificacion.tipo === "comentario" || notificacion.tipo === "respuesta_comentario") && referenciaId) {
+        return `muro.html?post=${referenciaId}&comentarios=1`;
+    }
+
+    if (notificacion.tipo === "like" && referenciaId) {
+        return `muro.html?post=${referenciaId}`;
     }
 
     return "muro.html";
