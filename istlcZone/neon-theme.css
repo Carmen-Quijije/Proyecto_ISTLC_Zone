@@ -628,3 +628,86 @@ body[data-tema-istlc="tradicional"] .estado-vacio-red{
     background:#fff;
     border-color:#d5dbe3;
 }
+
+/* Pulido visual del tema neon */
+body:not([data-tema-istlc="tradicional"]) .card,
+body:not([data-tema-istlc="tradicional"]) .login-card,
+body:not([data-tema-istlc="tradicional"]) .registro-card,
+body:not([data-tema-istlc="tradicional"]) .mensajes-sidebar,
+body:not([data-tema-istlc="tradicional"]) .mensajes-chat,
+body:not([data-tema-istlc="tradicional"]) .modal-content,
+body:not([data-tema-istlc="tradicional"]) .usuario-card,
+body:not([data-tema-istlc="tradicional"]) .amigo-mini,
+body:not([data-tema-istlc="tradicional"]) .terminos-card,
+body:not([data-tema-istlc="tradicional"]) .cumple-card,
+body:not([data-tema-istlc="tradicional"]) .foto-card,
+body:not([data-tema-istlc="tradicional"]) .plataforma-card,
+body:not([data-tema-istlc="tradicional"]) .empleo-card{
+    background:
+        linear-gradient(180deg, rgba(15,23,36,.97), rgba(9,28,48,.95)) !important;
+    border-color:rgba(255,193,7,.26) !important;
+    box-shadow:
+        0 0 0 1px rgba(37,215,255,.05),
+        0 14px 30px rgba(0,0,0,.36) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .card:hover,
+body:not([data-tema-istlc="tradicional"]) .usuario-card:hover,
+body:not([data-tema-istlc="tradicional"]) .plataforma-card:hover,
+body:not([data-tema-istlc="tradicional"]) .empleo-card:hover{
+    box-shadow:
+        0 0 0 1px rgba(255,193,7,.18),
+        0 18px 38px rgba(0,0,0,.42) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .mensajes-lista{
+    background:
+        linear-gradient(180deg, rgba(4,11,23,.78), rgba(5,14,28,.86)) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .mensaje-burbuja.otro{
+    background:rgba(12,27,47,.96) !important;
+    border-color:rgba(255,193,7,.22) !important;
+    color:var(--neon-text) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .mensaje-burbuja.mio{
+    background:linear-gradient(135deg, var(--neon-gold), #ffdf62) !important;
+    color:#061A38 !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .comentario-item div{
+    background:rgba(5,14,28,.78) !important;
+    border-color:rgba(255,193,7,.2) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .publicacion-card p,
+body:not([data-tema-istlc="tradicional"]) .perfil-publicacion p,
+body:not([data-tema-istlc="tradicional"]) .comentario-item p{
+    color:var(--neon-text) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .panel-tema-app,
+body:not([data-tema-istlc="tradicional"]) .buscador-global-resultados{
+    background:#061A38 !important;
+    border-color:var(--neon-gold) !important;
+    color:var(--neon-text) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .buscador-global-item{
+    color:var(--neon-text) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .buscador-global-item:hover{
+    background:rgba(255,193,7,.12) !important;
+    color:var(--neon-gold) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .buscador-global-item small,
+body:not([data-tema-istlc="tradicional"]) .buscador-global-vacio{
+    color:var(--neon-muted) !important;
+}
+
+body:not([data-tema-istlc="tradicional"]) .publicacion-imagen-label{
+    background:rgba(5,14,28,.72) !important;
+}
