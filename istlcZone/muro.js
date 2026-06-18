@@ -202,7 +202,14 @@ function tarjetaPublicacion(publicacion) {
                 Eliminar
             </button>
         `
-        : "";
+        : `
+            <button
+                class="btn btn-sm btn-outline-warning btn-eliminar-publicacion"
+                onclick="reportarContenido('publicacion', ${publicacion.id})"
+            >
+                Reportar
+            </button>
+        `;
     const imagen = renderImagenesPublicacion(publicacion);
     const fecha = publicacion.fecha ? new Date(publicacion.fecha).toLocaleString("es-EC") : "Hoy";
     const likeClase = publicacion.likedByMe ? "btn-warning" : "btn-light";
@@ -470,7 +477,15 @@ function tarjetaComentario(comentario, publicacionId) {
                 Eliminar
             </button>
         `
-        : "";
+        : `
+            <button
+                class="comentario-accion peligro"
+                type="button"
+                onclick="reportarContenido('comentario', ${comentario.id})"
+            >
+                Reportar
+            </button>
+        `;
 
     return `
         <div class="comentario-item ${claseRespuesta}">
@@ -554,6 +569,43 @@ async function eliminarComentario(publicacionId, comentarioId) {
         await cargarComentarios(publicacionId);
         await cargarFeed();
         mostrarToastAppSeguro("Comentario eliminado");
+    } catch (error) {
+        mostrarToastAppSeguro(error.message, "error");
+    }
+}
+
+async function reportarContenido(tipo, referenciaId) {
+    const motivo = window.prompt("Cuentanos el motivo del reporte");
+
+    if (motivo === null) {
+        return;
+    }
+
+    const texto = motivo.trim();
+
+    if (!texto) {
+        mostrarToastAppSeguro("Escribe un motivo para reportar", "error");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/reports`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                tipo,
+                referenciaId,
+                reportanteId: usuario.id,
+                motivo: texto
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo enviar el reporte");
+        }
+
+        mostrarToastAppSeguro("Reporte enviado. Gracias por avisar.");
     } catch (error) {
         mostrarToastAppSeguro(error.message, "error");
     }

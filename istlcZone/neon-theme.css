@@ -198,6 +198,22 @@ textarea:focus{
     box-shadow:0 0 14px rgba(255,193,7,.32);
 }
 
+.reporte-admin-card{
+    background:rgba(5,14,28,.74) !important;
+    color:var(--neon-text) !important;
+    border-color:rgba(255,193,7,.32) !important;
+}
+
+.reporte-admin-card small{
+    color:var(--neon-muted) !important;
+}
+
+.reporte-admin-tipo,
+.reporte-admin-estado{
+    background:rgba(255,193,7,.18) !important;
+    color:var(--neon-gold) !important;
+}
+
 .empleo-card,
 .empleo-card p,
 .empleo-card strong{

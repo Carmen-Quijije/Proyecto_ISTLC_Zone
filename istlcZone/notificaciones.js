@@ -118,6 +118,9 @@ function crearCentroNotificaciones() {
 
     const centro = document.createElement("div");
     centro.className = "notificaciones-app";
+    const linkReportesAdmin = esAdminNotificaciones()
+        ? `<a class="btn btn-light fw-bold" href="adminReportes.html">Reportes</a>`
+        : "";
     centro.innerHTML = `
         <div class="buscador-global">
             <input
@@ -130,6 +133,7 @@ function crearCentroNotificaciones() {
             <span class="material-symbols-outlined">search</span>
             <div id="buscadorGlobalResultados" class="buscador-global-resultados d-none"></div>
         </div>
+        ${linkReportesAdmin}
         <button id="btnTemaApp" class="btn btn-light btn-tema-app" type="button" title="Cambiar tema">
             <span class="material-symbols-outlined">palette</span>
         </button>
@@ -174,6 +178,10 @@ function crearCentroNotificaciones() {
             document.getElementById("buscadorGlobalResultados")?.classList.add("d-none");
         }
     });
+}
+
+function esAdminNotificaciones() {
+    return usuarioNotificaciones?.rol === "admin" || usuarioNotificaciones?.usuario === "admin";
 }
 
 function prepararBuscadorGlobal() {

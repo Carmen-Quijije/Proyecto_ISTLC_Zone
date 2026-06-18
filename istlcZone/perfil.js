@@ -117,6 +117,13 @@ function renderAccionesPerfilAjeno() {
         <a href="mensajes.html?contacto=${perfilObjetivoId}" class="btn btn-light fw-bold">
             Mensaje
         </a>
+        <button
+            class="btn btn-outline-warning fw-bold"
+            type="button"
+            onclick="reportarPerfil()"
+        >
+            Reportar perfil
+        </button>
     `;
 }
 
@@ -156,6 +163,51 @@ async function enviarSolicitudPerfil() {
     } catch (error) {
         mostrarToastAppSeguro(error.message || "No se pudo enviar la solicitud", "error");
         renderAccionesPerfilAjeno();
+    }
+}
+
+async function reportarPerfil() {
+    const motivo = window.prompt("Cuentanos el motivo del reporte");
+
+    if (motivo === null) {
+        return;
+    }
+
+    const texto = motivo.trim();
+
+    if (!texto) {
+        mostrarToastPerfil("Escribe un motivo para reportar", "error");
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`${API_BASE}/api/auth/reports`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                tipo: "perfil",
+                referenciaId: perfilObjetivoId,
+                reportanteId: usuario.id,
+                motivo: texto
+            })
+        });
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.success) {
+            throw new Error(data.message || "No se pudo enviar el reporte");
+        }
+
+        mostrarToastPerfil("Reporte enviado. Gracias por avisar.");
+    } catch (error) {
+        mostrarToastPerfil(error.message, "error");
+    }
+}
+
+function mostrarToastPerfil(mensaje, tipo) {
+    if (typeof mostrarToastApp === "function") {
+        mostrarToastApp(mensaje, tipo);
+    } else {
+        alert(mensaje);
     }
 }
 

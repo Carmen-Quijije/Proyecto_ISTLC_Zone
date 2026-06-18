@@ -94,18 +94,19 @@ const normalizarUsuario = (usuario = {}) => ({
     carrera: usuario.carrera || '',
     semestre: usuario.semestre || '',
     fotoPerfil: usuario.foto_perfil || '',
-    bio: usuario.bio || ''
+    bio: usuario.bio || '',
+    rol: usuario.rol || 'usuario'
 });
 
 const usuarioSelect = `
     id, nombre, email, usuario, privacidad, email_verificado,
     vive_en, lugar_origen, fecha_nacimiento, estado_civil,
-    carrera, semestre, foto_perfil, bio
+    carrera, semestre, foto_perfil, bio, rol
 `;
 const usuarioSelectConAlias = (alias) => `
     ${alias}.id, ${alias}.nombre, ${alias}.email, ${alias}.usuario, ${alias}.privacidad, ${alias}.email_verificado,
     ${alias}.vive_en, ${alias}.lugar_origen, ${alias}.fecha_nacimiento, ${alias}.estado_civil,
-    ${alias}.carrera, ${alias}.semestre, ${alias}.foto_perfil, ${alias}.bio
+    ${alias}.carrera, ${alias}.semestre, ${alias}.foto_perfil, ${alias}.bio, ${alias}.rol
 `;
 
 const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) => {
@@ -114,6 +115,11 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
         'INSERT INTO notificaciones (usuario_id, tipo, mensaje, referencia_id) VALUES (?, ?, ?, ?)',
         [usuarioId, tipo, mensaje, referenciaId]
     );
+};
+
+const esAdministrador = async (usuarioId) => {
+    const usuario = await one('SELECT rol, usuario FROM usuarios WHERE id = ?', [usuarioId]);
+    return usuario?.rol === 'admin' || usuario?.usuario === 'admin';
 };
 
 const enviarCorreoBrevoApi = async (email, asunto, html) => {
@@ -582,6 +588,125 @@ router.get('/users', async (req, res) => {
     } catch (error) {
         console.error('Error usuarios:', error);
         res.status(500).json({ success: false, message: 'No se pudieron cargar usuarios' });
+    }
+});
+
+router.post('/reports', async (req, res) => {
+    try {
+        const { tipo, referenciaId, reportanteId, motivo } = req.body;
+        const tiposPermitidos = ['publicacion', 'comentario', 'perfil'];
+        const textoMotivo = String(motivo || '').trim();
+
+        if (!tiposPermitidos.includes(tipo)) {
+            return res.status(400).json({ success: false, message: 'Tipo de reporte no valido' });
+        }
+
+        if (!referenciaId || !reportanteId || !textoMotivo) {
+            return res.status(400).json({ success: false, message: 'Completa el motivo del reporte' });
+        }
+
+        if (tipo === 'publicacion') {
+            const existe = await one('SELECT id FROM publicaciones WHERE id = ?', [referenciaId]);
+            if (!existe) return res.status(404).json({ success: false, message: 'Publicacion no encontrada' });
+        }
+
+        if (tipo === 'comentario') {
+            const existe = await one('SELECT id FROM comentarios WHERE id = ?', [referenciaId]);
+            if (!existe) return res.status(404).json({ success: false, message: 'Comentario no encontrado' });
+        }
+
+        if (tipo === 'perfil') {
+            const existe = await one('SELECT id FROM usuarios WHERE id = ?', [referenciaId]);
+            if (!existe) return res.status(404).json({ success: false, message: 'Perfil no encontrado' });
+        }
+
+        await exec(
+            `INSERT INTO reportes (tipo, referencia_id, reportante_id, motivo, estado)
+             VALUES (?, ?, ?, ?, 'pendiente')
+             ON CONFLICT (tipo, referencia_id, reportante_id)
+             DO UPDATE SET motivo = EXCLUDED.motivo, estado = 'pendiente', fecha = NOW()`,
+            [tipo, referenciaId, reportanteId, textoMotivo]
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error reporte:', error);
+        res.status(500).json({ success: false, message: 'No se pudo enviar el reporte' });
+    }
+});
+
+router.get('/reports', async (req, res) => {
+    try {
+        const usuarioId = Number(req.query.usuarioId || 0);
+
+        if (!await esAdministrador(usuarioId)) {
+            return res.status(403).json({ success: false, message: 'No tienes permisos para ver reportes' });
+        }
+
+        const reportes = await all(
+            `SELECT r.*,
+                    ur.nombre AS reportante_nombre,
+                    ur.usuario AS reportante_usuario,
+                    up.nombre AS perfil_nombre,
+                    up.usuario AS perfil_usuario,
+                    p.contenido AS publicacion_contenido,
+                    c.contenido AS comentario_contenido,
+                    c.publicacion_id AS comentario_publicacion_id,
+                    uc.nombre AS comentario_autor_nombre
+             FROM reportes r
+             JOIN usuarios ur ON ur.id = r.reportante_id
+             LEFT JOIN usuarios up ON r.tipo = 'perfil' AND up.id = r.referencia_id
+             LEFT JOIN publicaciones p ON r.tipo = 'publicacion' AND p.id = r.referencia_id
+             LEFT JOIN comentarios c ON r.tipo = 'comentario' AND c.id = r.referencia_id
+             LEFT JOIN usuarios uc ON uc.id = c.usuario_id
+             ORDER BY CASE WHEN r.estado = 'pendiente' THEN 0 ELSE 1 END, r.fecha DESC`
+        );
+
+        res.json({
+            success: true,
+            reportes: reportes.map((r) => ({
+                id: r.id,
+                tipo: r.tipo,
+                referenciaId: r.referencia_id,
+                motivo: r.motivo,
+                estado: r.estado,
+                fecha: r.fecha,
+                reportante: {
+                    nombre: r.reportante_nombre,
+                    usuario: r.reportante_usuario
+                },
+                objetivo: {
+                    perfil: r.perfil_nombre ? `${r.perfil_nombre} (@${r.perfil_usuario})` : '',
+                    publicacion: r.publicacion_contenido || '',
+                    comentario: r.comentario_contenido || '',
+                    comentarioPublicacionId: r.comentario_publicacion_id || null,
+                    comentarioAutor: r.comentario_autor_nombre || ''
+                }
+            }))
+        });
+    } catch (error) {
+        console.error('Error listar reportes:', error);
+        res.status(500).json({ success: false, message: 'No se pudieron cargar reportes' });
+    }
+});
+
+router.put('/reports/:id/status', async (req, res) => {
+    try {
+        const { usuarioId, estado } = req.body;
+        const estadosPermitidos = ['pendiente', 'revisado', 'descartado'];
+
+        if (!await esAdministrador(usuarioId)) {
+            return res.status(403).json({ success: false, message: 'No tienes permisos para actualizar reportes' });
+        }
+
+        if (!estadosPermitidos.includes(estado)) {
+            return res.status(400).json({ success: false, message: 'Estado no valido' });
+        }
+
+        await exec('UPDATE reportes SET estado = ? WHERE id = ?', [estado, req.params.id]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'No se pudo actualizar el reporte' });
     }
 });
 

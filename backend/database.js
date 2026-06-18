@@ -56,7 +56,8 @@ const initDatabase = async () => {
         ADD COLUMN IF NOT EXISTS carrera TEXT,
         ADD COLUMN IF NOT EXISTS semestre TEXT,
         ADD COLUMN IF NOT EXISTS foto_perfil TEXT,
-        ADD COLUMN IF NOT EXISTS bio TEXT
+        ADD COLUMN IF NOT EXISTS bio TEXT,
+        ADD COLUMN IF NOT EXISTS rol TEXT DEFAULT 'usuario'
     `);
     console.log('Columnas de perfil listas');
 
@@ -189,6 +190,20 @@ const initDatabase = async () => {
         )
     `);
     console.log('Tabla mensajes lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS reportes (
+            id SERIAL PRIMARY KEY,
+            tipo TEXT NOT NULL,
+            referencia_id INTEGER NOT NULL,
+            reportante_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            motivo TEXT NOT NULL,
+            estado TEXT DEFAULT 'pendiente',
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (tipo, referencia_id, reportante_id)
+        )
+    `);
+    console.log('Tabla reportes lista');
 
     await pool.query('SELECT 1');
     console.log('Base de datos Neon PostgreSQL conectada');
