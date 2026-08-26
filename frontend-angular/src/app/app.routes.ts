@@ -18,6 +18,20 @@ import { PaginaNoEncontrada } from './pagina-no-encontrada/pagina-no-encontrada'
 export const routes: Routes = [
   { path: '', redirectTo: 'iniciarSesion', pathMatch: 'full' },
 
+  // Compatibilidad con los enlaces de la versión anterior en HTML.
+  // Así, una URL guardada como /muro.html sigue funcionando sin recargar la SPA.
+  { path: 'muro.html', redirectTo: 'muro', pathMatch: 'full' },
+  { path: 'perfil.html', redirectTo: 'perfil', pathMatch: 'full' },
+  { path: 'editarPerfil.html', redirectTo: 'editarPerfil', pathMatch: 'full' },
+  { path: 'amigos.html', redirectTo: 'amigos', pathMatch: 'full' },
+  { path: 'mensajes.html', redirectTo: 'mensajes', pathMatch: 'full' },
+  { path: 'empleos.html', redirectTo: 'empleos', pathMatch: 'full' },
+  { path: 'plataformas.html', redirectTo: 'plataformas', pathMatch: 'full' },
+  { path: 'iniciarSesion.html', redirectTo: 'iniciarSesion', pathMatch: 'full' },
+  { path: 'registro.html', redirectTo: 'registro', pathMatch: 'full' },
+  { path: 'recuperarClave.html', redirectTo: 'recuperarClave', pathMatch: 'full' },
+  { path: 'terminosCondiciones.html', redirectTo: 'terminosCondiciones', pathMatch: 'full' },
+
   // Autenticación: rutas públicas
   { path: 'iniciarSesion', component: IniciarSesion },
   { path: 'registro', component: Registro },
