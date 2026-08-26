@@ -1,0 +1,23 @@
+<!-- Directorio de accesos a plataformas institucionales externas. -->
+<main class="contenedor">
+  <h1 class="titulo-pagina"><mat-icon>apps</mat-icon> Plataformas institucionales</h1>
+  <!-- Tarjetas generadas desde el arreglo plataformas del componente. -->
+  <div class="rejilla">
+    @for (plataforma of plataformas; track plataforma.nombre) {
+    <mat-card class="tarjeta"
+      ><img
+        class="imagen-tarjeta"
+        [src]="plataforma.imagen"
+        [alt]="plataforma.nombre"
+      /><mat-card-header><mat-card-title>{{ plataforma.nombre }}</mat-card-title></mat-card-header
+      ><mat-card-content><p>{{ plataforma.descripcion }}</p></mat-card-content
+      ><!-- El enlace abre la plataforma externa en una pestaña segura. -->
+      <mat-card-actions
+        ><a mat-flat-button [href]="plataforma.url" target="_blank" rel="noopener"
+          >Ingresar <mat-icon>launch</mat-icon></a
+        ></mat-card-actions
+      ></mat-card
+    >
+    }
+  </div>
+</main>

@@ -1,0 +1,13 @@
+/* Recorta la imagen de portada dentro de los bordes de la tarjeta. */
+.tarjeta-portada {
+  overflow: hidden;
+}
+.tarjeta-portada > img {
+  height: 230px;
+  object-fit: cover;
+}
+/* Alinea los iconos con los datos personales y académicos. */
+mat-card-content mat-icon {
+  vertical-align: middle;
+  margin-right: 6px;
+}

@@ -1,0 +1,192 @@
+/* El componente puede crecer dentro de la estructura vertical de la aplicación. */
+:host {
+  display: block;
+  flex: 1;
+}
+/* Distribución principal: presentación visual y formulario en dos columnas. */
+.inicio-istlc {
+  min-height: calc(100vh - 147px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+  align-items: stretch;
+  background: #f1f3f6;
+}
+.presentacion {
+  padding: 34px clamp(24px, 5vw, 70px);
+  border-right: 1px solid #d5dbe3;
+}
+/* Carrusel que reutiliza las fotografías de la aplicación original. */
+.carrusel {
+  position: relative;
+  max-width: 650px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(6, 26, 56, 0.24);
+  background: #061a38;
+}
+.carrusel > img {
+  display: block;
+  width: 100%;
+  height: min(51vh, 450px);
+  object-fit: cover;
+  transition: opacity 0.35s ease;
+}
+/* Botones anterior/siguiente e indicadores de posición del carrusel. */
+.control {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(6, 26, 56, 0.72);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.control:hover {
+  color: #061a38;
+  background: #ffc107;
+}
+.anterior {
+  left: 14px;
+}
+.siguiente {
+  right: 14px;
+}
+.indicadores {
+  position: absolute;
+  left: 50%;
+  bottom: 15px;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+.indicadores button {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 1px solid white;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+}
+.indicadores button.activo {
+  width: 28px;
+  border-radius: 10px;
+  background: #ffc107;
+}
+/* Bloque de bienvenida con el logotipo institucional. */
+.mensaje-comunidad {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 650px;
+  margin: 24px auto 0;
+  color: #061a38;
+}
+.mensaje-comunidad img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+}
+.mensaje-comunidad h1 {
+  margin: 0 0 6px;
+  font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+}
+.mensaje-comunidad p {
+  margin: 0;
+  color: #3f4856;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+/* Panel derecho y tarjeta del formulario de inicio de sesión. */
+.panel-acceso {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 42px clamp(24px, 5vw, 72px);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)),
+    url('/assets/images/red.jpg') center/cover no-repeat;
+}
+.tarjeta-acceso {
+  width: min(500px, 100%);
+  padding: 34px;
+  background: rgba(255, 255, 255, 0.97);
+}
+.tarjeta-acceso mat-card-title {
+  color: #061a38;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+/* Separación vertical de campos y acciones del formulario reactivo. */
+.formulario {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.boton-ingresar,
+.crear-cuenta {
+  min-height: 48px;
+  color: #061a38 !important;
+  background: #ffc107 !important;
+  font-weight: 800;
+}
+.boton-ingresar:hover,
+.crear-cuenta:hover {
+  background: #e0aa00 !important;
+}
+.recuperar {
+  color: #061a38 !important;
+  font-weight: 700;
+}
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #d5dbe3;
+}
+/* En tabletas la pantalla cambia de dos columnas a una sola. */
+@media (max-width: 920px) {
+  .inicio-istlc {
+    grid-template-columns: 1fr;
+  }
+  .presentacion {
+    border-right: 0;
+    border-bottom: 3px solid #ffc107;
+  }
+  .carrusel > img {
+    height: 360px;
+  }
+}
+/* Ajustes adicionales para teléfonos y pantallas estrechas. */
+@media (max-width: 560px) {
+  .presentacion {
+    padding: 20px 16px;
+  }
+  .carrusel > img {
+    height: 280px;
+  }
+  .mensaje-comunidad img {
+    display: none;
+  }
+  .panel-acceso {
+    padding: 28px 16px;
+  }
+  .tarjeta-acceso {
+    padding: 22px;
+  }
+}

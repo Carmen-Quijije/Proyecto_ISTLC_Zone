@@ -1,0 +1,42 @@
+<!-- Pantalla para buscar integrantes de la comunidad y seguirlos. -->
+<main class="contenedor">
+  <!-- Título e identificación visual del módulo. -->
+  <h1 class="titulo-pagina"><mat-icon>group</mat-icon> Amigos</h1>
+  <!-- Buscador enlazado a termino; ejecuta buscar al presionar Enter o el icono. -->
+  <mat-form-field class="ancho-completo"
+    ><mat-label>Buscar por nombre o usuario</mat-label
+    ><input matInput [(ngModel)]="termino" (keyup.enter)="buscar()" /><button
+      mat-icon-button
+      matSuffix
+      (click)="buscar()"
+    >
+      <mat-icon>search</mat-icon>
+    </button></mat-form-field
+  >
+  <!-- Rejilla de resultados generada a partir del arreglo personas. -->
+  <div class="rejilla">
+    @for (persona of personas; track persona.id) {
+    <mat-card
+      ><mat-card-header
+        ><img
+          mat-card-avatar
+          [src]="persona.foto_perfil || 'assets/images/icono.png'"
+          alt="Foto de perfil"
+        /><mat-card-title
+          ><a routerLink="/perfil" [queryParams]="{ id: persona.id }"
+            >{{ persona.nombre }}</a
+          ></mat-card-title
+        ><mat-card-subtitle>@{{ persona.usuario }}</mat-card-subtitle></mat-card-header
+      ><mat-card-content><p>{{ persona.carrera || 'Comunidad ISTLC' }}</p></mat-card-content
+      ><mat-card-actions
+        ><button mat-flat-button (click)="seguir(persona)" [disabled]="persona.siguiendo">
+          <mat-icon>person_add</mat-icon> {{ persona.siguiendo ? 'Siguiendo' : 'Seguir' }}
+        </button></mat-card-actions
+      ></mat-card
+    >
+    } @empty {
+    <!-- Estado vacío mostrado antes de buscar o cuando no existen coincidencias. -->
+    <p class="texto-secundario">Escribe un nombre para encontrar compañeros.</p>
+    }
+  </div>
+</main>

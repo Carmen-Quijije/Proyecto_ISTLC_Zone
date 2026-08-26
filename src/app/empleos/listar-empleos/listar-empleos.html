@@ -1,0 +1,29 @@
+<!-- Bolsa de empleo con ofertas obtenidas por el componente. -->
+<main class="contenedor">
+  <h1 class="titulo-pagina"><mat-icon>work</mat-icon> Bolsa de empleo</h1>
+  <!-- Cada empleo se presenta como tarjeta Material y se identifica por su slug. -->
+  <div class="rejilla">
+    @for (empleo of empleos; track empleo.slug) {
+    <mat-card
+      ><mat-card-header
+        ><mat-card-title>{{ empleo.title }}</mat-card-title
+        ><mat-card-subtitle
+          >{{ empleo.company_name }} · {{ empleo.location }}</mat-card-subtitle
+        ></mat-card-header
+      ><mat-card-content
+        ><mat-chip-set
+          ><mat-chip>{{ empleo.remote ? 'Remoto' : 'Presencial' }}</mat-chip></mat-chip-set
+        >
+        <p>{{ resumen(empleo.description) }}…</p></mat-card-content
+      ><mat-card-actions
+        ><a mat-flat-button [href]="empleo.url" target="_blank" rel="noopener"
+          >Ver oferta <mat-icon>open_in_new</mat-icon></a
+        ></mat-card-actions
+      ></mat-card
+    >
+    } @empty {
+    <!-- Estado temporal mientras se cargan ofertas o cuando no hay resultados. -->
+    <p class="texto-secundario">Cargando ofertas de empleo…</p>
+    }
+  </div>
+</main>

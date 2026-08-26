@@ -1,0 +1,9 @@
+/* Centra el mensaje de error y destaca el icono de ruta inexistente. */
+section {
+  text-align: center;
+}
+mat-icon {
+  width: 72px;
+  height: 72px;
+  font-size: 72px;
+}

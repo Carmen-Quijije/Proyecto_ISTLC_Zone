@@ -1,0 +1,6 @@
+/* Organiza verticalmente los controles de recuperación de contraseña. */
+.formulario {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}

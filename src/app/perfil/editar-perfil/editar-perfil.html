@@ -1,0 +1,38 @@
+<!-- Formulario para actualizar la información del perfil autenticado. -->
+<main class="contenedor">
+  <mat-card
+    ><mat-card-header
+      ><mat-card-title>Editar perfil</mat-card-title
+      ><mat-card-subtitle
+        >Actualiza tu información personal y académica</mat-card-subtitle
+      ></mat-card-header
+    ><mat-card-content
+      ><!-- Los controles están enlazados al FormGroup definido en editar-perfil.ts. -->
+      <form class="rejilla formulario" [formGroup]="formulario" (ngSubmit)="guardar()">
+        <mat-form-field
+          ><mat-label>Nombre</mat-label><input matInput formControlName="nombre" /></mat-form-field
+        ><mat-form-field
+          ><mat-label>Biografía</mat-label
+          ><textarea matInput formControlName="biografia"></textarea></mat-form-field
+        ><mat-form-field
+          ><mat-label>Ciudad actual</mat-label
+          ><input matInput formControlName="vive_en" /></mat-form-field
+        ><mat-form-field
+          ><mat-label>Carrera</mat-label
+          ><input matInput formControlName="carrera" /></mat-form-field
+        ><mat-form-field
+          ><mat-label>Semestre</mat-label><input matInput formControlName="semestre"
+        /></mat-form-field>
+        <!-- Guardar ejecuta el submit; Cancelar navega sin modificar datos. -->
+        <div class="fila">
+          <button mat-flat-button type="submit">Guardar cambios</button
+          ><a mat-button routerLink="/perfil">Cancelar</a>
+        </div>
+      </form>
+      <!-- Confirmación que se muestra después de guardar correctamente. -->
+      @if (mensaje) {
+      <p class="mensaje-exito">{{ mensaje }}</p>
+      }</mat-card-content
+    ></mat-card
+  >
+</main>

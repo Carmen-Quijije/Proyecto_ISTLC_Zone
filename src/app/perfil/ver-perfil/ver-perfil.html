@@ -1,0 +1,37 @@
+<!-- Vista de consulta de los datos personales y académicos del usuario. -->
+<main class="contenedor">
+  <!-- Encabezado y acceso a la ruta de edición del perfil. -->
+  <div class="fila">
+    <h1 class="titulo-pagina"><mat-icon>account_circle</mat-icon> Perfil</h1>
+    <span class="espaciador"></span
+    ><a mat-flat-button routerLink="/editarPerfil"><mat-icon>edit</mat-icon> Editar perfil</a>
+  </div>
+  <!-- Tarjeta principal con portada, avatar, nombre y biografía. -->
+  <div class="rejilla">
+    <mat-card class="tarjeta-portada"
+      ><img
+        mat-card-image
+        [src]="perfil?.foto_portada || 'assets/images/principal2.jpg'"
+        alt="Portada del perfil"
+      /><mat-card-header
+        ><img
+          mat-card-avatar
+          [src]="perfil?.foto_perfil || 'assets/images/icono.png'"
+          alt="Foto de perfil"
+        /><mat-card-title>{{ perfil?.nombre || 'Usuario ISTLC' }}</mat-card-title
+        ><mat-card-subtitle>@{{ perfil?.usuario }}</mat-card-subtitle></mat-card-header
+      ><mat-card-content
+        ><p>{{ perfil?.biografia || 'Aún no hay biografía.' }}</p></mat-card-content
+      ></mat-card
+    ><!-- Tarjeta secundaria con la información complementaria. -->
+    <mat-card
+      ><mat-card-header><mat-card-title>Información</mat-card-title></mat-card-header
+      ><mat-card-content
+        ><p><mat-icon>location_on</mat-icon> {{ perfil?.vive_en || 'No registrado' }}</p>
+        <p><mat-icon>school</mat-icon> {{ perfil?.carrera || 'No registrado' }}</p>
+        <p><mat-icon>menu_book</mat-icon> {{ perfil?.semestre || 'No registrado' }}</p>
+        <p><a routerLink="/amigos">Ver amigos</a></p></mat-card-content
+      ></mat-card
+    >
+  </div>
+</main>

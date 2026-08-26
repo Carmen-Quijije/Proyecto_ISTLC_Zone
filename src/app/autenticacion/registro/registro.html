@@ -1,0 +1,37 @@
+<!-- Formulario de alta para nuevos usuarios de ISTLC Zone. -->
+<main class="contenedor-acceso">
+  <mat-card class="tarjeta-acceso"
+    ><mat-card-header><mat-card-title>Crear cuenta</mat-card-title></mat-card-header
+    ><mat-card-content>
+      <!-- Formulario reactivo con datos personales, credenciales y aceptación legal. -->
+      <form class="formulario" [formGroup]="formulario" (ngSubmit)="registrar()">
+        <mat-form-field
+          ><mat-label>Nombre completo</mat-label><input matInput formControlName="nombre"
+        /></mat-form-field>
+        <mat-form-field
+          ><mat-label>Correo institucional</mat-label
+          ><input matInput type="email" formControlName="email"
+        /></mat-form-field>
+        <mat-form-field
+          ><mat-label>Usuario</mat-label><input matInput formControlName="usuario"
+        /></mat-form-field>
+        <mat-form-field
+          ><mat-label>Contraseña</mat-label
+          ><input matInput type="password" formControlName="password"
+        /></mat-form-field>
+        <mat-checkbox formControlName="terminos"
+          >Acepto los <a routerLink="/terminosCondiciones">términos y condiciones</a></mat-checkbox
+        >
+        <!-- Resultado del registro: el color cambia según éxito o error. -->
+        @if (mensaje) {
+        <p [class.mensaje-exito]="registroExitoso" [class.mensaje-error]="!registroExitoso">
+          {{ mensaje }}
+        </p>
+        }
+        <!-- Acciones finales del formulario y retorno al inicio de sesión. -->
+        <button mat-flat-button type="submit" [disabled]="formulario.invalid">Registrarme</button>
+        <a mat-button routerLink="/iniciarSesion">Volver al inicio</a>
+      </form>
+    </mat-card-content></mat-card
+  >
+</main>

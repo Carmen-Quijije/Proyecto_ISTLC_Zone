@@ -1,0 +1,4 @@
+/* Mantiene las imágenes de las plataformas dentro de cada tarjeta. */
+.tarjeta {
+  overflow: hidden;
+}

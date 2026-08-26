@@ -1,0 +1,16 @@
+/* Divide el módulo entre el listado de conversaciones y el chat seleccionado. */
+.panel-mensajes {
+  display: grid;
+  grid-template-columns: 330px 1fr;
+  gap: 18px;
+}
+/* Comunica visualmente que cada conversación puede seleccionarse. */
+mat-list-item {
+  cursor: pointer;
+}
+/* En dispositivos pequeños las dos áreas se apilan verticalmente. */
+@media (max-width: 760px) {
+  .panel-mensajes {
+    grid-template-columns: 1fr;
+  }
+}

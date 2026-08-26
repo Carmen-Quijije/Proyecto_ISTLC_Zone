@@ -1,0 +1,52 @@
+<!-- Barra superior: muestra la marca y permite regresar al muro. -->
+<mat-toolbar class="barra-navegacion">
+  <a class="marca" routerLink="/muro">
+    <img src="assets/images/logo.png" alt="Logo ISTLC Zone" />
+    <span>ISTLC Zone</span>
+  </a>
+
+  <span class="espaciador"></span>
+
+  <!-- Navegación privada: solo aparece cuando existe una sesión activa. -->
+  @if (autenticacionService.estaAutenticado()) {
+  <nav class="ocultar-movil" aria-label="Navegación principal">
+    <a mat-button routerLink="/muro" routerLinkActive="activo"> <mat-icon>home</mat-icon> Muro </a>
+    <a mat-button routerLink="/amigos" routerLinkActive="activo">
+      <mat-icon>group</mat-icon> Amigos
+    </a>
+    <a mat-button routerLink="/mensajes" routerLinkActive="activo">
+      <mat-icon>chat</mat-icon> Mensajes
+    </a>
+    <a mat-button routerLink="/empleos" routerLinkActive="activo">
+      <mat-icon>work</mat-icon> Empleos
+    </a>
+    <a mat-button routerLink="/plataformas" routerLinkActive="activo">
+      <mat-icon>apps</mat-icon> Plataformas
+    </a>
+  </nav>
+
+  <!-- Menú con las acciones relacionadas con la cuenta del usuario. -->
+  <button mat-icon-button [matMenuTriggerFor]="menuUsuario" aria-label="Menú de usuario">
+    <mat-icon>account_circle</mat-icon>
+  </button>
+  <mat-menu #menuUsuario="matMenu">
+    <a mat-menu-item routerLink="/perfil"><mat-icon>person</mat-icon> Mi perfil</a>
+    <a mat-menu-item routerLink="/editarPerfil"><mat-icon>edit</mat-icon> Editar perfil</a>
+    <button mat-menu-item (click)="autenticacionService.cerrarSesion()">
+      <mat-icon>logout</mat-icon> Cerrar sesión
+    </button>
+  </mat-menu>
+  } @else {
+  <!-- Acciones públicas disponibles cuando el visitante no ha iniciado sesión. -->
+  <a mat-button routerLink="/iniciarSesion">Iniciar sesión</a>
+  <a mat-flat-button routerLink="/registro">Crear cuenta</a>
+  }
+</mat-toolbar>
+
+<!-- Angular Router inserta aquí el componente correspondiente a la URL activa. -->
+<router-outlet></router-outlet>
+
+<!-- Pie común que permanece visible en todas las pantallas. -->
+<footer class="pie-pagina">
+  <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
+</footer>

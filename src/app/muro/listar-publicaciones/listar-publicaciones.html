@@ -1,0 +1,75 @@
+<!-- Muro principal de publicaciones de la comunidad. -->
+<main class="contenedor">
+  <h1 class="titulo-pagina"><mat-icon>dynamic_feed</mat-icon> Muro</h1>
+  <div class="distribucion">
+    <!-- Columna principal: formulario de publicación y listado del muro. -->
+    <section class="columna">
+      <mat-card
+        ><mat-card-header
+          ><img
+            mat-card-avatar
+            [src]="autenticacionService.usuario()?.foto_perfil || 'assets/images/icono.png'"
+            alt="Foto de usuario"
+          /><mat-card-title>¿Qué quieres compartir?</mat-card-title></mat-card-header
+        ><mat-card-content
+          ><mat-form-field class="ancho-completo"
+            ><mat-label>Escribe una publicación</mat-label
+            ><textarea
+              matInput
+              [(ngModel)]="contenido"
+              rows="3"
+            ></textarea></mat-form-field></mat-card-content
+        ><mat-card-actions align="end"
+          ><button mat-flat-button (click)="publicar()" [disabled]="!contenido.trim()">
+            <mat-icon>send</mat-icon> Publicar
+          </button></mat-card-actions
+        ></mat-card
+      >
+      <!-- Cada elemento del arreglo publicaciones se representa en una tarjeta Material. -->
+      @for (publicacion of publicaciones; track publicacion.id) {
+      <mat-card
+        ><mat-card-header
+          ><img
+            mat-card-avatar
+            [src]="publicacion.foto_perfil || 'assets/images/icono.png'"
+            alt="Foto del autor"
+          /><mat-card-title
+            ><a [routerLink]="['/perfil']" [queryParams]="{ id: publicacion.id }"
+              >{{ publicacion.nombre || publicacion.usuario }}</a
+            ></mat-card-title
+          ><mat-card-subtitle>{{ publicacion.fecha_creacion }}</mat-card-subtitle></mat-card-header
+        ><mat-card-content
+          ><p>{{ publicacion.contenido }}</p>
+          <!-- La imagen es opcional y solo se agrega cuando la publicación la contiene. -->
+          @if (publicacion.imagen) {
+          <img class="imagen-tarjeta" [src]="publicacion.imagen" alt="Imagen de la publicación" />
+          }</mat-card-content
+        ><mat-card-actions
+          ><button mat-button (click)="indicarMeGusta(publicacion)">
+            <mat-icon>favorite</mat-icon> {{ publicacion.likes || 0 }}</button
+          ><button mat-button><mat-icon>comment</mat-icon> Comentar</button
+          ><button mat-button><mat-icon>share</mat-icon> Compartir</button></mat-card-actions
+        ></mat-card
+      >
+      } @empty {
+      <!-- Mensaje alternativo cuando el servicio no devuelve publicaciones. -->
+      <mat-card
+        ><mat-card-content
+          ><p class="texto-secundario">No hay publicaciones disponibles.</p></mat-card-content
+        ></mat-card
+      >
+      }
+    </section>
+    <!-- Panel lateral con enlaces rápidos configurados mediante routerLink. -->
+    <aside>
+      <mat-card
+        ><mat-card-header><mat-card-title>Accesos rápidos</mat-card-title></mat-card-header
+        ><mat-card-content
+          ><p><a routerLink="/perfil">Mi perfil</a></p>
+          <p><a routerLink="/amigos">Buscar amigos</a></p>
+          <p><a routerLink="/plataformas">Plataformas institucionales</a></p></mat-card-content
+        ></mat-card
+      >
+    </aside>
+  </div>
+</main>

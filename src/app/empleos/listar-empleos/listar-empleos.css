@@ -1,0 +1,4 @@
+/* Separa la etiqueta de modalidad del resumen de cada empleo. */
+mat-chip-set {
+  margin-bottom: 12px;
+}

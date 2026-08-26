@@ -1,0 +1,4 @@
+/* Permite que el componente de amigos ocupe su propio bloque en la página. */
+:host {
+  display: block;
+}

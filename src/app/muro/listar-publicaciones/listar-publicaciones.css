@@ -1,0 +1,12 @@
+/* Distribuye el muro entre publicaciones y accesos rápidos. */
+.distribucion {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(250px, 1fr);
+  gap: 20px;
+}
+/* En pantallas estrechas el panel lateral pasa debajo del contenido. */
+@media (max-width: 850px) {
+  .distribucion {
+    grid-template-columns: 1fr;
+  }
+}

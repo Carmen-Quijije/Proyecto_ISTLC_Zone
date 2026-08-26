@@ -1,0 +1,114 @@
+/* Variables globales: centralizan la paleta institucional heredada del proyecto original. */
+:root {
+  --istlc-azul: #061a38;
+  --istlc-azul-claro: #0b315f;
+  --istlc-amarillo: #ffc107;
+  --istlc-amarillo-hover: #e0aa00;
+  --istlc-fondo: #f1f3f6;
+  --istlc-texto: #212529;
+}
+/* Normalización básica para calcular correctamente anchos, altos y márgenes. */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+body {
+  font-family: Roboto, Arial, sans-serif;
+  color: var(--istlc-texto);
+  background: var(--istlc-fondo);
+}
+a {
+  color: var(--istlc-azul);
+  text-decoration: none;
+}
+/* Clases reutilizables para la estructura de las diferentes pantallas. */
+.contenedor {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0;
+}
+.titulo-pagina {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 22px;
+  color: var(--istlc-azul);
+}
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.columna {
+  display: grid;
+  gap: 16px;
+}
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.espaciador {
+  flex: 1;
+}
+.ancho-completo {
+  width: 100%;
+}
+.texto-secundario {
+  color: #64748b;
+}
+.avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.imagen-tarjeta {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+}
+/* Diseño compartido por las pantallas de autenticación. */
+.contenedor-acceso {
+  min-height: calc(100vh - 147px);
+  display: grid;
+  place-items: center;
+  padding: 38px 24px;
+}
+.tarjeta-acceso {
+  width: min(520px, 100%);
+  padding: 28px;
+  border-top: 5px solid var(--istlc-amarillo);
+  border-radius: 22px !important;
+  box-shadow: 0 10px 30px rgba(6, 26, 56, 0.16) !important;
+}
+/* Colores semánticos para los mensajes enviados por los componentes. */
+.mensaje-error {
+  color: #b42318;
+}
+.mensaje-exito {
+  color: #067647;
+}
+/* Ajustes globales sobre componentes de Angular Material. */
+button[mat-flat-button],
+a[mat-flat-button] {
+  font-weight: 700;
+}
+.mat-mdc-card {
+  border-radius: 18px !important;
+}
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--istlc-amarillo) !important;
+}
+/* Adaptación global para pantallas pequeñas. */
+@media (max-width: 760px) {
+  .ocultar-movil {
+    display: none !important;
+  }
+}

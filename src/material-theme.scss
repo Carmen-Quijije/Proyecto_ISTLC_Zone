@@ -1,0 +1,16 @@
+// API de temas de Angular Material utilizada para generar los estilos de componentes.
+@use '@angular/material' as mat;
+
+// Tema global: amarillo como color primario, azul como apoyo y tipografía Roboto.
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$yellow-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}

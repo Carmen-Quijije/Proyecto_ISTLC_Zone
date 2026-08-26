@@ -1,0 +1,88 @@
+<!-- Pantalla inicial dividida entre la identidad visual y el formulario de acceso. -->
+<main class="inicio-istlc">
+  <!-- Presentación: conserva las imágenes y colores del sitio Bootstrap original. -->
+  <section class="presentacion" aria-label="Comunidad ISTLC Zone">
+    <!-- Carrusel controlado desde iniciar-sesion.ts mediante imagenActual. -->
+    <div class="carrusel">
+      <img [src]="imagenes[imagenActual()].ruta" [alt]="imagenes[imagenActual()].texto" />
+      <button
+        class="control anterior"
+        type="button"
+        (click)="imagenAnterior()"
+        aria-label="Imagen anterior"
+      >
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <button
+        class="control siguiente"
+        type="button"
+        (click)="siguienteImagen()"
+        aria-label="Imagen siguiente"
+      >
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <!-- Indicadores que permiten seleccionar directamente una imagen. -->
+      <div class="indicadores" aria-label="Seleccionar imagen">
+        @for (imagen of imagenes; track imagen.ruta; let indice = $index) {
+        <button
+          type="button"
+          [class.activo]="indice === imagenActual()"
+          (click)="seleccionarImagen(indice)"
+          [attr.aria-label]="'Mostrar imagen ' + (indice + 1)"
+        ></button>
+        }
+      </div>
+    </div>
+    <!-- Mensaje institucional y logotipo de ISTLC Zone. -->
+    <div class="mensaje-comunidad">
+      <img src="assets/images/logo.png" alt="Logo ISTLC Zone" />
+      <div>
+        <h1>Bienvenido a ISTLC Zone</h1>
+        <p>Conecta con tus compañeros, comparte ideas y forma parte de nuestra comunidad.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panel de acceso construido con tarjeta, campos y botones de Angular Material. -->
+  <section class="panel-acceso">
+    <mat-card class="tarjeta-acceso">
+      <mat-card-header>
+        <mat-card-title>Iniciar sesión</mat-card-title>
+        <mat-card-subtitle>Ingresa con tu correo o usuario</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <!-- Formulario reactivo: valida los datos antes de llamar a iniciarSesion(). -->
+        <form class="formulario" [formGroup]="formulario" (ngSubmit)="iniciarSesion()">
+          <mat-form-field appearance="outline"
+            ><mat-label>Usuario o correo</mat-label
+            ><input matInput formControlName="usuario" /><mat-icon matSuffix
+              >person</mat-icon
+            ></mat-form-field
+          >
+          <mat-form-field appearance="outline"
+            ><mat-label>Contraseña</mat-label
+            ><input matInput type="password" formControlName="password" /><mat-icon matSuffix
+              >lock</mat-icon
+            ></mat-form-field
+          >
+          <!-- Retroalimentación visible si el servicio rechaza las credenciales. -->
+          @if (mensajeError) {
+          <p class="mensaje-error">{{ mensajeError }}</p>
+          }
+          <button
+            class="boton-ingresar"
+            mat-flat-button
+            type="submit"
+            [disabled]="formulario.invalid || procesando"
+          >
+            {{ procesando ? 'Ingresando...' : 'Iniciar sesión' }}
+          </button>
+          <a class="recuperar" mat-button routerLink="/recuperarClave">¿Olvidaste tu contraseña?</a>
+          <!-- Enlace alternativo para crear una cuenta mediante Angular Router. -->
+          <div class="separador"><span>¿Aún no eres parte?</span></div>
+          <a class="crear-cuenta" mat-flat-button routerLink="/registro">Crear cuenta nueva</a>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </section>
+</main>

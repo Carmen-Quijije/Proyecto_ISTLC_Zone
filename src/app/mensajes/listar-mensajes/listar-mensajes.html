@@ -1,0 +1,50 @@
+<!-- Módulo de mensajería: conversaciones a la izquierda y chat a la derecha. -->
+<main class="contenedor">
+  <h1 class="titulo-pagina"><mat-icon>chat</mat-icon> Mensajes</h1>
+  <div class="panel-mensajes">
+    <!-- Listado de conversaciones disponibles. -->
+    <mat-card
+      ><mat-card-header><mat-card-title>Conversaciones</mat-card-title></mat-card-header
+      ><mat-list
+        >@for (conversacion of conversaciones; track conversacion.id) {
+        <mat-list-item (click)="abrir(conversacion)"
+          ><mat-icon matListItemIcon>person</mat-icon
+          ><span matListItemTitle>{{ conversacion.nombre || conversacion.usuario }}</span
+          ><span matListItemLine>{{ conversacion.ultimo_mensaje }}</span></mat-list-item
+        >
+        }</mat-list
+      ></mat-card
+    ><!-- Conversación seleccionada y sus mensajes. -->
+    <mat-card
+      ><mat-card-header
+        ><mat-card-title
+          >{{ contacto?.nombre || 'Selecciona una conversación' }}</mat-card-title
+        ></mat-card-header
+      ><mat-card-content class="columna"
+        >@for (mensaje of mensajes; track mensaje.id) {
+        <p>
+          <strong
+            >{{ mensaje.emisor_id === autenticacionService.usuario()?.id ? 'Tú' : contacto?.nombre
+            }}:</strong
+          >
+          {{ mensaje.contenido }}
+        </p>
+        }</mat-card-content
+      ><!-- El cuadro de escritura solo aparece cuando se seleccionó un contacto. -->
+      @if (contacto) {
+      <mat-card-actions
+        ><mat-form-field class="ancho-completo"
+          ><mat-label>Mensaje</mat-label
+          ><input matInput [(ngModel)]="texto" (keyup.enter)="enviar()" /><button
+            mat-icon-button
+            matSuffix
+            (click)="enviar()"
+          >
+            <mat-icon>send</mat-icon>
+          </button></mat-form-field
+        ></mat-card-actions
+      >
+      }</mat-card
+    >
+  </div>
+</main>

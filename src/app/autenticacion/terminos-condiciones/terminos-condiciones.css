@@ -1,0 +1,5 @@
+/* Limita el ancho del contenido legal para facilitar su lectura. */
+mat-card {
+  max-width: 900px;
+  margin: 0 auto;
+}
