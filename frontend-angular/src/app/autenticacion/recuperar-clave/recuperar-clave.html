@@ -8,12 +8,16 @@
       ></mat-card-header
     ><mat-card-content
       ><!-- El formulario valida el correo antes de ejecutar enviar(). -->
-      <form class="formulario" [formGroup]="formulario" (ngSubmit)="enviar()">
+      <form class="formulario" [formGroup]="formulario" (ngSubmit)="codigoEnviado ? restablecer() : enviar()">
         <mat-form-field
-          ><mat-label>Correo</mat-label
-          ><input matInput type="email" formControlName="email" /></mat-form-field
-        ><button mat-flat-button type="submit" [disabled]="formulario.invalid">Enviar código</button
-        ><a mat-button routerLink="/iniciarSesion">Volver</a>
+          ><mat-label>Correo</mat-label><input matInput type="email" formControlName="email" [readonly]="codigoEnviado" /></mat-form-field
+        >@if (codigoEnviado) {
+        <mat-form-field><mat-label>Código de verificación</mat-label><input matInput inputmode="numeric" maxlength="6" formControlName="codigo" /></mat-form-field>
+        <mat-form-field><mat-label>Nueva contraseña</mat-label><input matInput type="password" formControlName="password" /></mat-form-field>
+        <mat-form-field><mat-label>Confirmar contraseña</mat-label><input matInput type="password" formControlName="confirmarPassword" /></mat-form-field>
+        }
+        <button mat-flat-button type="submit" [disabled]="claveActualizada">{{ codigoEnviado ? 'Cambiar contraseña' : 'Enviar código' }}</button>
+        <a mat-button routerLink="/iniciarSesion">Volver</a>
         <!-- Confirmación que aparece después de procesar la solicitud. -->
         @if (mensaje) {
         <p class="mensaje-exito">{{ mensaje }}</p>

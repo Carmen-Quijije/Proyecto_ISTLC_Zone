@@ -22,8 +22,9 @@ import { AutenticacionService } from '../autenticacion-service';
   styleUrl: './recuperar-clave.css',
 })
 export class RecuperarClave {
-  // Mensaje mostrado después de procesar la solicitud.
   mensaje = '';
+  codigoEnviado = false;
+  claveActualizada = false;
 
   // Formulario reactivo que exige un correo válido.
   formulario;
@@ -34,14 +35,39 @@ export class RecuperarClave {
   ) {
     this.formulario = this.fb.nonNullable.group({
       email: ['', [Validators.required, Validators.email]],
+      codigo: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
+      password: ['', [Validators.required, Validators.minLength(6)]],
+      confirmarPassword: ['', Validators.required],
     });
   }
   /** Solicita la recuperación si el formulario contiene un correo válido. */
   enviar(): void {
-    if (this.formulario.invalid) return;
-    this.autenticacionService.solicitarRecuperacion(this.formulario.getRawValue().email).subscribe({
-      next: () => (this.mensaje = 'Solicitud enviada. Revisa tu correo.'),
-      error: () => (this.mensaje = 'Si el correo está registrado, recibirás instrucciones.'),
+    const email = this.formulario.controls.email;
+    if (email.invalid) return;
+
+    this.autenticacionService.solicitarRecuperacion(email.value).subscribe({
+      next: () => {
+        this.codigoEnviado = true;
+        this.mensaje = 'Revisa tu correo e ingresa el código de 6 dígitos.';
+      },
+      error: (error) => (this.mensaje = error.error?.message ?? 'No se pudo enviar el código.'),
+    });
+  }
+
+  /** Verifica el código enviado y actualiza la contraseña. */
+  restablecer(): void {
+    const { email, codigo, password, confirmarPassword } = this.formulario.getRawValue();
+    if (!codigo || !password || password !== confirmarPassword || this.formulario.controls.codigo.invalid || this.formulario.controls.password.invalid) {
+      this.mensaje = 'Revisa el código y confirma una contraseña de al menos 6 caracteres.';
+      return;
+    }
+
+    this.autenticacionService.restablecerClave({ email, codigo, password }).subscribe({
+      next: () => {
+        this.claveActualizada = true;
+        this.mensaje = 'Contraseña actualizada. Ya puedes iniciar sesión.';
+      },
+      error: (error) => (this.mensaje = error.error?.message ?? 'El código no es válido o ya expiró.'),
     });
   }
 }

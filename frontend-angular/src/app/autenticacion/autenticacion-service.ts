@@ -49,6 +49,11 @@ export class AutenticacionService {
     return this.http.post(`${this.apiUrl}/forgot-password`, { email });
   }
 
+  /** Valida el código recibido y guarda la nueva contraseña. */
+  restablecerClave(datos: { email: string; codigo: string; password: string }) {
+    return this.http.post(`${this.apiUrl}/reset-password`, datos);
+  }
+
   /** Elimina la sesión local y devuelve al usuario a la pantalla de acceso. */
   cerrarSesion(): void {
     localStorage.removeItem('usuario');
