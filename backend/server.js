@@ -8,7 +8,8 @@ const { initDatabase } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_DIR = process.env.FRONTEND_DIR || path.join(
+// La imagen Docker siempre coloca Angular en esta ubicación.
+const FRONTEND_DIR = path.join(
     __dirname,
     '..',
     'frontend-angular',
