@@ -12,6 +12,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "outputPath": "dist/proyecto-istlc-zone-angular",
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [{ "glob": "**/*", "input": "public" }],
@@ -31,6 +32,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": { "buildTarget": "proyecto-istlc-zone-angular:build:production" },
             "development": { "buildTarget": "proyecto-istlc-zone-angular:build:development" }

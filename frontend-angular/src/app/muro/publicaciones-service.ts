@@ -16,7 +16,8 @@ export interface Publicacion {
 
 @Injectable({ providedIn: 'root' })
 export class PublicacionesService {
-  private readonly apiUrl = 'http://localhost:3000/api/auth';
+  // URL relativa compartida con el backend publicado por Render.
+  private readonly apiUrl = '/api/auth';
 
   constructor(private http: HttpClient) {}
 

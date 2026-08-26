@@ -1,38 +1,34 @@
-# Proyecto ISTLC Zone - Angular
+# Proyecto ISTLC Zone
 
-Frontend reorganizado siguiendo la estructura del ejemplo `facturacionWeb`:
+Aplicación organizada como un proyecto de pila completa para mantener la configuración existente de Render.
 
-- Cada dominio tiene su propia carpeta.
-- Cada componente separa TypeScript, HTML y CSS.
-- Los servicios están ubicados en la carpeta del dominio correspondiente.
-- `app.routes.ts` importa los componentes de forma explícita.
-- La navegación interna usa `routerLink` y `routerLinkActive`.
-- La interfaz utiliza componentes de Angular Material.
+## Estructura
 
-## Estructura principal
+- `frontend-angular/`: interfaz desarrollada con Angular y Angular Material.
+- `backend/`: API REST desarrollada con Node.js, Express y PostgreSQL.
 
-```text
-src/app/
-├── autenticacion/
-├── muro/
-├── perfil/
-├── amigos/
-├── mensajes/
-├── empleos/
-├── plataformas/
-├── pagina-no-encontrada/
-├── app.config.ts
-├── app.css
-├── app.html
-├── app.routes.ts
-└── app.ts
-```
+En Render, Angular consume `/api/auth` desde el mismo dominio del backend. En desarrollo, el proxy de Angular redirige `/api` a `http://localhost:3000`.
 
-## Ejecución
+## Desarrollo local
+
+Primero inicia el backend:
 
 ```bash
+cd backend
 npm install
 npm start
 ```
 
-Abre `http://localhost:4200`. El backend de ISTLC Zone debe estar activo en `http://localhost:3000`.
+Después inicia Angular en otra terminal:
+
+```bash
+cd frontend-angular
+npm install
+npm start
+```
+
+Abre `http://localhost:4200`.
+
+## Despliegue existente de Render
+
+El archivo usado por el servicio continúa en `backend/Dockerfile`. El contexto de construcción debe seguir siendo la raíz del repositorio, igual que en la versión anterior. El Dockerfile compila Angular y luego inicia Express, que publica tanto `/api/auth` como las rutas de la aplicación.

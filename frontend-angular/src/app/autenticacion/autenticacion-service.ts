@@ -17,7 +17,8 @@ export interface UsuarioSesion {
 @Injectable({ providedIn: 'root' })
 export class AutenticacionService {
   // Dirección base del módulo de autenticación del backend Express.
-  private readonly apiUrl = 'http://localhost:3000/api/auth';
+  // Usa el mismo dominio en Render; durante desarrollo Angular redirige /api al puerto 3000.
+  private readonly apiUrl = '/api/auth';
 
   // Signal privada que conserva la sesión recuperada desde localStorage.
   private readonly usuarioActual = signal<UsuarioSesion | null>(this.leerSesion());
