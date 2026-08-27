@@ -18,12 +18,14 @@ import { PerfilService } from '../perfil-service';
   styleUrl: './ver-perfil.css',
 })
 export class VerPerfil implements OnInit {
+  perfilId = 0;
   perfil?: Usuario;
   respuesta?: PerfilRespuesta;
   publicaciones: Publicacion[] = [];
   amigos: Usuario[] = [];
   cargando = true;
   mensaje = '';
+  private solicitudPerfil = 0;
   constructor(
     private route: ActivatedRoute,
     private perfilService: PerfilService,
@@ -37,25 +39,70 @@ export class VerPerfil implements OnInit {
     );
   }
   cargar(id: number): void {
-    const actual = this.autenticacionService.usuario()?.id;
-    if (!id || !actual) return;
-    this.cargando = true;
+    const usuarioSesion = this.autenticacionService.usuario();
+    const actual = usuarioSesion?.id;
+    if (!id || !actual || !usuarioSesion) return;
+    const solicitud = ++this.solicitudPerfil;
+    this.perfilId = id;
+    this.mensaje = '';
+    this.publicaciones = [];
+    this.amigos = [];
+
+    // El perfil propio se muestra de inmediato con la información guardada al iniciar sesión.
+    if (id === actual) {
+      this.perfil = usuarioSesion;
+      this.respuesta = {
+        success: true,
+        usuario: usuarioSesion,
+        seguidores: 0,
+        seguidos: 0,
+        siguiendo: false,
+        solicitudPendiente: false,
+      };
+      this.cargando = false;
+    } else {
+      this.perfil = undefined;
+      this.respuesta = undefined;
+      this.cargando = true;
+    }
+
     this.perfilService.obtener(id, actual).subscribe({
       next: (r) => {
+        if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
         this.respuesta = r;
         this.perfil = r.usuario;
         this.cargando = false;
       },
       error: () => {
-        this.mensaje = 'No se pudo cargar este perfil.';
+        if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
+        this.mensaje =
+          id === actual
+            ? 'No se pudo actualizar la información del perfil desde el servidor.'
+            : 'No se pudo cargar el perfil solicitado.';
         this.cargando = false;
       },
     });
-    this.perfilService.obtenerPublicaciones(id, actual).subscribe((p) => (this.publicaciones = p));
-    this.amigosService.listarSiguiendo(id, actual).subscribe((a) => (this.amigos = a));
+    this.perfilService.obtenerPublicaciones(id, actual).subscribe({
+      next: (publicaciones) => {
+        if (solicitud === this.solicitudPerfil && id === this.perfilId)
+          this.publicaciones = publicaciones;
+      },
+      error: () => {
+        if (solicitud === this.solicitudPerfil && id === this.perfilId)
+          this.publicaciones = [];
+      },
+    });
+    this.amigosService.listarSiguiendo(id, actual).subscribe({
+      next: (amigos) => {
+        if (solicitud === this.solicitudPerfil && id === this.perfilId) this.amigos = amigos;
+      },
+      error: () => {
+        if (solicitud === this.solicitudPerfil && id === this.perfilId) this.amigos = [];
+      },
+    });
   }
   get esPropio(): boolean {
-    return this.perfil?.id === this.autenticacionService.usuario()?.id;
+    return this.perfilId === this.autenticacionService.usuario()?.id;
   }
   seguir(): void {
     const actual = this.autenticacionService.usuario()?.id;

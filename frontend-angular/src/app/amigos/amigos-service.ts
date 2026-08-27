@@ -1,7 +1,7 @@
 // Servicio que concentra las operaciones HTTP relacionadas con personas y seguimiento.
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { map } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { Usuario } from '../core/modelos';
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +27,50 @@ export class AmigosService {
         `${this.apiUrl}/following/${perfilId}?currentUserId=${usuarioActualId}`,
       )
       .pipe(map((respuesta) => respuesta.usuarios));
+  }
+
+  /** Prioriza amigos de amigos y completa la lista con las cuentas más recientes. */
+  obtenerSugerencias(usuarioId: number, limite = 4) {
+    return forkJoin({
+      candidatos: this.buscar('', usuarioId),
+      amigos: this.listarSiguiendo(usuarioId, usuarioId),
+    }).pipe(
+      switchMap(({ candidatos, amigos }) => {
+        const consultas = amigos.slice(0, 12).map((amigo) =>
+          this.listarSiguiendo(amigo.id, usuarioId).pipe(catchError(() => of([] as Usuario[]))),
+        );
+        const redes$ = consultas.length ? forkJoin(consultas) : of([] as Usuario[][]);
+        return redes$.pipe(
+          map((redes) => {
+            const conexionesComunes = new Map<number, number>();
+            redes.flat().forEach((persona) =>
+              conexionesComunes.set(
+                persona.id,
+                (conexionesComunes.get(persona.id) ?? 0) + 1,
+              ),
+            );
+            return candidatos
+              .filter((persona) => !persona.siguiendo)
+              .sort(
+                (a, b) =>
+                  (conexionesComunes.get(b.id) ?? 0) - (conexionesComunes.get(a.id) ?? 0) ||
+                  Number(a.solicitudPendiente) - Number(b.solicitudPendiente) ||
+                  b.id - a.id,
+              )
+              .slice(0, limite)
+              .map((persona) => {
+                const comunes = conexionesComunes.get(persona.id) ?? 0;
+                return {
+                  ...persona,
+                  motivoSugerencia: comunes
+                    ? `${comunes} conexión${comunes === 1 ? '' : 'es'} en común`
+                    : 'Usuario nuevo o sugerido',
+                };
+              });
+          }),
+        );
+      }),
+    );
   }
   /** Envía al backend la relación entre seguidor y usuario seguido. */
   seguir(seguidorId: number, seguidoId: number) {

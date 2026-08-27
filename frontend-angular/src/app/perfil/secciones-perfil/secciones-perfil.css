@@ -62,11 +62,21 @@
   margin-left: auto;
 }
 .tabs {
+  position: relative;
+  z-index: 1;
   width: min(1000px, calc(100% - 50px));
   margin: auto;
   display: flex;
-  overflow: auto;
+  overflow: visible;
   background: var(--istlc-superficie);
+}
+.tabs::before {
+  position: absolute;
+  inset: 0 calc(50% - 50vw);
+  z-index: -1;
+  background: var(--istlc-superficie);
+  border-bottom: 1px solid var(--istlc-borde);
+  content: '';
 }
 .tabs a {
   padding: 14px;
@@ -74,8 +84,8 @@
   white-space: nowrap;
 }
 .tabs a.activo {
-  color: #061a38;
-  border-bottom: 3px solid #ffc107;
+  color: #0d6efd;
+  border-bottom: 3px solid #0d6efd;
   font-weight: 800;
 }
 .contenido {
@@ -108,7 +118,7 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 355px));
   gap: 18px;
 }
-.mas-tabs{position:relative;color:#475569}.mas-tabs summary{display:flex;align-items:center;gap:5px;padding:14px;list-style:none;cursor:pointer;white-space:nowrap}.mas-tabs summary::-webkit-details-marker{display:none}.mas-tabs.activo-mas summary{color:#061a38;border-bottom:3px solid #ffc107;font-weight:800}.mas-tabs>div{position:absolute;top:100%;left:0;z-index:20;display:grid;min-width:230px;padding:8px;background:var(--istlc-superficie);border:1px solid var(--istlc-borde);border-radius:7px;box-shadow:0 10px 24px var(--istlc-sombra)}.mas-tabs>div a{padding:10px 12px;border-bottom:0!important}
+.mas-tabs{position:relative;color:#475569}.mas-tabs summary{display:flex;align-items:center;gap:5px;padding:14px;list-style:none;cursor:pointer;white-space:nowrap}.mas-tabs summary::-webkit-details-marker{display:none}.mas-tabs.activo-mas summary{color:#0d6efd;border-bottom:3px solid #0d6efd;font-weight:800}.mas-tabs>div{position:absolute;top:100%;left:0;z-index:20;display:grid;min-width:230px;padding:8px;background:var(--istlc-superficie);border:1px solid var(--istlc-borde);border-radius:7px;box-shadow:0 10px 24px var(--istlc-sombra)}.mas-tabs>div a{padding:10px 12px;border-bottom:0!important}
 .galeria img {
   width: 100%;
   aspect-ratio: 1;
@@ -176,6 +186,9 @@
   color: #64748b;
 }
 @media (max-width: 650px) {
+  .tabs {
+    overflow-x: auto;
+  }
   .identidad {
     flex-direction: column;
     text-align: center;

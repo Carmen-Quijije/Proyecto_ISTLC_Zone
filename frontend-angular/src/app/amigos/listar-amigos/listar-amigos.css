@@ -1,13 +1,19 @@
 .amigos-page { min-height: calc(100vh - 145px); background: var(--istlc-fondo); }
-.cabecera-perfil, .tabs { background: var(--istlc-superficie); }
-.portada { height: 190px; background: linear-gradient(135deg, #958861, #061a38); }
-.datos { width: min(1100px, calc(100% - 32px)); margin: auto; display: flex; align-items: center; gap: 20px; padding-bottom: 22px; }
-.datos > img { width: 145px; height: 145px; margin-top: -65px; border: 5px solid #fff; border-radius: 50%; object-fit: cover; }
-.datos h1, .contenido h2, .amigo-card h3, .tarjeta-persona h3 { margin: 0; color: var(--istlc-texto); }
-.datos p { margin: 5px 0; color: var(--istlc-muted); }
-.tabs { position: relative; display: flex; align-items: stretch; gap: 8px; width: min(1100px, calc(100% - 32px)); margin: auto; padding: 10px 0; }
+.perfil-mini { background: var(--istlc-superficie); border-bottom: 1px solid var(--istlc-borde); }
+.portada { min-height: 272px; background: linear-gradient(135deg, #958861, #061a38); }
+.identidad { width: min(1000px, calc(100% - 50px)); min-height: 272px; margin: auto; display: flex; align-items: center; gap: 28px; color: #fff; }
+.identidad > img { width: 210px; height: 210px; border: 5px solid #fff; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 15px #0003; }
+.datos-cabecera { flex: 1; }
+.datos-cabecera h1 { margin: 0 0 8px; color: #fff; font-size: clamp(2rem, 4vw, 3rem); line-height: 1; text-shadow: 0 3px 4px #0008; }
+.datos-cabecera p { margin: 6px 0; color: #fff; font-size: 1.05rem; }
+.detalles-cabecera { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; }
+.detalles-cabecera span { display: flex; align-items: center; gap: 5px; }
+.detalles-cabecera mat-icon { color: #fff; }
+.contenido h2, .amigo-card h3, .tarjeta-persona h3 { margin: 0; color: var(--istlc-texto); }
+.tabs { position: relative; z-index: 1; display: flex; align-items: stretch; gap: 8px; width: min(1000px, calc(100% - 50px)); margin: auto; padding: 10px 0; background: var(--istlc-superficie); }
+.tabs::before { position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--istlc-superficie); border-bottom: 1px solid var(--istlc-borde); content: ''; }
 .tabs > a, .mas-tabs summary { padding: 12px 16px; color: var(--istlc-muted); cursor: pointer; white-space: nowrap; }
-.tabs .activo { border-bottom: 3px solid var(--istlc-amarillo); color: var(--istlc-texto); font-weight: 800; }
+.tabs .activo { border-bottom: 3px solid #0d6efd; color: #0d6efd; font-weight: 800; }
 .mas-tabs { position: relative; }
 .mas-tabs summary { display: flex; align-items: center; list-style: none; }
 .mas-tabs summary::-webkit-details-marker { display: none; }
@@ -28,4 +34,4 @@
 .busqueda mat-form-field { width: 100%; margin-top: 12px; }
 .tarjeta-persona button { background: var(--istlc-amarillo); color: var(--istlc-boton-texto); font-weight: 800; }
 @media (max-width: 900px) { .red-grid, .resultados { grid-template-columns: repeat(2, minmax(230px, 1fr)); } }
-@media (max-width: 650px) { .datos { flex-direction: column; text-align: center; } .tabs { overflow-x: auto; } .contenido { width: min(100% - 20px, 1350px); } .red-grid, .resultados { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .identidad { flex-direction: column; justify-content: center; padding: 24px 0; text-align: center; } .identidad > img { width: 150px; height: 150px; } .detalles-cabecera { justify-content: center; } .tabs { overflow-x: auto; } .contenido { width: min(100% - 20px, 1350px); } .red-grid, .resultados { grid-template-columns: 1fr; } }

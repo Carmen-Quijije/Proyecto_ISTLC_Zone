@@ -20,6 +20,7 @@ export interface Usuario {
   ultimoMensaje?: string;
   ultimaFecha?: string;
   mensajesNoLeidos?: number;
+  motivoSugerencia?: string;
 }
 
 export interface PerfilRespuesta {

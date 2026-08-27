@@ -2,3 +2,15 @@
 .tarjeta {
   overflow: hidden;
 }
+.acciones-pagina {
+  display: flex;
+  justify-content: center;
+  padding: 30px 0 10px;
+}
+.boton-regresar {
+  min-width: 210px;
+  min-height: 44px;
+  color: var(--istlc-boton-texto) !important;
+  background: var(--istlc-amarillo) !important;
+  font-weight: 800;
+}

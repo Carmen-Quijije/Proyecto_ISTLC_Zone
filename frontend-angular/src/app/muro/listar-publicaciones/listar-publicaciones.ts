@@ -63,8 +63,11 @@ export class ListarPublicaciones implements OnInit {
   }
 
   cargarTodo(): void {
-    const id = this.autenticacionService.usuario()?.id;
+    const usuarioSesion = this.autenticacionService.usuario();
+    const id = usuarioSesion?.id;
     if (!id) return;
+    // Muestra inmediatamente los datos guardados al iniciar sesión mientras Render responde.
+    this.perfil = this.perfil ?? usuarioSesion;
     this.publicacionesService
       .obtenerMuro(id)
       .subscribe({
@@ -74,16 +77,20 @@ export class ListarPublicaciones implements OnInit {
         },
         error: () => (this.mensaje = 'No se pudo cargar el muro.'),
       });
-    this.perfilService.obtener(id, id).subscribe((respuesta) => {
-      this.perfil = respuesta.usuario;
-      this.seguidores = respuesta.seguidores;
-      this.seguidos = respuesta.seguidos;
+    this.perfilService.obtener(id, id).subscribe({
+      next: (respuesta) => {
+        this.perfil = respuesta.usuario;
+        this.seguidores = respuesta.seguidores;
+        this.seguidos = respuesta.seguidos;
+      },
+      error: () => {
+        if (!this.mensaje)
+          this.mensaje = 'No se pudieron actualizar el perfil y los contadores.';
+      },
     });
     this.amigosService
-      .buscar('', id)
-      .subscribe(
-        (usuarios) => (this.sugerencias = usuarios.filter((u) => !u.siguiendo).slice(0, 4)),
-      );
+      .obtenerSugerencias(id)
+      .subscribe((usuarios) => (this.sugerencias = usuarios));
     this.amigosService
       .listarSiguiendo(id, id)
       .subscribe((usuarios) => (this.contactosCompartir = usuarios));

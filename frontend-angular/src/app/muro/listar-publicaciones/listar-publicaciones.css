@@ -43,6 +43,11 @@
   margin: 12px 0 4px;
   color: #061a38;
 }
+.usuario-perfil {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-weight: 700;
+}
 .bio,
 .contador {
   color: #64748b;
