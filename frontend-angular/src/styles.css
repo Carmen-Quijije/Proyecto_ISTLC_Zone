@@ -143,7 +143,8 @@ a[mat-flat-button] {
   font-weight: 700;
 }
 .mat-mdc-card {
-  border-radius: 18px !important;
+  border: 1px solid var(--istlc-borde);
+  border-radius: 7px !important;
 }
 
 /* Adaptación global de Angular Material y de las pantallas al tema seleccionado. */
@@ -167,11 +168,34 @@ body:not([data-tema-istlc='tradicional']) .panel,
 body:not([data-tema-istlc='tradicional']) .contactos,
 body:not([data-tema-istlc='tradicional']) .chat,
 body:not([data-tema-istlc='tradicional']) .perfil-mini,
-body:not([data-tema-istlc='tradicional']) .contenido {
+body:not([data-tema-istlc='tradicional']) .fotos-panel {
   color: var(--istlc-texto) !important;
   background: var(--istlc-superficie) !important;
   border-color: var(--istlc-borde) !important;
   box-shadow: 0 10px 28px var(--istlc-sombra) !important;
+}
+body:not([data-tema-istlc='tradicional']) .comentarios,
+body:not([data-tema-istlc='tradicional']) .panel-compartir,
+body:not([data-tema-istlc='tradicional']) .comentario > div,
+body:not([data-tema-istlc='tradicional']) .contacto-compartir,
+body:not([data-tema-istlc='tradicional']) .publicar-enlace a {
+  color: var(--istlc-texto) !important;
+  background: var(--istlc-superficie-2) !important;
+  border-color: var(--istlc-borde) !important;
+}
+body[data-tema-istlc='neon'] .muro-page,
+body[data-tema-istlc='neon'] .perfil-page,
+body[data-tema-istlc='neon'] .seccion-page {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(37, 215, 255, 0.08), transparent 28%),
+    linear-gradient(135deg, #050914, #07111f 45%, #091a2b) !important;
+}
+body[data-tema-istlc='neon'] .mat-mdc-card {
+  border-color: #334155 !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35) !important;
+}
+body[data-tema-istlc='oceano'] .mat-mdc-card {
+  border-color: #1b5872 !important;
 }
 body:not([data-tema-istlc='tradicional']) h1,
 body:not([data-tema-istlc='tradicional']) h2,
@@ -230,7 +254,11 @@ body:not([data-tema-istlc='tradicional']) .lista {
 }
 body:not([data-tema-istlc='tradicional']) .barra-navegacion a,
 body:not([data-tema-istlc='tradicional']) .barra-navegacion mat-icon,
-body:not([data-tema-istlc='tradicional']) .pie-pagina p {
+body:not([data-tema-istlc='tradicional']) .pie-pagina p,
+body:not([data-tema-istlc='tradicional']) .perfil-info p,
+body:not([data-tema-istlc='tradicional']) .perfil-info .detalles,
+body:not([data-tema-istlc='tradicional']) .identidad p,
+body:not([data-tema-istlc='tradicional']) .identidad .detalles-cabecera {
   color: var(--istlc-nav-text) !important;
 }
 .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,

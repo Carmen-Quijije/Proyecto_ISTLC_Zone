@@ -66,6 +66,26 @@ export class SeccionesPerfil implements OnInit {
   get fotos(): string[] {
     return this.publicaciones.flatMap((p) => p.imagenes);
   }
+  get gruposFotos(): { clave: string; titulo: string; fotos: string[] }[] {
+    const grupos = new Map<string, string[]>();
+    for (const publicacion of this.publicaciones) {
+      if (!publicacion.imagenes.length) continue;
+      const fecha = new Date(publicacion.fecha);
+      const clave = fecha.toISOString().slice(0, 10);
+      grupos.set(clave, [...(grupos.get(clave) ?? []), ...publicacion.imagenes]);
+    }
+    return [...grupos.entries()]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([clave, fotos]) => ({
+        clave,
+        titulo: new Date(`${clave}T12:00:00`).toLocaleDateString('es-EC', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+        fotos,
+      }));
+  }
   get esPropio(): boolean {
     return this.perfilId === this.auth.usuario()?.id;
   }
