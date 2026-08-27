@@ -6,6 +6,49 @@
   --istlc-amarillo-hover: #e0aa00;
   --istlc-fondo: #f1f3f6;
   --istlc-texto: #212529;
+  --istlc-muted: #64748b;
+  --istlc-superficie: #ffffff;
+  --istlc-superficie-2: #f8fafc;
+  --istlc-borde: #d5dbe3;
+  --istlc-nav-text: #ffffff;
+  --istlc-boton-texto: #061a38;
+  --istlc-sombra: rgba(6, 26, 56, 0.2);
+}
+/* Tema oscuro negro neón, equivalente a la opción de la aplicación original. */
+html[data-tema-istlc='neon'],
+body[data-tema-istlc='neon'] {
+  color-scheme: dark;
+  --istlc-azul: #050914;
+  --istlc-azul-claro: #0b1f36;
+  --istlc-amarillo: #ffc107;
+  --istlc-amarillo-hover: #ffdf62;
+  --istlc-fondo: #07111f;
+  --istlc-texto: #f4f8ff;
+  --istlc-muted: #aab8cc;
+  --istlc-superficie: #0f1724;
+  --istlc-superficie-2: #132238;
+  --istlc-borde: #29415f;
+  --istlc-nav-text: #f4f8ff;
+  --istlc-boton-texto: #07111f;
+  --istlc-sombra: rgba(37, 215, 255, 0.18);
+}
+/* Tema azul océano de la versión Bootstrap. */
+html[data-tema-istlc='oceano'],
+body[data-tema-istlc='oceano'] {
+  color-scheme: dark;
+  --istlc-azul: #031725;
+  --istlc-azul-claro: #07334a;
+  --istlc-amarillo: #3ee7ff;
+  --istlc-amarillo-hover: #8af7d4;
+  --istlc-fondo: #041d2c;
+  --istlc-texto: #eefbff;
+  --istlc-muted: #a8c9d8;
+  --istlc-superficie: #0a2235;
+  --istlc-superficie-2: #0d2b42;
+  --istlc-borde: #1b5872;
+  --istlc-nav-text: #eefbff;
+  --istlc-boton-texto: #031725;
+  --istlc-sombra: rgba(62, 231, 255, 0.18);
 }
 /* Normalización básica para calcular correctamente anchos, altos y márgenes. */
 * {
@@ -20,6 +63,7 @@ body {
   font-family: Roboto, Arial, sans-serif;
   color: var(--istlc-texto);
   background: var(--istlc-fondo);
+  transition: color 180ms ease, background-color 180ms ease;
 }
 a {
   color: var(--istlc-azul);
@@ -59,7 +103,7 @@ a {
   width: 100%;
 }
 .texto-secundario {
-  color: #64748b;
+  color: var(--istlc-muted);
 }
 .avatar {
   width: 50px;
@@ -100,6 +144,94 @@ a[mat-flat-button] {
 }
 .mat-mdc-card {
   border-radius: 18px !important;
+}
+
+/* Adaptación global de Angular Material y de las pantallas al tema seleccionado. */
+body:not([data-tema-istlc='tradicional']) main,
+body:not([data-tema-istlc='tradicional']) .muro-page,
+body:not([data-tema-istlc='tradicional']) .perfil-page,
+body:not([data-tema-istlc='tradicional']) .amigos-page,
+body:not([data-tema-istlc='tradicional']) .mensajes-page,
+body:not([data-tema-istlc='tradicional']) .editar-page,
+body:not([data-tema-istlc='tradicional']) .seccion-page,
+body:not([data-tema-istlc='tradicional']) .pagina-auth,
+body:not([data-tema-istlc='tradicional']) .inicio-istlc,
+body:not([data-tema-istlc='tradicional']) .panel-acceso {
+  color: var(--istlc-texto) !important;
+  background: var(--istlc-fondo) !important;
+}
+body:not([data-tema-istlc='tradicional']) .mat-mdc-card,
+body:not([data-tema-istlc='tradicional']) .tarjeta-auth,
+body:not([data-tema-istlc='tradicional']) .tarjeta-acceso,
+body:not([data-tema-istlc='tradicional']) .panel,
+body:not([data-tema-istlc='tradicional']) .contactos,
+body:not([data-tema-istlc='tradicional']) .chat,
+body:not([data-tema-istlc='tradicional']) .perfil-mini,
+body:not([data-tema-istlc='tradicional']) .contenido {
+  color: var(--istlc-texto) !important;
+  background: var(--istlc-superficie) !important;
+  border-color: var(--istlc-borde) !important;
+  box-shadow: 0 10px 28px var(--istlc-sombra) !important;
+}
+body:not([data-tema-istlc='tradicional']) h1,
+body:not([data-tema-istlc='tradicional']) h2,
+body:not([data-tema-istlc='tradicional']) h3,
+body:not([data-tema-istlc='tradicional']) h4,
+body:not([data-tema-istlc='tradicional']) strong,
+body:not([data-tema-istlc='tradicional']) a:not(.amarillo):not(.boton-amarillo),
+body:not([data-tema-istlc='tradicional']) .mat-mdc-menu-item-text,
+body:not([data-tema-istlc='tradicional']) .mat-mdc-menu-item mat-icon {
+  color: var(--istlc-texto) !important;
+}
+body:not([data-tema-istlc='tradicional']) p,
+body:not([data-tema-istlc='tradicional']) small,
+body:not([data-tema-istlc='tradicional']) .secundario,
+body:not([data-tema-istlc='tradicional']) .texto-secundario {
+  color: var(--istlc-muted) !important;
+}
+body:not([data-tema-istlc='tradicional']) .mat-mdc-menu-panel,
+body:not([data-tema-istlc='tradicional']) .mat-mdc-menu-content,
+body:not([data-tema-istlc='tradicional']) .mat-mdc-dialog-surface {
+  color: var(--istlc-texto) !important;
+  background: var(--istlc-superficie) !important;
+}
+body:not([data-tema-istlc='tradicional']) .mat-mdc-form-field {
+  --mat-form-field-outlined-input-text-color: var(--istlc-texto);
+  --mat-form-field-outlined-label-text-color: var(--istlc-muted);
+  --mat-form-field-outlined-outline-color: var(--istlc-borde);
+  --mat-form-field-outlined-hover-outline-color: var(--istlc-amarillo);
+  --mat-form-field-outlined-focus-outline-color: var(--istlc-amarillo);
+  --mat-select-enabled-trigger-text-color: var(--istlc-texto);
+}
+body:not([data-tema-istlc='tradicional']) input,
+body:not([data-tema-istlc='tradicional']) textarea,
+body:not([data-tema-istlc='tradicional']) select {
+  color: var(--istlc-texto) !important;
+  caret-color: var(--istlc-amarillo);
+}
+body:not([data-tema-istlc='tradicional']) input::placeholder,
+body:not([data-tema-istlc='tradicional']) textarea::placeholder {
+  color: var(--istlc-muted) !important;
+}
+body:not([data-tema-istlc='tradicional']) .amarillo,
+body:not([data-tema-istlc='tradicional']) .boton-amarillo,
+body:not([data-tema-istlc='tradicional']) button[mat-flat-button]:not(:disabled) {
+  color: var(--istlc-boton-texto) !important;
+  background: var(--istlc-amarillo) !important;
+}
+body:not([data-tema-istlc='tradicional']) .tabs,
+body:not([data-tema-istlc='tradicional']) .perfil-tabs,
+body:not([data-tema-istlc='tradicional']) .historial,
+body:not([data-tema-istlc='tradicional']) .resultados,
+body:not([data-tema-istlc='tradicional']) .lista {
+  color: var(--istlc-texto) !important;
+  background-color: var(--istlc-superficie-2) !important;
+  border-color: var(--istlc-borde) !important;
+}
+body:not([data-tema-istlc='tradicional']) .barra-navegacion a,
+body:not([data-tema-istlc='tradicional']) .barra-navegacion mat-icon,
+body:not([data-tema-istlc='tradicional']) .pie-pagina p {
+  color: var(--istlc-nav-text) !important;
 }
 .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
 .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,

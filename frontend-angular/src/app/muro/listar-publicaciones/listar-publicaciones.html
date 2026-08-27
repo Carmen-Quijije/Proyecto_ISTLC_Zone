@@ -1,75 +1,66 @@
-<!-- Muro principal de publicaciones de la comunidad. -->
-<main class="contenedor">
-  <h1 class="titulo-pagina"><mat-icon>dynamic_feed</mat-icon> Muro</h1>
-  <div class="distribucion">
-    <!-- Columna principal: formulario de publicación y listado del muro. -->
-    <section class="columna">
-      <mat-card
-        ><mat-card-header
-          ><img
-            mat-card-avatar
-            [src]="autenticacionService.usuario()?.foto_perfil || 'assets/images/icono.png'"
-            alt="Foto de usuario"
-          /><mat-card-title>¿Qué quieres compartir?</mat-card-title></mat-card-header
-        ><mat-card-content
-          ><mat-form-field class="ancho-completo"
-            ><mat-label>Escribe una publicación</mat-label
-            ><textarea
-              matInput
-              [(ngModel)]="contenido"
-              rows="3"
-            ></textarea></mat-form-field></mat-card-content
-        ><mat-card-actions align="end"
-          ><button mat-flat-button (click)="publicar()" [disabled]="!contenido.trim()">
-            <mat-icon>send</mat-icon> Publicar
-          </button></mat-card-actions
-        ></mat-card
-      >
-      <!-- Cada elemento del arreglo publicaciones se representa en una tarjeta Material. -->
-      @for (publicacion of publicaciones; track publicacion.id) {
-      <mat-card
-        ><mat-card-header
-          ><img
-            mat-card-avatar
-            [src]="publicacion.foto_perfil || 'assets/images/icono.png'"
-            alt="Foto del autor"
-          /><mat-card-title
-            ><a [routerLink]="['/perfil']" [queryParams]="{ id: publicacion.id }"
-              >{{ publicacion.nombre || publicacion.usuario }}</a
-            ></mat-card-title
-          ><mat-card-subtitle>{{ publicacion.fecha_creacion }}</mat-card-subtitle></mat-card-header
-        ><mat-card-content
-          ><p>{{ publicacion.contenido }}</p>
-          <!-- La imagen es opcional y solo se agrega cuando la publicación la contiene. -->
-          @if (publicacion.imagen) {
-          <img class="imagen-tarjeta" [src]="publicacion.imagen" alt="Imagen de la publicación" />
-          }</mat-card-content
-        ><mat-card-actions
-          ><button mat-button (click)="indicarMeGusta(publicacion)">
-            <mat-icon>favorite</mat-icon> {{ publicacion.likes || 0 }}</button
-          ><button mat-button><mat-icon>comment</mat-icon> Comentar</button
-          ><button mat-button><mat-icon>share</mat-icon> Compartir</button></mat-card-actions
-        ></mat-card
-      >
-      } @empty {
-      <!-- Mensaje alternativo cuando el servicio no devuelve publicaciones. -->
-      <mat-card
-        ><mat-card-content
-          ><p class="texto-secundario">No hay publicaciones disponibles.</p></mat-card-content
-        ></mat-card
-      >
-      }
-    </section>
-    <!-- Panel lateral con enlaces rápidos configurados mediante routerLink. -->
-    <aside>
-      <mat-card
-        ><mat-card-header><mat-card-title>Accesos rápidos</mat-card-title></mat-card-header
-        ><mat-card-content
-          ><p><a routerLink="/perfil">Mi perfil</a></p>
-          <p><a routerLink="/amigos">Buscar amigos</a></p>
-          <p><a routerLink="/plataformas">Plataformas institucionales</a></p></mat-card-content
-        ></mat-card
-      >
+<main class="muro-page">
+  <section class="muro-grid">
+    <aside class="columna-lateral">
+      <mat-card class="perfil-resumen">
+        <img class="avatar-grande" [src]="perfil?.fotoPerfil || 'assets/images/icono.png'" alt="Foto de perfil" />
+        <h2>{{ perfil?.nombre || 'Usuario ISTLC' }}</h2>
+        <p class="bio">{{ perfil?.bio || 'Miembro de ISTLC Zone' }}</p>
+        <p class="contador">{{ seguidores }} seguidores · {{ seguidos }} seguidos</p>
+        <a mat-flat-button class="boton-amarillo" routerLink="/perfil">Perfil</a>
+        <a mat-button class="boton-claro" routerLink="/amigos">Buscar amigos</a>
+      </mat-card>
+
+      <mat-card class="acceso-card">
+        <div class="titulo-fila"><h3>Plataformas</h3><a routerLink="/plataformas">Ver más</a></div>
+        <a class="acceso-mini" href="https://moodle.tecnologicoliceocristiano.edu.ec/campus/" target="_blank"><img src="assets/images/moodle.JPG" alt="Moodle" /><span>Moodle</span></a>
+        <a class="acceso-mini" href="https://sga.tecnologicoliceocristiano.edu.ec/Login/Login" target="_blank"><img src="assets/images/sga.JPG" alt="SGA" /><span>SGA</span></a>
+      </mat-card>
+
+      <mat-card class="acceso-card"><h3>Bolsa de empleo</h3><a class="empleo-mini" routerLink="/empleos"><img src="assets/images/bolsaEmpleo.png" alt="Empleo" /><span>Ver ofertas</span></a></mat-card>
     </aside>
-  </div>
+
+    <section class="feed">
+      <mat-card class="crear-publicacion">
+        <h2>Crear publicación</h2>
+        <mat-form-field appearance="outline"><mat-label>¿Qué estás pensando?</mat-label><textarea matInput [(ngModel)]="contenido" rows="3"></textarea></mat-form-field>
+        <label class="selector-imagen"><mat-icon>image</mat-icon><span>Añadir fotos desde el ordenador</span><input type="file" accept="image/*" multiple (change)="seleccionarImagenes($event)" hidden /></label>
+        @if (previews.length) { <div class="preview-grid">@for (preview of previews; track preview) { <img [src]="preview" alt="Vista previa" /> }</div> }
+        <button mat-flat-button class="boton-amarillo" (click)="publicar()" [disabled]="publicando || (!contenido.trim() && !archivos.length)">{{ publicando ? 'Publicando...' : 'Publicar' }}</button>
+      </mat-card>
+
+      @if (mensaje) { <p class="aviso">{{ mensaje }}</p> }
+      @for (publicacion of publicaciones; track publicacion.id) {
+        <mat-card class="publicacion-card" [id]="'publicacion-'+publicacion.id">
+          <header class="autor">
+            <a [routerLink]="['/perfil']" [queryParams]="{ id: publicacion.autor.id }"><img [src]="publicacion.autor.fotoPerfil || 'assets/images/icono.png'" alt="Autor" /></a>
+            <div><a [routerLink]="['/perfil']" [queryParams]="{ id: publicacion.autor.id }"><strong>{{ publicacion.autor.nombre }}</strong></a><small>@{{ publicacion.autor.usuario }} · {{ formatearFecha(publicacion.fecha) }}</small></div>
+            <span class="espaciador"></span>
+            @if (esPropia(publicacion)) { <button mat-icon-button title="Editar" (click)="editarPublicacion(publicacion)"><mat-icon>edit</mat-icon></button><button mat-icon-button title="Eliminar" (click)="eliminarPublicacion(publicacion)"><mat-icon>delete</mat-icon></button> } @else { <button mat-icon-button title="Reportar" (click)="reportar(publicacion)"><mat-icon>flag</mat-icon></button> }
+          </header>
+          <p class="contenido">{{ publicacion.contenido }}</p>
+          @if (publicacion.imagenes.length) { <div class="imagenes" [class.varias]="publicacion.imagenes.length > 1">@for (imagen of publicacion.imagenes; track imagen; let indice=$index) { <button class="imagen-boton" type="button" (click)="abrirVisor(publicacion.imagenes,indice)"><img [src]="imagen" alt="Imagen de la publicación" /></button> }</div> }
+          <div class="estadisticas"><span>{{ publicacion.totalLikes }} Me gusta</span><span>{{ publicacion.totalComentarios }} comentarios</span></div>
+          <div class="acciones-publicacion">
+            <button mat-button [class.activo]="publicacion.likedByMe" (click)="cambiarMeGusta(publicacion)"><mat-icon>favorite</mat-icon> Me gusta</button>
+            <button mat-button (click)="mostrarComentarios(publicacion)"><mat-icon>chat_bubble</mat-icon> Comentar</button>
+            <button mat-button (click)="abrirCompartir(publicacion)"><mat-icon>share</mat-icon> Compartir</button>
+          </div>
+          @if(compartirPublicacionId===publicacion.id){<div class="panel-compartir"><button mat-button (click)="compartirEnPerfil(publicacion)"><mat-icon>person</mat-icon>Compartir en mi perfil</button><strong>Enviar por mensaje</strong>@for(contacto of contactosCompartir;track contacto.id){<button class="contacto-compartir" type="button" (click)="compartirPorMensaje(publicacion,contacto)"><img [src]="contacto.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><span>{{contacto.nombre}}</span><mat-icon>send</mat-icon></button>}@empty{<small>Sigue personas para compartir por mensaje.</small>}</div>}
+          @if (comentariosVisibles.has(publicacion.id)) {
+            <section class="comentarios">
+              @for (comentario of comentarios[publicacion.id] || []; track comentario.id) { <div class="comentario" [class.respuesta]="comentario.comentarioPadreId"><a [routerLink]="['/perfil']" [queryParams]="{id:comentario.autor.id}"><img [src]="comentario.autor.fotoPerfil || 'assets/images/icono.png'" alt="Autor" /></a><div>@if(comentario.respuestaA?.autor){<small>Responde a {{comentario.respuestaA?.autor?.nombre}}</small>}<strong>{{ comentario.autor.nombre }}</strong><p>{{ comentario.contenido }}</p><div class="acciones-comentario"><button type="button" (click)="prepararRespuesta(publicacion.id,comentario)">Responder</button>@if(esComentarioPropio(comentario)){<button type="button" (click)="editarComentario(publicacion,comentario)">Editar</button><button class="peligro" type="button" (click)="eliminarComentario(publicacion,comentario)">Eliminar</button>}@else{<button class="peligro" type="button" (click)="reportarComentario(comentario)">Reportar</button>}</div></div></div> }
+              @if(respuestasComentario[publicacion.id]){<div class="respondiendo">Respondiendo a <strong>{{respuestasComentario[publicacion.id]?.autor?.nombre}}</strong><button mat-icon-button (click)="cancelarRespuesta(publicacion.id)"><mat-icon>close</mat-icon></button></div>}
+              <div class="nuevo-comentario"><img [src]="perfil?.fotoPerfil || 'assets/images/icono.png'" alt="Tu perfil" /><mat-form-field appearance="outline"><mat-label>Escribe un comentario</mat-label><input matInput [(ngModel)]="textosComentario[publicacion.id]" (keyup.enter)="comentar(publicacion)" /><button mat-icon-button matSuffix (click)="comentar(publicacion)"><mat-icon>send</mat-icon></button></mat-form-field></div>
+            </section>
+          }
+        </mat-card>
+      } @empty { <mat-card class="vacio"><mat-icon>dynamic_feed</mat-icon><p>Aún no hay publicaciones. Sigue personas o crea la primera.</p></mat-card> }
+    </section>
+
+    <aside class="columna-lateral derecha">
+      <mat-card class="acceso-card"><h3>Notificaciones</h3><p><mat-icon>notifications</mat-icon> Revisa las novedades de tu comunidad.</p><p><mat-icon>chat_bubble</mat-icon> Tus mensajes están siempre disponibles.</p></mat-card>
+      <mat-card class="acceso-card"><div class="titulo-fila"><h3>Amigos sugeridos</h3><a routerLink="/amigos">Ver</a></div>@for (persona of sugerencias; track persona.id) { <div class="sugerencia"><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil || 'assets/images/icono.png'" alt="Perfil" /></a><div><strong>{{ persona.nombre }}</strong><small>@{{ persona.usuario }}</small></div><button mat-icon-button [disabled]="persona.solicitudPendiente" (click)="seguir(persona)"><mat-icon>{{ persona.solicitudPendiente ? 'schedule' : 'person_add' }}</mat-icon></button></div> }</mat-card>
+    </aside>
+  </section>
 </main>
+@if(imagenesVisor.length){<div class="visor" (click)="cerrarVisor()"><button mat-icon-button class="cerrar-visor" (click)="cerrarVisor()"><mat-icon>close</mat-icon></button>@if(imagenesVisor.length>1){<button mat-icon-button class="visor-anterior" (click)="$event.stopPropagation();moverVisor(-1)"><mat-icon>chevron_left</mat-icon></button>}<img [src]="imagenesVisor[indiceVisor]" alt="Imagen ampliada" (click)="$event.stopPropagation()">@if(imagenesVisor.length>1){<button mat-icon-button class="visor-siguiente" (click)="$event.stopPropagation();moverVisor(1)"><mat-icon>chevron_right</mat-icon></button>}<span>{{indiceVisor+1}} / {{imagenesVisor.length}}</span></div>}

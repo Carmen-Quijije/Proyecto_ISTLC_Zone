@@ -1,12 +1,13 @@
 <!-- Bolsa de empleo con ofertas obtenidas por el componente. -->
 <main class="contenedor">
   <h1 class="titulo-pagina"><mat-icon>work</mat-icon> Bolsa de empleo</h1>
+  <mat-form-field appearance="outline"><mat-label>Fecha de publicación</mat-label><mat-select [(ngModel)]="filtroFecha" (selectionChange)="aplicarFiltro()"><mat-option value="all">Todas</mat-option><mat-option value="today">Hoy</mat-option><mat-option value="week">Última semana</mat-option><mat-option value="month">Último mes</mat-option></mat-select></mat-form-field>
   <!-- Cada empleo se presenta como tarjeta Material y se identifica por su slug. -->
   <div class="rejilla">
     @for (empleo of empleos; track empleo.slug) {
     <mat-card
       ><mat-card-header
-        ><mat-card-title>{{ empleo.title }}</mat-card-title
+        ><mat-card-title>{{ titulo(empleo.title) }}</mat-card-title
         ><mat-card-subtitle
           >{{ empleo.company_name }} · {{ empleo.location }}</mat-card-subtitle
         ></mat-card-header
@@ -16,14 +17,12 @@
         >
         <p>{{ resumen(empleo.description) }}…</p></mat-card-content
       ><mat-card-actions
-        ><a mat-flat-button [href]="empleo.url" target="_blank" rel="noopener"
-          >Ver oferta <mat-icon>open_in_new</mat-icon></a
-        ></mat-card-actions
+        ><button mat-flat-button (click)="abrirDetalle(empleo)">Ver detalle <mat-icon>visibility</mat-icon></button></mat-card-actions
       ></mat-card
     >
     } @empty {
     <!-- Estado temporal mientras se cargan ofertas o cuando no hay resultados. -->
-    <p class="texto-secundario">Cargando ofertas de empleo…</p>
+    <p class="texto-secundario">{{cargando?'Cargando ofertas de empleo…':error||'No se encontraron ofertas con el filtro seleccionado.'}}</p>
     }
   </div>
 </main>

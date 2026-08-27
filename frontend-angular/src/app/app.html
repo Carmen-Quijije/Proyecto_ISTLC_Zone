@@ -1,52 +1,25 @@
-<!-- Barra superior: muestra la marca y permite regresar al muro. -->
 <mat-toolbar class="barra-navegacion">
-  <a class="marca" routerLink="/muro">
-    <img src="assets/images/logo.png" alt="Logo ISTLC Zone" />
-    <span>ISTLC Zone</span>
-  </a>
-
-  <span class="espaciador"></span>
-
-  <!-- Navegación privada: solo aparece cuando existe una sesión activa. -->
-  @if (autenticacionService.estaAutenticado()) {
-  <nav class="ocultar-movil" aria-label="Navegación principal">
-    <a mat-button routerLink="/muro" routerLinkActive="activo"> <mat-icon>home</mat-icon> Muro </a>
-    <a mat-button routerLink="/amigos" routerLinkActive="activo">
-      <mat-icon>group</mat-icon> Amigos
-    </a>
-    <a mat-button routerLink="/mensajes" routerLinkActive="activo">
-      <mat-icon>chat</mat-icon> Mensajes
-    </a>
-    <a mat-button routerLink="/empleos" routerLinkActive="activo">
-      <mat-icon>work</mat-icon> Empleos
-    </a>
-    <a mat-button routerLink="/plataformas" routerLinkActive="activo">
-      <mat-icon>apps</mat-icon> Plataformas
-    </a>
-  </nav>
-
-  <!-- Menú con las acciones relacionadas con la cuenta del usuario. -->
-  <button mat-icon-button [matMenuTriggerFor]="menuUsuario" aria-label="Menú de usuario">
-    <mat-icon>account_circle</mat-icon>
-  </button>
-  <mat-menu #menuUsuario="matMenu">
-    <a mat-menu-item routerLink="/perfil"><mat-icon>person</mat-icon> Mi perfil</a>
-    <a mat-menu-item routerLink="/editarPerfil"><mat-icon>edit</mat-icon> Editar perfil</a>
-    <button mat-menu-item (click)="autenticacionService.cerrarSesion()">
-      <mat-icon>logout</mat-icon> Cerrar sesión
-    </button>
-  </mat-menu>
-  } @else {
-  <!-- Acciones públicas disponibles cuando el visitante no ha iniciado sesión. -->
-  <a mat-button routerLink="/iniciarSesion">Iniciar sesión</a>
-  <a mat-flat-button routerLink="/registro">Crear cuenta</a>
-  }
+  <div class="nav-contenido">
+    <a class="marca" [routerLink]="autenticacionService.estaAutenticado()?'/muro':'/iniciarSesion'"><img src="assets/images/logo.png" alt="Logo ISTLC Zone"><span>ISTLC</span></a>
+    @if(autenticacionService.estaAutenticado()){
+      <nav class="navegacion-principal"><a mat-button routerLink="/muro" routerLinkActive="activo"><mat-icon>home</mat-icon>Muro</a><a mat-button routerLink="/amigos" routerLinkActive="activo"><mat-icon>group</mat-icon>Amigos</a><a mat-button routerLink="/mensajes" routerLinkActive="activo"><mat-icon>chat</mat-icon>Mensajes</a><a mat-button routerLink="/empleos" routerLinkActive="activo"><mat-icon>work</mat-icon>Empleos</a><a mat-button routerLink="/plataformas" routerLinkActive="activo"><mat-icon>apps</mat-icon>Plataformas</a></nav>
+      <div class="buscador-global"><mat-icon>search</mat-icon><input [(ngModel)]="busquedaGlobal" (input)="buscarUsuariosGlobal()" placeholder="Buscar personas" aria-label="Buscar personas">@if(busquedaGlobal){<div class="resultados-globales">@if(buscandoUsuarios){<p>Buscando...</p>}@else{@for(persona of resultadosGlobales;track persona.id){<a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}" (click)="cerrarBusqueda()"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><span><strong>{{persona.nombre}}</strong><small>@{{persona.usuario}}</small></span></a>}@empty{<p>No se encontraron personas.</p>}}</div>}</div>
+      <span class="espaciador"></span>
+      <button class="boton-tema" mat-icon-button [matMenuTriggerFor]="menuTema" aria-label="Cambiar tema" title="Cambiar tema"><mat-icon>{{temaActual==='tradicional'?'light_mode':temaActual==='neon'?'dark_mode':'water_drop'}}</mat-icon></button>
+      <button mat-icon-button [matMenuTriggerFor]="menuNotificaciones" [matBadge]="sinLeer||null" matBadgeColor="warn" aria-label="Notificaciones" (click)="marcarLeidas()"><mat-icon>notifications</mat-icon></button>
+      <mat-menu #menuNotificaciones="matMenu" class="menu-notificaciones">
+        <div class="menu-titulo" (click)="$event.stopPropagation()"><strong>Notificaciones</strong></div>
+        @for(solicitud of solicitudes;track solicitud.id){<div class="solicitud" (click)="$event.stopPropagation()"><img [src]="solicitud.foto_perfil||'assets/images/icono.png'" alt="Perfil"><span><strong>{{solicitud.nombre}}</strong><small>quiere seguirte</small></span><button mat-icon-button (click)="responder(solicitud,'aceptar')"><mat-icon>check</mat-icon></button><button mat-icon-button (click)="responder(solicitud,'rechazar')"><mat-icon>close</mat-icon></button></div>}
+        @for(notificacion of notificaciones;track notificacion.id){<button mat-menu-item (click)="abrirNotificacion(notificacion)"><mat-icon>{{notificacion.tipo==='mensaje'?'chat':notificacion.tipo==='like'?'favorite':'notifications'}}</mat-icon><span>{{notificacion.mensaje}}</span></button>}@empty{<p class="sin-notificaciones">No tienes notificaciones nuevas.</p>}
+      </mat-menu>
+      <button class="usuario-boton" mat-button [matMenuTriggerFor]="menuUsuario"><img [src]="autenticacionService.usuario()?.fotoPerfil||'assets/images/icono.png'" alt="Usuario"><span>{{autenticacionService.usuario()?.nombre}}</span><mat-icon>expand_more</mat-icon></button>
+      <mat-menu #menuUsuario="matMenu"><a mat-menu-item routerLink="/perfil"><mat-icon>person</mat-icon>Mi perfil</a><a mat-menu-item routerLink="/editarPerfil"><mat-icon>edit</mat-icon>Editar perfil</a>@if(autenticacionService.usuario()?.rol==='admin'||autenticacionService.usuario()?.usuario==='admin'){<a mat-menu-item routerLink="/adminReportes"><mat-icon>shield</mat-icon>Administrar reportes</a>}<button mat-menu-item (click)="autenticacionService.cerrarSesion()"><mat-icon>logout</mat-icon>Cerrar sesión</button></mat-menu>
+    }@else{<span class="espaciador"></span><button class="boton-tema" mat-icon-button [matMenuTriggerFor]="menuTema" aria-label="Cambiar tema" title="Cambiar tema"><mat-icon>{{temaActual==='tradicional'?'light_mode':temaActual==='neon'?'dark_mode':'water_drop'}}</mat-icon></button><a mat-button routerLink="/iniciarSesion">Iniciar sesión</a><a mat-flat-button class="amarillo" routerLink="/registro">Crear cuenta</a>}
+    <mat-menu #menuTema="matMenu" class="menu-temas">
+      <div class="menu-titulo-tema" (click)="$event.stopPropagation()"><strong>Tema de apariencia</strong></div>
+      @for(tema of temas;track tema.id){<button mat-menu-item [class.tema-seleccionado]="temaActual===tema.id" (click)="seleccionarTema(tema.id)"><mat-icon>{{tema.icono}}</mat-icon><span>{{tema.nombre}}</span>@if(temaActual===tema.id){<mat-icon class="tema-check">check</mat-icon>}</button>}
+    </mat-menu>
+  </div>
 </mat-toolbar>
-
-<!-- Angular Router inserta aquí el componente correspondiente a la URL activa. -->
 <router-outlet></router-outlet>
-
-<!-- Pie común que permanece visible en todas las pantallas. -->
-<footer class="pie-pagina">
-  <p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p>
-</footer>
+<footer class="pie-pagina"><p>Proyecto Integrador | Derechos reservados ISTLC Zone © 2026</p></footer>

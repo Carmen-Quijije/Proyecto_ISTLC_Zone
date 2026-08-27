@@ -1,10 +1,11 @@
-// Pantalla para solicitar instrucciones de recuperación por correo.
-import { Component } from '@angular/core';
+// Recuperación completa: solicita código y establece una contraseña nueva.
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { AutenticacionService } from '../autenticacion-service';
 
@@ -17,57 +18,61 @@ import { AutenticacionService } from '../autenticacion-service';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './recuperar-clave.html',
   styleUrl: './recuperar-clave.css',
 })
 export class RecuperarClave {
-  mensaje = '';
+  private readonly fb = inject(FormBuilder);
   codigoEnviado = false;
-  claveActualizada = false;
-
-  // Formulario reactivo que exige un correo válido.
-  formulario;
-
+  mensaje = '';
+  esError = false;
+  procesando = false;
+  readonly solicitud = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+  readonly cambio = this.fb.nonNullable.group({
+    codigo: ['', Validators.required],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    confirmacion: ['', Validators.required],
+  });
   constructor(
-    private fb: FormBuilder,
-    private autenticacionService: AutenticacionService,
-  ) {
-    this.formulario = this.fb.nonNullable.group({
-      email: ['', [Validators.required, Validators.email]],
-      codigo: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      confirmarPassword: ['', Validators.required],
-    });
-  }
-  /** Solicita la recuperación si el formulario contiene un correo válido. */
+    private auth: AutenticacionService,
+    private router: Router,
+  ) {}
   enviar(): void {
-    const email = this.formulario.controls.email;
-    if (email.invalid) return;
-
-    this.autenticacionService.solicitarRecuperacion(email.value).subscribe({
-      next: () => {
+    if (this.solicitud.invalid) return;
+    this.procesando = true;
+    this.auth.solicitarRecuperacion(this.solicitud.getRawValue().email).subscribe({
+      next: (r: any) => {
         this.codigoEnviado = true;
-        this.mensaje = 'Revisa tu correo e ingresa el código de 6 dígitos.';
+        this.mostrar(r.message || 'Código enviado al correo.', false);
+        this.procesando = false;
       },
-      error: (error) => (this.mensaje = error.error?.message ?? 'No se pudo enviar el código.'),
+      error: (e) => {
+        this.mostrar(e.error?.message || 'No se pudo enviar el código.', true);
+        this.procesando = false;
+      },
     });
   }
-
-  /** Verifica el código enviado y actualiza la contraseña. */
-  restablecer(): void {
-    const { email, codigo, password, confirmarPassword } = this.formulario.getRawValue();
-    if (!codigo || !password || password !== confirmarPassword || this.formulario.controls.codigo.invalid || this.formulario.controls.password.invalid) {
-      this.mensaje = 'Revisa el código y confirma una contraseña de al menos 6 caracteres.';
+  cambiar(): void {
+    const d = this.cambio.getRawValue();
+    if (this.cambio.invalid || d.password !== d.confirmacion) {
+      this.mostrar('Las contraseñas no coinciden.', true);
       return;
     }
-
-    this.autenticacionService.restablecerClave({ email, codigo, password }).subscribe({
-      next: () => {
-        this.claveActualizada = true;
-        this.mensaje = 'Contraseña actualizada. Ya puedes iniciar sesión.';
+    this.procesando = true;
+    this.auth.restablecerClave(this.solicitud.getRawValue().email, d.codigo, d.password).subscribe({
+      next: () => this.router.navigate(['/iniciarSesion'], { queryParams: { recuperada: 'ok' } }),
+      error: (e) => {
+        this.mostrar(e.error?.message || 'No se pudo cambiar la contraseña.', true);
+        this.procesando = false;
       },
-      error: (error) => (this.mensaje = error.error?.message ?? 'El código no es válido o ya expiró.'),
     });
+  }
+  private mostrar(m: string, e: boolean): void {
+    this.mensaje = m;
+    this.esError = e;
   }
 }

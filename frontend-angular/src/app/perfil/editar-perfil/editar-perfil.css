@@ -1,4 +1,66 @@
-/* Separa el formulario de edición del encabezado de la tarjeta. */
-.formulario {
-  margin-top: 20px;
+.editar-page {
+  min-height: calc(100vh - 145px);
+  padding: 32px 18px;
+  background: #f0f2f5;
+}
+.editar-page > mat-card {
+  width: min(900px, 100%);
+  margin: auto;
+  padding: 28px;
+  border-top: 5px solid #ffc107;
+}
+.editar-page header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.editar-page h1 {
+  margin: 0;
+  color: #061a38;
+}
+.editar-page header p {
+  margin: 4px 0;
+  color: #64748b;
+}
+.foto-editor {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+}
+.foto-editor img {
+  width: 125px;
+  height: 125px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid #ffc107;
+}
+.amarillo {
+  background: #ffc107 !important;
+  color: #061a38 !important;
+  font-weight: 800;
+}
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 16px;
+}
+.ancho {
+  grid-column: 1/-1;
+}
+.editar-page footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+@media (max-width: 640px) {
+  .campos {
+    grid-template-columns: 1fr;
+  }
+  .ancho {
+    grid-column: auto;
+  }
+  .foto-editor {
+    flex-direction: column;
+  }
 }

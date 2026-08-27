@@ -1,4 +1,141 @@
-/* Permite que el componente de amigos ocupe su propio bloque en la página. */
-:host {
-  display: block;
+.amigos-page {
+  min-height: calc(100vh - 145px);
+  background: #f0f2f5;
+}
+.cabecera-perfil {
+  background: #fff;
+}
+.portada {
+  height: 190px;
+  background: linear-gradient(135deg, #958861, #061a38);
+}
+.datos {
+  width: min(1100px, calc(100% - 32px));
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 22px;
+}
+.datos > img {
+  width: 145px;
+  height: 145px;
+  margin-top: -65px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.datos h1 {
+  margin: 0;
+  color: #061a38;
+}
+.datos p {
+  margin: 5px 0;
+  color: #64748b;
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  width: min(1100px, calc(100% - 32px));
+  margin: auto;
+  padding: 10px 0;
+  background: #fff;
+}
+.tabs a {
+  padding: 12px 16px;
+  color: #475569;
+}
+.tabs .activo {
+  border-bottom: 3px solid #ffc107;
+  color: #061a38;
+  font-weight: 800;
+}
+.contenido {
+  width: min(1100px, calc(100% - 32px));
+  margin: auto;
+  padding: 24px 0;
+  display: grid;
+  gap: 20px;
+}
+.contenido > mat-card {
+  padding: 24px;
+}
+.contenido h2 {
+  margin: 0;
+  color: #061a38;
+}
+.secundario {
+  color: #64748b;
+}
+.rejilla,
+.resultados {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.persona {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+.persona img {
+  width: 62px;
+  height: 62px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.persona div {
+  display: grid;
+}
+.persona small {
+  color: #64748b;
+}
+.busqueda mat-form-field {
+  width: 100%;
+  margin-top: 12px;
+}
+.tarjeta-persona {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid #d5dbe3;
+}
+.tarjeta-persona > a img {
+  width: 82px;
+  height: 82px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.persona-info h3,
+.persona-info p {
+  margin: 2px 0;
+}
+.persona-info small {
+  color: #64748b;
+}
+.tarjeta-persona button {
+  grid-column: 1/-1;
+  background: #ffc107;
+  color: #061a38;
+  font-weight: 800;
+}
+.tarjeta-persona button.siguiendo {
+  background: #eef1f5;
+}
+@media (max-width: 650px) {
+  .datos {
+    flex-direction: column;
+    text-align: center;
+  }
+  .tabs {
+    overflow: auto;
+  }
+  .resultados {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,6 +1,51 @@
-/* Organiza verticalmente los controles del formulario de registro. */
+.pagina-auth {
+  min-height: calc(100vh - 150px);
+  display: grid;
+  place-items: center;
+  padding: 38px 20px;
+  background:
+    linear-gradient(rgba(241, 243, 246, 0.93), rgba(241, 243, 246, 0.93)),
+    url('/assets/images/red.jpg') center/cover;
+}
+.tarjeta-auth {
+  width: min(580px, 100%);
+  padding: 32px;
+  border-top: 5px solid #ffc107;
+}
+.marca-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #061a38;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.marca-auth img {
+  width: 55px;
+}
+.tarjeta-auth h1 {
+  text-align: center;
+  color: #061a38;
+  margin: 18px 0 4px;
+}
+.subtitulo {
+  text-align: center;
+  color: #64748b;
+}
 .formulario {
   display: grid;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 24px;
+}
+.boton-principal {
+  min-height: 48px;
+  background: #ffc107 !important;
+  color: #061a38 !important;
+  font-weight: 800;
+}
+.codigo {
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 8px;
 }

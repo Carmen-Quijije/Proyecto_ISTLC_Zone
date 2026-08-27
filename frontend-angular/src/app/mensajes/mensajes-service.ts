@@ -1,24 +1,41 @@
-// Servicio de acceso a conversaciones y mensajes privados.
+// Servicio de conversaciones privadas compatible con las respuestas del backend original.
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { map } from 'rxjs';
+import { Mensaje, Usuario } from '../core/modelos';
 
 @Injectable({ providedIn: 'root' })
 export class MensajesService {
-  // URL relativa compartida con el backend publicado por Render.
   private readonly apiUrl = '/api/auth';
 
   constructor(private http: HttpClient) {}
 
-  /** Recupera el resumen de conversaciones del usuario autenticado. */
   listarConversaciones(usuarioId: number) {
-    return this.http.get<any[]>(`${this.apiUrl}/messages/conversations/${usuarioId}`);
+    return this.http
+      .get<{ success: boolean; conversaciones: Usuario[] }>(
+        `${this.apiUrl}/messages/conversations/${usuarioId}`,
+      )
+      .pipe(map((respuesta) => respuesta.conversaciones));
   }
-  /** Obtiene el historial intercambiado entre el usuario y un contacto. */
+
   obtenerMensajes(usuarioId: number, contactoId: number) {
-    return this.http.get<any[]>(`${this.apiUrl}/messages/${usuarioId}/${contactoId}`);
+    return this.http.get<{ success: boolean; contacto: Usuario; mensajes: Mensaje[] }>(
+      `${this.apiUrl}/messages/${usuarioId}/${contactoId}`,
+    );
   }
-  /** Crea un mensaje nuevo indicando emisor, receptor y contenido. */
+
   enviar(emisorId: number, receptorId: number, contenido: string) {
-    return this.http.post<any>(`${this.apiUrl}/messages`, { emisorId, receptorId, contenido });
+    return this.http.post<{ success: boolean }>(`${this.apiUrl}/messages`, {
+      emisorId,
+      receptorId,
+      contenido,
+    });
+  }
+
+  compartirPublicacion(publicacionId: number, emisorId: number, receptorId: number) {
+    return this.http.post(`${this.apiUrl}/posts/${publicacionId}/share-message`, {
+      emisorId,
+      receptorId,
+    });
   }
 }

@@ -1,37 +1,28 @@
-<!-- Formulario de alta para nuevos usuarios de ISTLC Zone. -->
-<main class="contenedor-acceso">
-  <mat-card class="tarjeta-acceso"
-    ><mat-card-header><mat-card-title>Crear cuenta</mat-card-title></mat-card-header
-    ><mat-card-content>
-      <!-- Formulario reactivo con datos personales, credenciales y aceptación legal. -->
+<main class="pagina-auth">
+  <mat-card class="tarjeta-auth">
+    <a class="marca-auth" routerLink="/iniciarSesion"><img src="assets/images/logo.png" alt="ISTLC Zone" /><span>ISTLC</span></a>
+    @if (!pasoVerificacion) {
+      <h1>Crear cuenta</h1>
+      <p class="subtitulo">Forma parte de la comunidad ISTLC Zone</p>
       <form class="formulario" [formGroup]="formulario" (ngSubmit)="registrar()">
-        <mat-form-field
-          ><mat-label>Nombre completo</mat-label><input matInput formControlName="nombre"
-        /></mat-form-field>
-        <mat-form-field
-          ><mat-label>Correo institucional</mat-label
-          ><input matInput type="email" formControlName="email"
-        /></mat-form-field>
-        <mat-form-field
-          ><mat-label>Usuario</mat-label><input matInput formControlName="usuario"
-        /></mat-form-field>
-        <mat-form-field
-          ><mat-label>Contraseña</mat-label
-          ><input matInput type="password" formControlName="password"
-        /></mat-form-field>
-        <mat-checkbox formControlName="terminos"
-          >Acepto los <a routerLink="/terminosCondiciones">términos y condiciones</a></mat-checkbox
-        >
-        <!-- Resultado del registro: el color cambia según éxito o error. -->
-        @if (mensaje) {
-        <p [class.mensaje-exito]="registroExitoso" [class.mensaje-error]="!registroExitoso">
-          {{ mensaje }}
-        </p>
-        }
-        <!-- Acciones finales del formulario y retorno al inicio de sesión. -->
-        <button mat-flat-button type="submit" [disabled]="formulario.invalid">Registrarme</button>
-        <a mat-button routerLink="/iniciarSesion">Volver al inicio</a>
+        <mat-form-field appearance="outline"><mat-label>Nombre completo</mat-label><input matInput formControlName="nombre" /><mat-icon matSuffix>person</mat-icon></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Correo institucional</mat-label><input matInput type="email" formControlName="email" /><mat-icon matSuffix>mail</mat-icon><mat-hint>Debe terminar en tecnologicoliceocristiano.edu.ec</mat-hint></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Usuario</mat-label><input matInput formControlName="usuario" /><mat-icon matSuffix>alternate_email</mat-icon></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Contraseña</mat-label><input matInput type="password" formControlName="password" /><mat-icon matSuffix>lock</mat-icon></mat-form-field>
+        <mat-checkbox formControlName="terminos">Acepto los <a routerLink="/terminosCondiciones">términos y condiciones</a></mat-checkbox>
+        @if (mensaje) { <p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{ mensaje }}</p> }
+        <button mat-flat-button class="boton-principal" type="submit" [disabled]="formulario.invalid || procesando">{{ procesando ? 'Enviando...' : 'Registrarme' }}</button>
       </form>
-    </mat-card-content></mat-card
-  >
+    } @else {
+      <h1>Verifica tu correo</h1>
+      <p class="subtitulo">Enviamos un código de seis dígitos a <strong>{{ emailPendiente }}</strong></p>
+      <form class="formulario" [formGroup]="formularioCodigo" (ngSubmit)="confirmarCodigo()">
+        <mat-form-field appearance="outline"><mat-label>Código de verificación</mat-label><input matInput maxlength="6" formControlName="codigo" class="codigo" /></mat-form-field>
+        @if (mensaje) { <p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{ mensaje }}</p> }
+        <button mat-flat-button class="boton-principal" type="submit" [disabled]="formularioCodigo.invalid || procesando">Confirmar cuenta</button>
+        <button mat-button type="button" (click)="reenviar()">Reenviar código</button>
+      </form>
+    }
+    <a mat-button routerLink="/iniciarSesion">Volver al inicio de sesión</a>
+  </mat-card>
 </main>

@@ -1,0 +1,141 @@
+.seccion-page {
+  min-height: calc(100vh - 145px);
+  background: #f0f2f5;
+}
+.perfil-mini {
+  background: #fff;
+}
+.portada {
+  height: 180px;
+  background: linear-gradient(135deg, #958861, #061a38);
+}
+.identidad {
+  width: min(1050px, calc(100% - 32px));
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 20px;
+}
+.identidad img {
+  width: 135px;
+  height: 135px;
+  margin-top: -62px;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.identidad h1 {
+  margin: 0;
+  color: #061a38;
+}
+.identidad p {
+  color: #64748b;
+}
+.acciones-perfil {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.tabs {
+  width: min(1050px, calc(100% - 32px));
+  margin: auto;
+  display: flex;
+  overflow: auto;
+  background: #fff;
+}
+.tabs a {
+  padding: 14px;
+  color: #475569;
+  white-space: nowrap;
+}
+.tabs a.activo {
+  color: #061a38;
+  border-bottom: 3px solid #ffc107;
+  font-weight: 800;
+}
+.contenido {
+  width: min(1050px, calc(100% - 32px));
+  margin: auto;
+  padding: 28px 0;
+}
+.contenido h2 {
+  color: #061a38;
+}
+.dos-columnas,
+.rejilla {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+.contenido mat-card {
+  padding: 22px;
+}
+.contenido mat-card h3 {
+  color: #061a38;
+}
+.contenido mat-card p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.galeria img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.cumple {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 14px;
+}
+.cumple img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.cumple p {
+  margin: 5px 0;
+}
+.actividad {
+  display: grid;
+  gap: 12px;
+}
+.actividad mat-card {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+}
+.actividad mat-icon {
+  color: #ffc107;
+}
+.actividad p {
+  margin: 5px 0;
+  color: #64748b;
+}
+.vacio {
+  text-align: center;
+  color: #64748b;
+}
+@media (max-width: 650px) {
+  .identidad {
+    flex-direction: column;
+    text-align: center;
+  }
+  .dos-columnas,
+  .rejilla {
+    grid-template-columns: 1fr;
+  }
+  .galeria {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

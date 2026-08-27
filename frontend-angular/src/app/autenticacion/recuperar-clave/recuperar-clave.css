@@ -1,6 +1,40 @@
-/* Organiza verticalmente los controles de recuperación de contraseña. */
-.formulario {
+.pagina-auth {
+  min-height: calc(100vh - 150px);
   display: grid;
-  gap: 14px;
-  margin-top: 20px;
+  place-items: center;
+  padding: 38px 20px;
+  background: #f1f3f6;
+}
+.tarjeta-auth {
+  width: min(520px, 100%);
+  padding: 32px;
+  border-top: 5px solid #ffc107;
+  text-align: center;
+}
+.marca-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #061a38;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.marca-auth img {
+  width: 55px;
+}
+.tarjeta-auth h1 {
+  color: #061a38;
+}
+.tarjeta-auth form {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+  text-align: left;
+}
+.boton-principal {
+  min-height: 48px;
+  background: #ffc107 !important;
+  color: #061a38 !important;
+  font-weight: 800;
 }

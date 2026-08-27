@@ -1,11 +1,13 @@
-// Formulario que permite modificar la información del perfil autenticado.
-import { Component } from '@angular/core';
+// Edición de todos los datos del perfil y carga de foto a Cloudinary.
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
 import { PerfilService } from '../perfil-service';
 
@@ -17,34 +19,77 @@ import { PerfilService } from '../perfil-service';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatButtonModule,
+    MatIconModule,
   ],
   templateUrl: './editar-perfil.html',
   styleUrl: './editar-perfil.css',
 })
-export class EditarPerfil {
-  // Mensaje de confirmación y formulario reactivo de edición.
+export class EditarPerfil implements OnInit {
+  private readonly fb = inject(FormBuilder);
   mensaje = '';
-  formulario;
-
-  // Inicializa el formulario con el nombre disponible en la sesión.
+  esError = false;
+  fotoPreview = 'assets/images/icono.png';
+  archivo?: File;
+  guardando = false;
+  readonly formulario = this.fb.nonNullable.group({
+    nombre: [''],
+    viveEn: [''],
+    lugarOrigen: [''],
+    fechaNacimiento: [''],
+    estadoCivil: [''],
+    carrera: [''],
+    semestre: [''],
+    bio: [''],
+    fotoPerfil: [''],
+  });
   constructor(
-    private fb: FormBuilder,
     private perfilService: PerfilService,
-    private autenticacionService: AutenticacionService,
-  ) {
-    this.formulario = this.fb.nonNullable.group({
-      nombre: [this.autenticacionService.usuario()?.nombre ?? ''],
-      biografia: [''],
-      vive_en: [''],
-      carrera: [''],
-      semestre: [''],
+    private auth: AutenticacionService,
+    private router: Router,
+  ) {}
+  ngOnInit(): void {
+    const id = this.auth.usuario()?.id;
+    if (!id) return;
+    this.perfilService.obtener(id, id).subscribe((r) => {
+      this.formulario.patchValue(r.usuario);
+      this.fotoPreview = r.usuario.fotoPerfil || this.fotoPreview;
     });
   }
-  /** Combina el identificador de sesión con los campos y actualiza el perfil. */
+  seleccionarFoto(evento: Event): void {
+    const archivo = (evento.target as HTMLInputElement).files?.[0];
+    if (!archivo) return;
+    this.archivo = archivo;
+    this.fotoPreview = URL.createObjectURL(archivo);
+  }
   guardar(): void {
-    this.perfilService
-      .actualizar({ id: this.autenticacionService.usuario()?.id, ...this.formulario.getRawValue() })
-      .subscribe(() => (this.mensaje = 'Perfil actualizado correctamente.'));
+    const id = this.auth.usuario()?.id;
+    if (!id) return;
+    this.guardando = true;
+    const actualizar = (fotoPerfil: string) =>
+      this.perfilService
+        .actualizar({ id, ...this.formulario.getRawValue(), fotoPerfil })
+        .subscribe({
+          next: () => {
+            this.guardando = false;
+            this.router.navigate(['/perfil']);
+          },
+          error: (e) => {
+            this.guardando = false;
+            this.esError = true;
+            this.mensaje = e.error?.message || 'No se pudo actualizar el perfil.';
+          },
+        });
+    if (this.archivo)
+      this.perfilService.subirImagen(this.archivo, 'perfiles').subscribe({
+        next: (r) => actualizar(r.url),
+        error: () => {
+          this.guardando = false;
+          this.esError = true;
+          this.mensaje = 'No se pudo subir la fotografía.';
+        },
+      });
+    else actualizar(this.formulario.getRawValue().fotoPerfil);
   }
 }

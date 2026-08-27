@@ -1,16 +1,160 @@
-/* Divide el módulo entre el listado de conversaciones y el chat seleccionado. */
-.panel-mensajes {
-  display: grid;
-  grid-template-columns: 330px 1fr;
-  gap: 18px;
+.mensajes-page {
+  min-height: calc(100vh - 145px);
+  padding: 28px 18px;
+  background: #f0f2f5;
 }
-/* Comunica visualmente que cada conversación puede seleccionarse. */
-mat-list-item {
+.panel {
+  width: min(1100px, 100%);
+  height: 690px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  background: #fff;
+  border: 1px solid #d5dbe3;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px #061a381c;
+}
+.contactos {
+  border-right: 1px solid #d5dbe3;
+  overflow: auto;
+}
+.contactos header,
+.chat header {
+  display: flex;
+  align-items: center;
+  padding: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.contactos h1 {
+  margin: 0;
+  flex: 1;
+  color: #061a38;
+}
+.contactos mat-form-field {
+  width: calc(100% - 28px);
+  margin: 14px;
+}
+.lista {
+  display: grid;
+}
+.contacto {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 0;
+  border-bottom: 1px solid #eef1f5;
+  background: #fff;
+  text-align: left;
   cursor: pointer;
 }
-/* En dispositivos pequeños las dos áreas se apilan verticalmente. */
-@media (max-width: 760px) {
-  .panel-mensajes {
+.contacto:hover,
+.contacto.activo {
+  background: #fff8df;
+}
+.contacto img,
+.chat header img {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.contacto span,
+.chat header div {
+  display: grid;
+  min-width: 0;
+}
+.contacto small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+}
+.contacto b {
+  display: grid;
+  place-items: center;
+  min-width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #ffc107;
+  color: #061a38;
+}
+.chat {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
+}
+.chat header {
+  gap: 12px;
+}
+.chat header a {
+  color: #061a38;
+}
+.chat header small {
+  color: #64748b;
+}
+.historial {
+  padding: 22px;
+  overflow: auto;
+  background:
+    linear-gradient(#f8fafcdd, #f8fafcdd),
+    url('/assets/images/red.jpg') center/cover;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.burbuja {
+  align-self: flex-start;
+  max-width: 72%;
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 3px;
+  background: #fff;
+  box-shadow: 0 2px 5px #0001;
+}
+.burbuja.mio {
+  align-self: flex-end;
+  border-radius: 16px 16px 3px 16px;
+  background: #fff3bf;
+}
+.burbuja p {
+  margin: 0;
+}
+.burbuja small {
+  display: block;
+  text-align: right;
+  color: #64748b;
+}
+.chat form {
+  padding: 14px;
+}
+.chat form mat-form-field {
+  width: 100%;
+}
+.sin-chat,
+.vacio {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  color: #64748b;
+}
+.sin-chat mat-icon {
+  width: 70px;
+  height: 70px;
+  font-size: 70px;
+  color: #ffc107;
+}
+@media (max-width: 720px) {
+  .panel {
     grid-template-columns: 1fr;
+    height: auto;
+  }
+  .contactos {
+    border-right: 0;
+  }
+  .chat {
+    min-height: 550px;
   }
 }

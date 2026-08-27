@@ -52,9 +52,9 @@ export class IniciarSesion implements OnInit, OnDestroy {
     });
   }
 
-  /** Inicia el cambio automático del carrusel cada 3,5 segundos. */
+  /** Inicia el cambio automático del carrusel cada 2,5 segundos, como en la versión original. */
   ngOnInit(): void {
-    this.temporizador = setInterval(() => this.siguienteImagen(), 3500);
+    this.temporizador = setInterval(() => this.siguienteImagen(), 2500);
   }
 
   /** Libera el temporizador cuando Angular destruye el componente. */
@@ -87,7 +87,7 @@ export class IniciarSesion implements OnInit, OnDestroy {
       next: () => this.router.navigate(['/muro']),
       error: (error) => {
         this.mensajeError =
-          error.error?.mensaje ?? 'Usuario o contraseña incorrecta, vuelve a intentar.';
+          error.error?.message ?? 'Usuario o contraseña incorrecta, vuelve a intentar.';
         this.procesando = false;
       },
     });

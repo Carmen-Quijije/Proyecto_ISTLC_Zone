@@ -3,16 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs';
+import { Usuario } from '../core/modelos';
 
 // Estructura mínima del usuario almacenado durante la sesión.
-export interface UsuarioSesion {
-  id: number;
-  nombre?: string;
-  usuario?: string;
-  email?: string;
-  foto_perfil?: string;
-  rol?: string;
-}
+export type UsuarioSesion = Usuario;
 
 @Injectable({ providedIn: 'root' })
 export class AutenticacionService {
@@ -44,19 +38,30 @@ export class AutenticacionService {
     return this.http.post(`${this.apiUrl}/register`, datos);
   }
 
+  /** Confirma el código enviado al correo institucional. */
+  verificarCorreo(email: string, codigo: string) {
+    return this.http.post(`${this.apiUrl}/verify-email`, { email, codigo });
+  }
+
+  /** Solicita un nuevo código de confirmación. */
+  reenviarCodigo(email: string) {
+    return this.http.post(`${this.apiUrl}/resend-code`, { email });
+  }
+
   /** Solicita el envío de instrucciones para recuperar la contraseña. */
   solicitarRecuperacion(email: string) {
     return this.http.post(`${this.apiUrl}/forgot-password`, { email });
   }
 
-  /** Valida el código recibido y guarda la nueva contraseña. */
-  restablecerClave(datos: { email: string; codigo: string; password: string }) {
-    return this.http.post(`${this.apiUrl}/reset-password`, datos);
+  /** Cambia la contraseña usando el código recibido por correo. */
+  restablecerClave(email: string, codigo: string, password: string) {
+    return this.http.post(`${this.apiUrl}/reset-password`, { email, codigo, password });
   }
 
   /** Elimina la sesión local y devuelve al usuario a la pantalla de acceso. */
   cerrarSesion(): void {
     localStorage.removeItem('usuario');
+    localStorage.removeItem('usuarioLogueado');
     this.usuarioActual.set(null);
     this.router.navigate(['/iniciarSesion']);
   }
@@ -64,13 +69,16 @@ export class AutenticacionService {
   /** Persiste la sesión y actualiza la signal utilizada por la interfaz. */
   private guardarSesion(usuario: UsuarioSesion): void {
     localStorage.setItem('usuario', JSON.stringify(usuario));
+    localStorage.setItem('usuarioLogueado', JSON.stringify(usuario));
     this.usuarioActual.set(usuario);
   }
 
   /** Recupera la sesión almacenada; devuelve null si no existe o está dañada. */
   private leerSesion(): UsuarioSesion | null {
     try {
-      return JSON.parse(localStorage.getItem('usuario') ?? 'null');
+      return JSON.parse(
+        localStorage.getItem('usuario') ?? localStorage.getItem('usuarioLogueado') ?? 'null',
+      );
     } catch {
       return null;
     }
