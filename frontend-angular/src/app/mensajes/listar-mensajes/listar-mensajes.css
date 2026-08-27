@@ -38,6 +38,17 @@
 .lista {
   display: grid;
 }
+.error-carga {
+  margin: 0 14px 12px;
+  padding: 10px 12px;
+  color: #991b1b;
+  background: #fee2e2;
+  border-radius: 8px;
+}
+.error-carga button {
+  display: block;
+  margin-top: 4px;
+}
 .contacto {
   display: grid;
   grid-template-columns: 54px 1fr auto;

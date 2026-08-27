@@ -47,6 +47,13 @@
   border: 1px solid var(--istlc-borde);
   border-radius: 22px;
 }
+.boton-muro {
+  margin-left: 22px;
+  color: var(--istlc-nav-text) !important;
+}
+.boton-muro mat-icon {
+  color: var(--istlc-nav-text) !important;
+}
 .buscador-global input {
   width: 100%;
   height: 38px;
@@ -105,6 +112,10 @@
 }
 .icono-alerta {
   color: var(--istlc-amarillo) !important;
+}
+.icono-alerta mat-icon {
+  color: var(--istlc-amarillo) !important;
+  opacity: 1 !important;
 }
 .usuario-boton {
   color: var(--istlc-nav-text) !important;
@@ -212,5 +223,8 @@ router-outlet + * {
   .controles-rapidos {
     gap: 0;
     margin-right: 2px;
+  }
+  .boton-muro {
+    margin-left: 4px;
   }
 }

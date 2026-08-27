@@ -13,15 +13,16 @@
     <mat-card class="red-panel">
       <h2>{{perfilId===autenticacionService.usuario()?.id?'Mis amigos':'Amigos'}}</h2>
       <p class="secundario">Personas que ya forman parte de {{perfilId===autenticacionService.usuario()?.id?'tu':'esta'}} red.</p>
+      @if(mensajeRed){<div class="error-red"><span>{{mensajeRed}}</span><button mat-button type="button" (click)="cargar()">Reintentar</button></div>}
       <div class="red-grid">
-        @for(persona of miRed;track persona.id){
+        @if(cargandoRed){<p class="secundario">Cargando amigos guardados...</p>}@else{@for(persona of miRed;track persona.id){
           <article class="amigo-card">
             <a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil de {{persona.nombre}}"></a>
             <h3>{{persona.nombre}}</h3><p>@{{persona.usuario}}</p><small>{{persona.carrera||'Comunidad ISTLC'}}{{persona.semestre?' - '+persona.semestre:''}}</small>
             <a mat-stroked-button [routerLink]="['/perfil']" [queryParams]="{id:persona.id}">Ver perfil</a>
             @if(perfilId===autenticacionService.usuario()?.id){<button mat-button class="siguiendo" type="button" (click)="alternar(persona)">Siguiendo</button>}
           </article>
-        }@empty{<p class="secundario">Todavía no hay personas agregadas en esta red.</p>}
+        }@empty{<p class="secundario">Todavía no hay personas agregadas en esta red.</p>}}
       </div>
     </mat-card>
     <mat-card class="busqueda"><h2>Buscar compañeros</h2><p class="secundario">Encuentra estudiantes registrados y agrégalos a tu red.</p><mat-form-field appearance="outline"><mat-label>Buscar por nombre, usuario o correo</mat-label><input matInput [(ngModel)]="termino" (input)="buscar()"><mat-icon matSuffix>search</mat-icon></mat-form-field></mat-card>

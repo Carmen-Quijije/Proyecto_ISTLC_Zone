@@ -2,6 +2,8 @@
   <div class="nav-contenido">
     <a class="marca" [routerLink]="autenticacionService.estaAutenticado()?'/muro':'/iniciarSesion'"><img src="assets/images/logo.png" alt="Logo ISTLC Zone"><span>ISTLC</span></a>
     @if(autenticacionService.estaAutenticado()){
+      <!-- Único acceso global de navegación: vuelve al muro desde cualquier pantalla. -->
+      <a class="boton-muro" mat-icon-button routerLink="/muro" aria-label="Volver al muro" title="Volver al muro"><mat-icon>home</mat-icon></a>
       <div class="buscador-global"><mat-icon>search</mat-icon><input [(ngModel)]="busquedaGlobal" (input)="buscarUsuariosGlobal()" placeholder="Buscar personas" aria-label="Buscar personas">@if(busquedaGlobal){<div class="resultados-globales">@if(buscandoUsuarios){<p>Buscando...</p>}@else{@for(persona of resultadosGlobales;track persona.id){<a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}" (click)="cerrarBusqueda()"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><span><strong>{{persona.nombre}}</strong><small>@{{persona.usuario}}</small></span></a>}@empty{<p>No se encontraron personas.</p>}}</div>}</div>
       <span class="espaciador"></span>
       <div class="controles-rapidos">

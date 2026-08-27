@@ -7,6 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { catchError, forkJoin, of } from 'rxjs';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
 import { Usuario } from '../../core/modelos';
 import { PerfilService } from '../../perfil/perfil-service';
@@ -35,7 +36,9 @@ export class ListarAmigos implements OnInit {
   seguidores = 0;
   seguidos = 0;
   cargando = true;
+  cargandoRed = true;
   mensaje = '';
+  mensajeRed = '';
   esError = false;
   constructor(
     private route: ActivatedRoute,
@@ -50,14 +53,49 @@ export class ListarAmigos implements OnInit {
     });
   }
   cargar(): void {
-    const actual = this.autenticacionService.usuario()?.id;
-    if (!actual || !this.perfilId) return;
-    this.perfilService.obtener(this.perfilId, actual).subscribe((r) => {
-      this.perfil = r.usuario;
-      this.seguidores = r.seguidores;
-      this.seguidos = r.seguidos;
+    const usuarioSesion = this.autenticacionService.usuario();
+    const actual = Number(usuarioSesion?.id || 0);
+    if (!actual || !this.perfilId || !usuarioSesion) {
+      this.mensajeRed = 'No se encontró la sesión del usuario.';
+      this.cargandoRed = false;
+      return;
+    }
+
+    this.cargandoRed = true;
+    this.mensajeRed = '';
+    if (Number(this.perfilId) === actual) this.perfil = usuarioSesion;
+    let errorPerfil = false;
+    let errorRed = false;
+
+    // Las dos respuestas se recuperan por separado para no ocultar amigos si falla el encabezado.
+    forkJoin({
+      perfil: this.perfilService.obtener(this.perfilId, actual).pipe(
+        catchError(() => {
+          errorPerfil = true;
+          return of(null);
+        }),
+      ),
+      red: this.amigosService.listarSiguiendo(this.perfilId, actual).pipe(
+        catchError(() => {
+          errorRed = true;
+          return of([] as Usuario[]);
+        }),
+      ),
+    }).subscribe(({ perfil, red }) => {
+      if (perfil) {
+        this.perfil = perfil.usuario;
+        this.seguidores = Number(perfil.seguidores || 0);
+        this.seguidos = Number(perfil.seguidos || 0);
+      }
+      this.miRed = red;
+      if (Number(this.perfilId) === actual && errorPerfil) this.seguidos = red.length;
+      this.mensajeRed = errorRed
+        ? 'No se pudo cargar la lista de amigos guardada en el servidor.'
+        : errorPerfil
+          ? 'Los amigos se cargaron, pero no se pudo actualizar la cabecera del perfil.'
+          : '';
+      this.cargandoRed = false;
     });
-    this.amigosService.listarSiguiendo(this.perfilId, actual).subscribe((r) => (this.miRed = r));
     this.buscar();
   }
   buscar(): void {

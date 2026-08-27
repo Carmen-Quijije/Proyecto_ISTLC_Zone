@@ -5,11 +5,26 @@
       <h1>Crear cuenta</h1>
       <p class="subtitulo">Forma parte de la comunidad ISTLC Zone</p>
       <form class="formulario" [formGroup]="formulario" (ngSubmit)="registrar()">
-        <mat-form-field appearance="outline"><mat-label>Nombre completo</mat-label><input matInput formControlName="nombre" /><mat-icon matSuffix>person</mat-icon></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Correo institucional</mat-label><input matInput type="email" formControlName="email" /><mat-icon matSuffix>mail</mat-icon><mat-hint>Debe terminar en tecnologicoliceocristiano.edu.ec</mat-hint></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Usuario</mat-label><input matInput formControlName="usuario" /><mat-icon matSuffix>alternate_email</mat-icon></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Contraseña</mat-label><input matInput type="password" formControlName="password" /><mat-icon matSuffix>lock</mat-icon></mat-form-field>
+        <!-- Datos de cuenta con las mismas reglas que la versión original. -->
+        <mat-form-field appearance="outline"><mat-label>Nombre completo</mat-label><input matInput formControlName="nombre" autocomplete="name" /><mat-icon matSuffix>person</mat-icon><mat-hint>Escríbelo como aparece en tu documento</mat-hint></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Correo institucional</mat-label><input matInput type="email" formControlName="email" autocomplete="email" placeholder="usuario@tecnologicoliceocristiano.edu.ec" /><mat-icon matSuffix>mail</mat-icon><mat-hint>Solo se acepta @tecnologicoliceocristiano.edu.ec</mat-hint>@if(formulario.controls.email.touched&&formulario.controls.email.invalid){<mat-error>Ingresa un correo institucional válido</mat-error>}</mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Usuario</mat-label><input matInput formControlName="usuario" autocomplete="username" maxlength="30" (input)="normalizarUsuario()" /><mat-icon matSuffix>alternate_email</mat-icon><mat-hint>3 a 30 caracteres: letras, números, guion o guion bajo</mat-hint>@if(formulario.controls.usuario.touched&&formulario.controls.usuario.invalid){<mat-error>El usuario no cumple el formato permitido</mat-error>}</mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Contraseña</mat-label><input matInput type="password" formControlName="password" autocomplete="new-password" /><mat-icon matSuffix>lock</mat-icon><mat-hint>Mínimo 8 caracteres</mat-hint>@if(formulario.controls.password.touched&&formulario.controls.password.invalid){<mat-error>Usa al menos 8 caracteres</mat-error>}</mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Confirmar contraseña</mat-label><input matInput type="password" formControlName="confirmacion" autocomplete="new-password" /><mat-icon matSuffix>lock_reset</mat-icon>@if(formulario.controls.confirmacion.touched&&formulario.controls.password.value!==formulario.controls.confirmacion.value){<mat-error>Las contraseñas no coinciden</mat-error>}</mat-form-field>
+        <!-- Información que alimenta la cabecera, biografía y cumpleaños del perfil. -->
+        <h2 class="titulo-datos-perfil">Completa tu perfil</h2>
+        <p class="ayuda-perfil">Estos datos son opcionales y podrás modificarlos más adelante.</p>
+        <div class="campos-perfil">
+          <mat-form-field appearance="outline"><mat-label>Ciudad actual</mat-label><input matInput formControlName="viveEn" /><mat-icon matSuffix>location_on</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Lugar de origen</mat-label><input matInput formControlName="lugarOrigen" /><mat-icon matSuffix>home</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Fecha de nacimiento</mat-label><input matInput type="date" formControlName="fechaNacimiento" /><mat-icon matSuffix>cake</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Estado civil</mat-label><input matInput formControlName="estadoCivil" /><mat-icon matSuffix>favorite</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Carrera</mat-label><input matInput formControlName="carrera" /><mat-icon matSuffix>school</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Semestre</mat-label><input matInput formControlName="semestre" /><mat-icon matSuffix>menu_book</mat-icon></mat-form-field>
+          <mat-form-field appearance="outline" class="campo-ancho"><mat-label>Biografía</mat-label><textarea matInput rows="3" formControlName="bio" placeholder="Escribe un mensaje para tu perfil"></textarea><mat-icon matSuffix>edit_note</mat-icon></mat-form-field>
+        </div>
         <mat-checkbox formControlName="terminos">Acepto los <a routerLink="/terminosCondiciones">términos y condiciones</a></mat-checkbox>
+        <mat-checkbox formControlName="privacidad">Deseo recibir notificaciones y novedades por correo</mat-checkbox>
         @if (mensaje) { <p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{ mensaje }}</p> }
         <button mat-flat-button class="boton-principal" type="submit" [disabled]="formulario.invalid || procesando">{{ procesando ? 'Enviando...' : 'Registrarme' }}</button>
       </form>
@@ -17,10 +32,10 @@
       <h1>Verifica tu correo</h1>
       <p class="subtitulo">Enviamos un código de seis dígitos a <strong>{{ emailPendiente }}</strong></p>
       <form class="formulario" [formGroup]="formularioCodigo" (ngSubmit)="confirmarCodigo()">
-        <mat-form-field appearance="outline"><mat-label>Código de verificación</mat-label><input matInput maxlength="6" formControlName="codigo" class="codigo" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Código de verificación</mat-label><input matInput maxlength="6" inputmode="numeric" autocomplete="one-time-code" formControlName="codigo" class="codigo" (input)="normalizarCodigo()" /><mat-hint>El código expira en 10 minutos</mat-hint></mat-form-field>
         @if (mensaje) { <p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{ mensaje }}</p> }
         <button mat-flat-button class="boton-principal" type="submit" [disabled]="formularioCodigo.invalid || procesando">Confirmar cuenta</button>
-        <button mat-button type="button" (click)="reenviar()">Reenviar código</button>
+        <button mat-button type="button" [disabled]="procesando" (click)="reenviar()">Reenviar código</button>
       </form>
     }
     <a mat-button routerLink="/iniciarSesion">Volver al inicio de sesión</a>

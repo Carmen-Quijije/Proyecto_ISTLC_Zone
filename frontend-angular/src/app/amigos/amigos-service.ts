@@ -17,7 +17,7 @@ export class AmigosService {
       .get<{ success: boolean; usuarios: Usuario[] }>(
         `${this.apiUrl}/users?q=${encodeURIComponent(termino)}&currentUserId=${usuarioId}`,
       )
-      .pipe(map((respuesta) => respuesta.usuarios));
+        .pipe(map((respuesta) => respuesta.usuarios ?? []));
   }
 
   /** Lista las personas que forman parte de la red de un perfil. */
@@ -26,7 +26,7 @@ export class AmigosService {
       .get<{ success: boolean; usuarios: Usuario[] }>(
         `${this.apiUrl}/following/${perfilId}?currentUserId=${usuarioActualId}`,
       )
-      .pipe(map((respuesta) => respuesta.usuarios));
+      .pipe(map((respuesta) => respuesta.usuarios ?? []));
   }
 
   /** Prioriza amigos de amigos y completa la lista con las cuentas más recientes. */

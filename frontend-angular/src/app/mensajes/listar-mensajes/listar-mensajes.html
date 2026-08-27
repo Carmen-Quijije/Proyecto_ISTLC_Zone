@@ -1,1 +1,30 @@
-<main class="mensajes-page"><section class="panel"><aside class="contactos"><header><h1>Mensajes</h1><a mat-icon-button routerLink="/muro"><mat-icon>close</mat-icon></a></header><mat-form-field appearance="outline"><mat-label>Buscar personas</mat-label><input matInput [(ngModel)]="busqueda" (input)="filtrar()"><mat-icon matSuffix>search</mat-icon></mat-form-field><div class="lista">@for(persona of contactosFiltrados;track persona.id){<button class="contacto" [class.activo]="contacto?.id===persona.id" (click)="abrir(persona)"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><span><strong>{{persona.nombre}}</strong><small>{{persona.ultimoMensaje||'Iniciar conversación'}}</small></span>@if(persona.mensajesNoLeidos){<b>{{persona.mensajesNoLeidos}}</b>}</button>}@empty{<p class="vacio">Sigue personas para iniciar conversaciones.</p>}</div></aside><section class="chat">@if(contacto){<header><img [src]="contacto.fotoPerfil||'assets/images/icono.png'" alt="Contacto"><div><a [routerLink]="['/perfil']" [queryParams]="{id:contacto.id}"><strong>{{contacto.nombre}}</strong></a><small>@{{contacto.usuario}}</small></div></header><div class="historial">@for(mensaje of mensajes;track mensaje.id){<div class="burbuja" [class.mio]="mensaje.mio"><p>{{mensaje.contenido}}</p><small>{{hora(mensaje.fecha)}}</small></div>}@empty{<p class="vacio">Aún no hay mensajes. Escribe el primero.</p>}</div><form (ngSubmit)="enviar()"><mat-form-field appearance="outline"><mat-label>Escribe un mensaje</mat-label><input matInput [(ngModel)]="texto" name="mensaje" autocomplete="off"><button mat-icon-button matSuffix type="submit"><mat-icon>send</mat-icon></button></mat-form-field></form>}@else{<div class="sin-chat"><mat-icon>forum</mat-icon><h2>Tus mensajes</h2><p>Selecciona una persona para abrir la conversación.</p></div>}</section></section></main>
+<main class="mensajes-page">
+  <section class="panel">
+    <!-- Columna que combina conversaciones guardadas, amigos y resultados de búsqueda. -->
+    <aside class="contactos">
+      <header><h1>Mensajes</h1><a mat-icon-button routerLink="/muro"><mat-icon>close</mat-icon></a></header>
+      <mat-form-field appearance="outline"><mat-label>Buscar personas</mat-label><input matInput [(ngModel)]="busqueda" (input)="filtrar()"><mat-icon matSuffix>search</mat-icon></mat-form-field>
+      @if(mensajeError){<div class="error-carga"><span>{{mensajeError}}</span><button mat-button type="button" (click)="cargarContactos(false)">Reintentar</button></div>}
+      <div class="lista">
+        @if(cargandoContactos){<p class="vacio">Cargando conversaciones...</p>}@else{
+          @for(persona of contactosFiltrados;track persona.id){
+            <button class="contacto" [class.activo]="contacto?.id===persona.id" (click)="abrir(persona)">
+              <img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil">
+              <span><strong>{{persona.nombre}}</strong><small>{{persona.ultimoMensaje||'Iniciar conversación'}}</small></span>
+              @if(persona.mensajesNoLeidos){<b>{{persona.mensajesNoLeidos>9?'9+':persona.mensajesNoLeidos}}</b>}
+            </button>
+          }@empty{<p class="vacio">No hay conversaciones ni amigos para mostrar.</p>}
+        }
+      </div>
+    </aside>
+
+    <!-- Conversación seleccionada y formulario para enviar mensajes nuevos. -->
+    <section class="chat">
+      @if(contacto){
+        <header><img [src]="contacto.fotoPerfil||'assets/images/icono.png'" alt="Contacto"><div><a [routerLink]="['/perfil']" [queryParams]="{id:contacto.id}"><strong>{{contacto.nombre}}</strong></a><small>@{{contacto.usuario}}</small></div></header>
+        <div class="historial">@for(mensaje of mensajes;track mensaje.id){<div class="burbuja" [class.mio]="mensaje.mio"><p>{{mensaje.contenido}}</p><small>{{hora(mensaje.fecha)}}</small></div>}@empty{<p class="vacio">Aún no hay mensajes. Escribe el primero.</p>}</div>
+        <form (ngSubmit)="enviar()"><mat-form-field appearance="outline"><mat-label>Escribe un mensaje</mat-label><input matInput [(ngModel)]="texto" name="mensaje" autocomplete="off"><button mat-icon-button matSuffix type="submit"><mat-icon>send</mat-icon></button></mat-form-field></form>
+      }@else{<div class="sin-chat"><mat-icon>forum</mat-icon><h2>Tus mensajes</h2><p>Selecciona una persona para abrir la conversación.</p></div>}
+    </section>
+  </section>
+</main>

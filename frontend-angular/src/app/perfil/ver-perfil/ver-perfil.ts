@@ -94,7 +94,10 @@ export class VerPerfil implements OnInit {
     });
     this.amigosService.listarSiguiendo(id, actual).subscribe({
       next: (amigos) => {
-        if (solicitud === this.solicitudPerfil && id === this.perfilId) this.amigos = amigos;
+        if (solicitud === this.solicitudPerfil && id === this.perfilId) {
+          this.amigos = amigos;
+          if (id === actual && this.respuesta) this.respuesta.seguidos = amigos.length;
+        }
       },
       error: () => {
         if (solicitud === this.solicitudPerfil && id === this.perfilId) this.amigos = [];

@@ -15,7 +15,7 @@ export class MensajesService {
       .get<{ success: boolean; conversaciones: Usuario[] }>(
         `${this.apiUrl}/messages/conversations/${usuarioId}`,
       )
-      .pipe(map((respuesta) => respuesta.conversaciones));
+      .pipe(map((respuesta) => respuesta.conversaciones ?? []));
   }
 
   obtenerMensajes(usuarioId: number, contactoId: number) {
@@ -29,6 +29,15 @@ export class MensajesService {
       emisorId,
       receptorId,
       contenido,
+    });
+  }
+
+  /** Marca como leídas las notificaciones relacionadas con el chat abierto. */
+  marcarConversacionLeida(usuarioId: number, contactoId: number) {
+    return this.http.put(`${this.apiUrl}/notifications/read-target`, {
+      usuarioId,
+      tipo: 'mensaje',
+      referenciaId: contactoId,
     });
   }
 

@@ -41,13 +41,33 @@ export class SeccionesPerfil implements OnInit {
     });
   }
   cargar(): void {
-    const actual = this.auth.usuario()?.id;
-    if (!actual || !this.perfilId) return;
-    this.perfilService.obtener(this.perfilId, actual).subscribe((r) => {
-      this.respuesta = r;
-      this.perfil = r.usuario;
-      if (this.seccion === 'cumpleanos' && !this.esPropio)
-        this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
+    const usuarioSesion = this.auth.usuario();
+    const actual = Number(usuarioSesion?.id || 0);
+    if (!actual || !this.perfilId || !usuarioSesion) return;
+
+    // Nombre, foto, bio y datos del perfil propio se muestran inmediatamente desde la sesión.
+    if (this.esPropio) {
+      this.perfil = usuarioSesion;
+      this.respuesta = {
+        success: true,
+        usuario: usuarioSesion,
+        seguidores: 0,
+        seguidos: 0,
+        siguiendo: false,
+        solicitudPendiente: false,
+      };
+    }
+
+    this.perfilService.obtener(this.perfilId, actual).subscribe({
+      next: (r) => {
+        this.respuesta = r;
+        this.perfil = r.usuario;
+        if (this.seccion === 'cumpleanos' && !this.esPropio)
+          this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
+      },
+      error: () => {
+        // En el perfil propio se conserva la información iniciada en sesión.
+      },
     });
     if (this.seccion === 'fotos')
       this.perfilService
@@ -56,12 +76,13 @@ export class SeccionesPerfil implements OnInit {
     if (this.seccion === 'cumpleanos' && this.esPropio)
       this.amigosService
         .listarSiguiendo(this.perfilId, actual)
-        .subscribe(
-          (a) =>
-            (this.amigos = a
-              .filter((x) => !!x.fechaNacimiento)
-              .sort((a, b) => this.dias(a.fechaNacimiento) - this.dias(b.fechaNacimiento))),
-        );
+        .subscribe((a) => {
+          // Orden ascendente: cumpleaños más cercano primero y el más lejano al final.
+          this.amigos = a
+            .filter((x) => !!x.fechaNacimiento)
+            .sort((a, b) => this.dias(a.fechaNacimiento) - this.dias(b.fechaNacimiento));
+          if (this.respuesta) this.respuesta.seguidos = a.length;
+        });
     if (this.seccion === 'actividad')
       this.perfilService.obtenerActividad(this.perfilId).subscribe((a) => (this.actividades = a));
   }

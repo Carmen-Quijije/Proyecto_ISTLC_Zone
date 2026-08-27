@@ -8,6 +8,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { PerfilService } from '../../perfil/perfil-service';
 import { AutenticacionService } from '../autenticacion-service';
 
 @Component({
@@ -43,9 +44,21 @@ export class Registro {
         Validators.pattern(/@tecnologicoliceocristiano\.edu\.ec$/i),
       ],
     ],
-    usuario: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    usuario: [
+      '',
+      [Validators.required, Validators.pattern(/^[a-z0-9_-]{3,30}$/)],
+    ],
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmacion: ['', [Validators.required, Validators.minLength(8)]],
+    viveEn: [''],
+    lugarOrigen: [''],
+    fechaNacimiento: [''],
+    estadoCivil: [''],
+    carrera: [''],
+    semestre: [''],
+    bio: [''],
     terminos: [false, Validators.requiredTrue],
+    privacidad: [false],
   });
   readonly formularioCodigo = this.fb.nonNullable.group({
     codigo: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
@@ -53,14 +66,33 @@ export class Registro {
 
   constructor(
     private autenticacionService: AutenticacionService,
+    private perfilService: PerfilService,
     private router: Router,
   ) {}
 
   registrar(): void {
-    if (this.formulario.invalid) return;
-    const { terminos, ...datos } = this.formulario.getRawValue();
+    if (this.formulario.invalid) {
+      this.formulario.markAllAsTouched();
+      this.mostrar('Revisa los campos obligatorios antes de continuar.', true);
+      return;
+    }
+
+    const valores = this.formulario.getRawValue();
+    if (valores.password !== valores.confirmacion) {
+      this.mostrar('Las contraseñas no coinciden.', true);
+      return;
+    }
+
+    const datos = {
+      nombre: valores.nombre.trim(),
+      email: valores.email.trim().toLowerCase(),
+      usuario: valores.usuario.trim().toLowerCase(),
+      password: valores.password,
+      privacidad: valores.privacidad,
+    };
     this.procesando = true;
-    this.autenticacionService.registrar({ ...datos, privacidad: terminos }).subscribe({
+    this.mensaje = '';
+    this.autenticacionService.registrar(datos).subscribe({
       next: (respuesta: any) => {
         this.emailPendiente = datos.email;
         this.pasoVerificacion = true;
@@ -75,12 +107,19 @@ export class Registro {
   }
 
   confirmarCodigo(): void {
-    if (this.formularioCodigo.invalid) return;
+    if (this.formularioCodigo.invalid) {
+      this.formularioCodigo.markAllAsTouched();
+      this.mostrar('Ingresa el código de seis dígitos enviado a tu correo.', true);
+      return;
+    }
     this.procesando = true;
     this.autenticacionService
       .verificarCorreo(this.emailPendiente, this.formularioCodigo.getRawValue().codigo)
       .subscribe({
-        next: () => this.router.navigate(['/iniciarSesion'], { queryParams: { registro: 'ok' } }),
+        next: () => {
+          this.mostrar('Correo confirmado correctamente. Guardando tu perfil...', false);
+          this.completarPerfilRegistrado();
+        },
         error: (error) => {
           this.mostrar(error.error?.message || 'Código inválido o expirado.', true);
           this.procesando = false;
@@ -89,11 +128,64 @@ export class Registro {
   }
 
   reenviar(): void {
+    if (!this.emailPendiente || this.procesando) return;
+    this.procesando = true;
     this.autenticacionService.reenviarCodigo(this.emailPendiente).subscribe({
-      next: (respuesta: any) => this.mostrar(respuesta.message || 'Código reenviado.', false),
-      error: (error) =>
-        this.mostrar(error.error?.message || 'No se pudo reenviar el código.', true),
+      next: (respuesta: any) => {
+        this.mostrar(respuesta.message || 'Código reenviado.', false);
+        this.procesando = false;
+      },
+      error: (error) => {
+        this.mostrar(error.error?.message || 'No se pudo reenviar el código.', true);
+        this.procesando = false;
+      },
     });
+  }
+
+  /** Conserva las mismas reglas del usuario empleadas por la versión sin Angular. */
+  normalizarUsuario(): void {
+    const control = this.formulario.controls.usuario;
+    const normalizado = control.value.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+    if (normalizado !== control.value) control.setValue(normalizado, { emitEvent: false });
+  }
+
+  /** El código de verificación solo admite los seis números enviados por correo. */
+  normalizarCodigo(): void {
+    const control = this.formularioCodigo.controls.codigo;
+    const normalizado = control.value.replace(/\D/g, '').slice(0, 6);
+    if (normalizado !== control.value) control.setValue(normalizado, { emitEvent: false });
+  }
+
+  /** Guarda los datos opcionales mediante el endpoint de perfil que ya existe. */
+  private completarPerfilRegistrado(): void {
+    const valores = this.formulario.getRawValue();
+    this.autenticacionService
+      .iniciarSesion({ usuario: valores.usuario.trim().toLowerCase(), password: valores.password })
+      .subscribe({
+        next: (respuesta) => {
+          const usuario = respuesta.usuario;
+          this.perfilService
+            .actualizar({
+              id: usuario.id,
+              nombre: valores.nombre.trim(),
+              viveEn: valores.viveEn.trim(),
+              lugarOrigen: valores.lugarOrigen.trim(),
+              fechaNacimiento: valores.fechaNacimiento,
+              estadoCivil: valores.estadoCivil.trim(),
+              carrera: valores.carrera.trim(),
+              semestre: valores.semestre.trim(),
+              fotoPerfil: usuario.fotoPerfil || '',
+              bio: valores.bio.trim(),
+            })
+            .subscribe({
+              next: () => this.autenticacionService.cerrarSesion(),
+              error: () => this.autenticacionService.cerrarSesion(),
+            });
+        },
+        // La cuenta ya está verificada aunque la sesión temporal no pueda iniciarse.
+        error: () =>
+          this.router.navigate(['/iniciarSesion'], { queryParams: { registro: 'ok' } }),
+      });
   }
 
   private mostrar(mensaje: string, error: boolean): void {
