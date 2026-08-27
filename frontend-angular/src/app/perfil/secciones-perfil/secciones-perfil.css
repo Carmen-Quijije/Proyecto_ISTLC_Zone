@@ -12,7 +12,7 @@
 }
 .identidad {
   box-sizing: border-box;
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   min-height: 272px;
   margin: auto;
   display: flex;
@@ -45,9 +45,10 @@
 }
 .detalles-cabecera {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 14px;
   margin-top: 8px;
+  white-space: nowrap;
 }
 .detalles-cabecera span {
   display: flex;
@@ -87,7 +88,7 @@
 .tabs {
   position: relative;
   z-index: 1;
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   margin: auto;
   display: flex;
   flex-wrap: wrap;
@@ -116,7 +117,7 @@
   font-weight: 800;
 }
 .contenido {
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   margin: auto;
   padding: 28px 0;
 }
@@ -236,7 +237,9 @@
     height: 150px;
   }
   .detalles-cabecera {
+    flex-wrap: wrap;
     justify-content: center;
+    white-space: normal;
   }
   .acciones-perfil {
     margin: 0;

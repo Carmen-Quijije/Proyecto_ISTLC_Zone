@@ -23,6 +23,9 @@ export class VerPerfil implements OnInit {
   respuesta?: PerfilRespuesta;
   publicaciones: Publicacion[] = [];
   amigos: Usuario[] = [];
+  usuariosEtiquetados: Usuario[] = [];
+  publicacionEtiquetasModal?: Publicacion;
+  cargandoEtiquetas = false;
   cargando = true;
   mensaje = '';
   private solicitudPerfil = 0;
@@ -242,6 +245,44 @@ export class VerPerfil implements OnInit {
       .split(/(@[a-zA-Z0-9._-]+)/g)
       .filter(Boolean)
       .map((parte) => ({ texto: parte, mencion: /^@/.test(parte) }));
+  }
+  /** Abre un modal con todos los perfiles mencionados mediante @usuario. */
+  abrirEtiquetas(publicacion: Publicacion): void {
+    const actual = Number(this.autenticacionService.usuario()?.id || 0);
+    const nombres = new Set(
+      [...publicacion.contenido.matchAll(/@([a-zA-Z0-9._-]+)/g)].map((item) =>
+        item[1].toLocaleLowerCase('es-EC'),
+      ),
+    );
+    if (!actual || !nombres.size) return;
+    this.publicacionEtiquetasModal = publicacion;
+    this.usuariosEtiquetados = [];
+    this.cargandoEtiquetas = true;
+    this.actualizarVista();
+    this.amigosService.buscar('', actual).subscribe({
+      next: (usuarios) => {
+        const sesion = this.autenticacionService.usuario();
+        const candidatos = sesion ? [sesion, ...usuarios] : usuarios;
+        const unicos = new Map<number, Usuario>();
+        candidatos
+          .filter((usuario) => nombres.has((usuario.usuario ?? '').toLocaleLowerCase('es-EC')))
+          .forEach((usuario) => unicos.set(Number(usuario.id), usuario));
+        this.usuariosEtiquetados = [...unicos.values()];
+        this.cargandoEtiquetas = false;
+        this.actualizarVista();
+      },
+      error: () => {
+        this.cargandoEtiquetas = false;
+        this.actualizarVista();
+      },
+    });
+  }
+  cerrarEtiquetas(): void {
+    this.publicacionEtiquetasModal = undefined;
+    this.usuariosEtiquetados = [];
+  }
+  prepararPerfilVisitado(usuario: Usuario): void {
+    localStorage.setItem(`istlc-zone-perfil-vista-${Number(usuario.id)}`, JSON.stringify(usuario));
   }
   seguir(): void {
     const actual = this.autenticacionService.usuario()?.id;

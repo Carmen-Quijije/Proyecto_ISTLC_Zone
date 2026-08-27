@@ -14,7 +14,7 @@
 }
 .perfil-info {
   box-sizing: border-box;
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   min-height: 272px;
   margin: auto;
   display: flex;
@@ -51,9 +51,10 @@
 }
 .detalles {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 12px;
   color: #fff;
+  white-space: nowrap;
 }
 .detalles span {
   display: flex;
@@ -96,7 +97,7 @@
   z-index: 1;
   display: flex;
   gap: 0;
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   margin: auto;
   padding: 0;
   background: var(--istlc-superficie);
@@ -126,7 +127,7 @@
   font-weight: 800;
 }
 .perfil-contenido {
-  width: min(1000px, calc(100% - 50px));
+  width: min(1200px, calc(100% - 50px));
   margin: auto;
   display: grid;
   grid-template-columns: 360px 1fr;
@@ -207,6 +208,9 @@
 .post header small {
   color: #64748b;
 }
+.post header a {
+  color: #061a38;
+}
 .post > p {
   padding: 0 18px;
   white-space: pre-wrap;
@@ -218,6 +222,11 @@
   font-weight: 700;
   background: #e7f1ff;
   border-radius: 4px;
+}
+.post .mencion-boton {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
 }
 .etiqueta-perfil {
   display: flex !important;
@@ -253,6 +262,65 @@
   text-align: center;
   color: #64748b;
 }
+.modal-etiquetas {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #061a3899;
+}
+.modal-etiquetas-contenido {
+  width: min(460px, 100%);
+  max-height: min(620px, 85vh);
+  overflow: hidden;
+}
+.modal-etiquetas-contenido > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  color: #fff;
+  background: #061a38;
+}
+.modal-etiquetas-contenido h2 {
+  margin: 0;
+  color: #fff;
+}
+.modal-etiquetas-contenido header button {
+  color: #fff;
+}
+.lista-etiquetas {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  overflow-y: auto;
+}
+.lista-etiquetas a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  color: #061a38;
+  border-radius: 10px;
+}
+.lista-etiquetas a:hover {
+  background: #eef1f5;
+}
+.lista-etiquetas img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.lista-etiquetas span {
+  display: grid;
+  flex: 1;
+}
+.lista-etiquetas small {
+  color: #64748b;
+}
 @media (max-width: 780px) {
   .perfil-info {
     align-items: center;
@@ -267,7 +335,9 @@
     margin: auto;
   }
   .detalles {
+    flex-wrap: wrap;
     justify-content: center;
+    white-space: normal;
   }
   .perfil-tabs {
     flex-wrap: wrap;

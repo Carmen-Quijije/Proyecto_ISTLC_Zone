@@ -1,5 +1,5 @@
 // Muro social equivalente a la versión original: perfil, publicaciones, comentarios y sugerencias.
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -65,6 +65,7 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     private amigosService: AmigosService,
     public autenticacionService: AutenticacionService,
     private route: ActivatedRoute,
+    private detector: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -86,9 +87,11 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     this.publicacionesService.obtenerMuro(id).subscribe({
       next: (datos) => {
         this.publicaciones = datos;
+        this.guardarMuro(id, datos);
         [...this.comentariosVisibles].forEach((publicacionId) =>
           this.cargarComentarios(publicacionId),
         );
+        this.actualizarVista();
       },
       error: () => {},
     });
@@ -105,16 +108,21 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     this.mensaje = '';
     // Muestra inmediatamente los datos guardados al iniciar sesión mientras Render responde.
     this.perfil = usuarioSesion;
+    this.restaurarMuro(id);
+    this.actualizarVista();
     this.publicacionesService
       .obtenerMuro(id)
       .subscribe({
         next: (datos) => {
           if (carga !== this.cargaActual) return;
           this.publicaciones = datos;
+          this.guardarMuro(id, datos);
           this.enfocarPublicacionDesdeUrl();
+          this.actualizarVista();
         },
         error: () => {
           if (carga === this.cargaActual) this.mensaje = 'No se pudo cargar el muro. Intenta nuevamente.';
+          this.actualizarVista();
         },
       });
     this.perfilService.obtener(id, id).subscribe({
@@ -123,6 +131,7 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
         this.perfil = respuesta.usuario;
         this.seguidores = respuesta.seguidores;
         this.seguidos = respuesta.seguidos;
+        this.actualizarVista();
       },
       error: () => {
         if (!this.mensaje)
@@ -133,6 +142,7 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
       .obtenerSugerencias(id)
       .subscribe((usuarios) => {
         if (carga === this.cargaActual) this.sugerencias = usuarios;
+        this.actualizarVista();
       });
     this.amigosService
       .listarSiguiendo(id, id)
@@ -140,6 +150,7 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
         if (carga !== this.cargaActual) return;
         this.contactosCompartir = usuarios;
         this.seguidos = Math.max(this.seguidos, usuarios.length);
+        this.actualizarVista();
       });
   }
 
@@ -507,5 +518,31 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
 
   formatearFecha(fecha: string): string {
     return new Date(fecha).toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  private restaurarMuro(usuarioId: number): void {
+    try {
+      const guardadas = JSON.parse(
+        localStorage.getItem(`istlc-zone-muro-${usuarioId}`) ?? '[]',
+      ) as Publicacion[];
+      if (Array.isArray(guardadas)) this.publicaciones = guardadas;
+    } catch {
+      localStorage.removeItem(`istlc-zone-muro-${usuarioId}`);
+    }
+  }
+
+  private guardarMuro(usuarioId: number, publicaciones: Publicacion[]): void {
+    try {
+      localStorage.setItem(`istlc-zone-muro-${usuarioId}`, JSON.stringify(publicaciones));
+    } catch {
+      // Render sigue siendo la fuente oficial; esta copia evita un muro vacío al regresar.
+    }
+  }
+
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }
