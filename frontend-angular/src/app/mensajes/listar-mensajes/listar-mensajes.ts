@@ -1,5 +1,5 @@
 // Mensajería privada compatible con las conversaciones guardadas por el backend original.
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -38,19 +38,28 @@ export class ListarMensajes implements OnInit, OnDestroy {
   private temporizador?: ReturnType<typeof setInterval>;
   private actualizandoContactos = false;
   private secuenciaBusqueda = 0;
+  private contactoEnCarga = 0;
+  private secuenciaChat = 0;
 
   constructor(
     private mensajesService: MensajesService,
     private amigosService: AmigosService,
     public autenticacionService: AutenticacionService,
     private route: ActivatedRoute,
+    private detector: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     // Presenta la última lista conocida de inmediato y luego la sincroniza con Render.
     this.restaurarContactosGuardados();
     // También vuelve a evaluar el contacto cuando cambia ?contacto= en la misma pantalla.
-    this.route.queryParamMap.subscribe(() => this.cargarContactos(false));
+    this.route.queryParamMap.subscribe((parametros) => {
+      // Abre primero el destinatario de ?contacto=; no espera a que termine la lista lateral.
+      const contactoId = Number(parametros.get('contacto') || 0);
+      this.abrirContactoSolicitado(contactoId);
+      this.cargarContactos(false);
+      this.actualizarVista();
+    });
     this.temporizador = setInterval(() => this.refrescar(), 5000);
   }
 
@@ -119,11 +128,13 @@ export class ListarMensajes implements OnInit, OnDestroy {
                 : '';
         this.cargandoContactos = false;
         this.actualizandoContactos = false;
+        this.actualizarVista();
       },
       error: () => {
         this.mensajeError = 'No se pudieron cargar los mensajes.';
         this.cargandoContactos = false;
         this.actualizandoContactos = false;
+        this.actualizarVista();
       },
     });
   }
@@ -134,6 +145,7 @@ export class ListarMensajes implements OnInit, OnDestroy {
     if (!consulta) {
       this.secuenciaBusqueda++;
       this.contactosFiltrados = [...this.contactos];
+      this.actualizarVista();
       return;
     }
 
@@ -165,12 +177,15 @@ export class ListarMensajes implements OnInit, OnDestroy {
             });
           });
         this.contactosFiltrados = [...mapa.values()];
+        this.actualizarVista();
       },
     });
   }
 
   abrir(contacto: Usuario): void {
     this.contacto = contacto;
+    this.mensajes = [];
+    this.actualizarVista();
     this.obtenerChat();
   }
 
@@ -178,18 +193,23 @@ export class ListarMensajes implements OnInit, OnDestroy {
     const id = Number(this.autenticacionService.usuario()?.id || 0);
     if (!id || !this.contacto) return;
     const contactoId = Number(this.contacto.id);
+    const secuencia = ++this.secuenciaChat;
 
     this.mensajesService.obtenerMensajes(id, contactoId).subscribe({
       next: (respuesta) => {
+        if (secuencia !== this.secuenciaChat) return;
         this.contacto = respuesta.contacto;
         this.mensajes = respuesta.mensajes ?? [];
         this.mensajeError = '';
         this.mensajesService
           .marcarConversacionLeida(id, contactoId)
           .subscribe({ error: () => {} });
+        this.actualizarVista();
       },
       error: (error) => {
+        if (secuencia !== this.secuenciaChat) return;
         this.mensajeError = error.error?.message || 'No se pudo abrir la conversación.';
+        this.actualizarVista();
       },
     });
   }
@@ -204,16 +224,24 @@ export class ListarMensajes implements OnInit, OnDestroy {
         this.texto = '';
         this.obtenerChat();
         this.cargarContactos(true);
+        this.actualizarVista();
       },
       error: (error) => {
         this.mensajeError = error.error?.message || 'No se pudo enviar el mensaje.';
+        this.actualizarVista();
       },
     });
   }
 
-  private abrirContactoSolicitado(): void {
-    const contactoId = Number(this.route.snapshot.queryParamMap.get('contacto') || 0);
-    if (!contactoId || Number(this.contacto?.id) === contactoId) return;
+  private abrirContactoSolicitado(
+    contactoId = Number(this.route.snapshot.queryParamMap.get('contacto') || 0),
+  ): void {
+    if (
+      !contactoId ||
+      Number(this.contacto?.id) === contactoId ||
+      this.contactoEnCarga === contactoId
+    )
+      return;
     const seleccionado = this.contactos.find((persona) => Number(persona.id) === contactoId);
     if (seleccionado) this.abrir(seleccionado);
     else this.abrirPorId(contactoId);
@@ -223,9 +251,13 @@ export class ListarMensajes implements OnInit, OnDestroy {
   private abrirPorId(contactoId: number): void {
     const id = Number(this.autenticacionService.usuario()?.id || 0);
     if (!id) return;
+    this.contactoEnCarga = contactoId;
+    const secuencia = ++this.secuenciaChat;
 
     this.mensajesService.obtenerMensajes(id, contactoId).subscribe({
       next: (respuesta) => {
+        if (this.contactoEnCarga === contactoId) this.contactoEnCarga = 0;
+        if (secuencia !== this.secuenciaChat) return;
         this.contacto = respuesta.contacto;
         this.mensajes = respuesta.mensajes ?? [];
         if (!this.contactos.some((persona) => Number(persona.id) === contactoId)) {
@@ -235,9 +267,13 @@ export class ListarMensajes implements OnInit, OnDestroy {
         this.mensajesService
           .marcarConversacionLeida(id, contactoId)
           .subscribe({ error: () => {} });
+        this.actualizarVista();
       },
       error: (error) => {
+        if (this.contactoEnCarga === contactoId) this.contactoEnCarga = 0;
+        if (secuencia !== this.secuenciaChat) return;
         this.mensajeError = error.error?.message || 'No se pudo abrir la conversación.';
+        this.actualizarVista();
       },
     });
   }
@@ -260,6 +296,7 @@ export class ListarMensajes implements OnInit, OnDestroy {
       this.contactosFiltrados = [...guardados];
       this.cargandoContactos = false;
       this.abrirContactoSolicitado();
+      this.actualizarVista();
     } catch {
       localStorage.removeItem(this.claveContactos());
     }
@@ -277,5 +314,13 @@ export class ListarMensajes implements OnInit, OnDestroy {
     return fecha
       ? new Date(fecha).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
       : '';
+  }
+
+  /** Refleja respuestas asíncronas inmediatamente, sin requerir otro clic en la pantalla. */
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }

@@ -94,6 +94,9 @@ export class AmigosService {
       lugarOrigen: usuario.lugarOrigen ?? usuario.lugar_origen ?? '',
       fechaNacimiento: usuario.fechaNacimiento ?? usuario.fecha_nacimiento ?? '',
       estadoCivil: usuario.estadoCivil ?? usuario.estado_civil ?? '',
+      tipoUsuario: usuario.tipoUsuario ?? usuario.tipo_usuario ?? '',
+      carrera: usuario.carrera ?? '',
+      semestre: usuario.semestre ?? '',
       solicitudPendiente: Boolean(usuario.solicitudPendiente ?? usuario.solicitud_pendiente),
       siguiendo: Boolean(usuario.siguiendo),
     };

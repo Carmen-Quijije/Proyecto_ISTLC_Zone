@@ -611,10 +611,35 @@ router.get('/profile/:id', async (req, res) => {
         const usuario = await one(`SELECT ${usuarioSelect} FROM usuarios WHERE id = ?`, [req.params.id]);
         if (!usuario) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
 
-        const seguidores = await one('SELECT COUNT(*) AS total FROM seguidores WHERE seguido_id = ?', [req.params.id]);
-        const seguidos = await one('SELECT COUNT(*) AS total FROM seguidores WHERE seguidor_id = ?', [req.params.id]);
+        // Cuenta la relación activa y recupera relaciones antiguas cuya solicitud quedó aceptada.
+        const seguidores = await one(
+            `SELECT COUNT(*) AS total FROM (
+                SELECT seguidor_id AS persona_id FROM seguidores WHERE seguido_id = ?
+                UNION
+                SELECT solicitante_id AS persona_id FROM solicitudes_seguimiento
+                WHERE receptor_id = ? AND estado = 'aceptada'
+             ) relaciones`,
+            [req.params.id, req.params.id]
+        );
+        const seguidos = await one(
+            `SELECT COUNT(*) AS total FROM (
+                SELECT seguido_id AS persona_id FROM seguidores WHERE seguidor_id = ?
+                UNION
+                SELECT receptor_id AS persona_id FROM solicitudes_seguimiento
+                WHERE solicitante_id = ? AND estado = 'aceptada'
+             ) relaciones`,
+            [req.params.id, req.params.id]
+        );
         const seguimiento = currentUserId
-            ? await one('SELECT id FROM seguidores WHERE seguidor_id = ? AND seguido_id = ?', [currentUserId, req.params.id])
+            ? await one(
+                `SELECT 1 AS id WHERE EXISTS (
+                    SELECT 1 FROM seguidores WHERE seguidor_id = ? AND seguido_id = ?
+                ) OR EXISTS (
+                    SELECT 1 FROM solicitudes_seguimiento
+                    WHERE solicitante_id = ? AND receptor_id = ? AND estado = 'aceptada'
+                )`,
+                [currentUserId, req.params.id, currentUserId, req.params.id]
+            )
             : null;
         const solicitud = currentUserId
             ? await one(
@@ -886,14 +911,19 @@ router.get('/following/:id', async (req, res) => {
             `SELECT ${usuarioSelectConAlias('u')},
                 CASE WHEN sf.id IS NULL THEN FALSE ELSE TRUE END AS siguiendo,
                 CASE WHEN ss.id IS NULL THEN FALSE ELSE TRUE END AS solicitud_pendiente
-             FROM seguidores s
+             FROM (
+                SELECT seguido_id FROM seguidores WHERE seguidor_id = ?
+                UNION
+                SELECT receptor_id AS seguido_id FROM solicitudes_seguimiento
+                WHERE solicitante_id = ? AND estado = 'aceptada'
+             ) s
              JOIN usuarios u ON u.id = s.seguido_id
              LEFT JOIN seguidores sf ON sf.seguidor_id = ? AND sf.seguido_id = u.id
              LEFT JOIN solicitudes_seguimiento ss
                 ON ss.solicitante_id = ? AND ss.receptor_id = u.id AND ss.estado = 'pendiente'
              WHERE s.seguidor_id = ?
              ORDER BY u.nombre ASC`,
-            [currentUserId, currentUserId, req.params.id]
+            [req.params.id, req.params.id, currentUserId, currentUserId]
         );
         res.json({
             success: true,

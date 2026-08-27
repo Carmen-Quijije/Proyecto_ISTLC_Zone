@@ -1,5 +1,5 @@
 // Secciones secundarias del perfil: información, fotos, cumpleaños y actividad.
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +32,7 @@ export class SeccionesPerfil implements OnInit {
     private amigosService: AmigosService,
     private auth: AutenticacionService,
     private publicacionesService: PublicacionesService,
+    private detector: ChangeDetectorRef,
   ) {}
   ngOnInit(): void {
     this.route.data.subscribe((d) => {
@@ -42,6 +43,7 @@ export class SeccionesPerfil implements OnInit {
         const idParametro = Number(p.get('id'));
         this.perfilId = Number.isFinite(idParametro) && idParametro > 0 ? idParametro : idSesion;
         this.cargar();
+        this.actualizarVista();
       });
     });
   }
@@ -73,6 +75,7 @@ export class SeccionesPerfil implements OnInit {
         this.perfil = r.usuario;
         if (this.seccion === 'cumpleanos' && !this.esPropio)
           this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
+        this.actualizarVista();
       },
       error: () => {
         // En el perfil propio se conserva la información iniciada en sesión.
@@ -89,6 +92,7 @@ export class SeccionesPerfil implements OnInit {
       }).subscribe(({ subidas, etiquetadas }) => {
         this.publicaciones = subidas;
         this.publicacionesEtiquetadas = etiquetadas;
+        this.actualizarVista();
       });
     if (this.seccion === 'cumpleanos' && this.esPropio)
       this.amigosService
@@ -99,9 +103,13 @@ export class SeccionesPerfil implements OnInit {
             .filter((x) => !!x.fechaNacimiento)
             .sort((a, b) => this.dias(a.fechaNacimiento) - this.dias(b.fechaNacimiento));
           if (this.respuesta) this.respuesta.seguidos = a.length;
+          this.actualizarVista();
         });
     if (this.seccion === 'actividad')
-      this.perfilService.obtenerActividad(this.perfilId).subscribe((a) => (this.actividades = a));
+      this.perfilService.obtenerActividad(this.perfilId).subscribe((a) => {
+        this.actividades = a;
+        this.actualizarVista();
+      });
   }
   get fotos(): string[] {
     return [...new Set(this.publicaciones.flatMap((p) => this.fotosPublicacion(p)))];
@@ -231,5 +239,11 @@ export class SeccionesPerfil implements OnInit {
       Number(coincidencia[3]),
     );
     return Number.isNaN(fecha.getTime()) ? undefined : fecha;
+  }
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }

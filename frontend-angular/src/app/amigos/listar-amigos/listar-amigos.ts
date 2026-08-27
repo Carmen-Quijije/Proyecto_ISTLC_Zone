@@ -1,5 +1,5 @@
 // Red de amigos: muestra perfiles existentes desde el inicio y permite buscar, seguir o dejar de seguir.
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,11 +45,13 @@ export class ListarAmigos implements OnInit {
     private amigosService: AmigosService,
     private perfilService: PerfilService,
     public autenticacionService: AutenticacionService,
+    private detector: ChangeDetectorRef,
   ) {}
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((p) => {
       this.perfilId = Number(p.get('id') || this.autenticacionService.usuario()?.id || 0);
       this.cargar();
+      this.actualizarVista();
     });
   }
   cargar(): void {
@@ -58,6 +60,7 @@ export class ListarAmigos implements OnInit {
     if (!actual || !this.perfilId || !usuarioSesion) {
       this.mensajeRed = 'No se encontró la sesión del usuario.';
       this.cargandoRed = false;
+      this.actualizarVista();
       return;
     }
 
@@ -106,11 +109,13 @@ export class ListarAmigos implements OnInit {
       next: (p) => {
         this.personas = p;
         this.cargando = false;
+        this.actualizarVista();
       },
       error: () => {
         this.mensaje = 'No se pudieron cargar los perfiles.';
         this.esError = true;
         this.cargando = false;
+        this.actualizarVista();
       },
     });
   }
@@ -144,5 +149,11 @@ export class ListarAmigos implements OnInit {
         },
       });
     }
+  }
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }

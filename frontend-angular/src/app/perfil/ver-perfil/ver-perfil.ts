@@ -1,5 +1,5 @@
 // Perfil completo con datos, red y publicaciones, compatible con perfiles propios y ajenos.
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -32,6 +32,7 @@ export class VerPerfil implements OnInit {
     private amigosService: AmigosService,
     private publicacionesService: PublicacionesService,
     public autenticacionService: AutenticacionService,
+    private detector: ChangeDetectorRef,
   ) {}
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((params) => {
@@ -47,6 +48,7 @@ export class VerPerfil implements OnInit {
     if (!id || !actual || !usuarioSesion) {
       this.perfil = undefined;
       this.cargando = false;
+      this.actualizarVista();
       this.mensaje = 'No se pudo identificar el perfil. Regresa al muro e inténtalo nuevamente.';
       return;
     }
@@ -58,8 +60,9 @@ export class VerPerfil implements OnInit {
 
     // El perfil propio se muestra de inmediato con la información guardada al iniciar sesión.
     if (id === actual) {
-      this.perfil = usuarioSesion;
-      this.respuesta = {
+      const perfilGuardado = this.leerPerfilGuardado(id);
+      this.perfil = perfilGuardado?.usuario ?? usuarioSesion;
+      this.respuesta = perfilGuardado ?? {
         success: true,
         usuario: usuarioSesion,
         seguidores: Number(usuarioSesion.seguidores ?? 0),
@@ -69,9 +72,10 @@ export class VerPerfil implements OnInit {
       };
       this.cargando = false;
     } else {
+      const perfilGuardado = this.leerPerfilGuardado(id);
       const vistaPrevia = this.leerVistaPrevia(id);
-      this.perfil = vistaPrevia;
-      this.respuesta = vistaPrevia
+      this.perfil = perfilGuardado?.usuario ?? vistaPrevia;
+      this.respuesta = perfilGuardado ?? (vistaPrevia
         ? {
             success: true,
             usuario: vistaPrevia,
@@ -80,9 +84,10 @@ export class VerPerfil implements OnInit {
             siguiendo: Boolean(vistaPrevia.siguiendo),
             solicitudPendiente: Boolean(vistaPrevia.solicitudPendiente),
           }
-        : undefined;
-      this.cargando = !vistaPrevia;
+        : undefined);
+      this.cargando = !this.perfil;
     }
+    this.actualizarVista();
 
     this.perfilService.obtener(id, actual).subscribe({
       next: (r) => {
@@ -99,7 +104,9 @@ export class VerPerfil implements OnInit {
           seguidos: Math.max(Number(r.seguidos || 0), this.amigos.length, Number(this.respuesta?.seguidos || 0)),
         };
         this.perfil = r.usuario;
+        this.guardarPerfil(this.respuesta);
         this.cargando = false;
+        this.actualizarVista();
       },
       error: () => {
         if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
@@ -108,12 +115,14 @@ export class VerPerfil implements OnInit {
             ? 'No se pudo actualizar la información del perfil desde el servidor.'
             : 'No se pudo cargar el perfil solicitado.';
         this.cargando = false;
+        this.actualizarVista();
       },
     });
     this.perfilService.obtenerPublicaciones(id, actual).subscribe({
       next: (publicaciones) => {
         if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
         this.publicaciones = publicaciones;
+        this.actualizarVista();
         if (!publicaciones.length) this.cargarPublicacionesDesdeMuro(actual, id, solicitud);
       },
       error: () => {
@@ -130,6 +139,7 @@ export class VerPerfil implements OnInit {
               Number(this.respuesta.seguidos || 0),
               amigos.length,
             );
+          this.actualizarVista();
         }
       },
       error: () => {
@@ -147,6 +157,29 @@ export class VerPerfil implements OnInit {
       return undefined;
     }
   }
+  /** Conserva el último perfil completo por ID para mostrarlo al primer clic mientras Render actualiza. */
+  private leerPerfilGuardado(id: number): PerfilRespuesta | undefined {
+    try {
+      const respuesta = JSON.parse(
+        localStorage.getItem(`istlc-zone-perfil-${id}`) ?? 'null',
+      ) as PerfilRespuesta | null;
+      return Number(respuesta?.usuario?.id) === Number(id) ? respuesta ?? undefined : undefined;
+    } catch {
+      localStorage.removeItem(`istlc-zone-perfil-${id}`);
+      return undefined;
+    }
+  }
+
+  private guardarPerfil(respuesta: PerfilRespuesta): void {
+    try {
+      localStorage.setItem(
+        `istlc-zone-perfil-${Number(respuesta.usuario.id)}`,
+        JSON.stringify(respuesta),
+      );
+    } catch {
+      // La caché solo evita pantallas vacías; Render continúa siendo la fuente oficial.
+    }
+  }
   /** Respaldo compatible con el muro original para no ocultar publicaciones ya existentes. */
   private cargarPublicacionesDesdeMuro(actual: number, perfilId: number, solicitud: number): void {
     this.publicacionesService.obtenerMuro(actual).subscribe({
@@ -155,6 +188,7 @@ export class VerPerfil implements OnInit {
         this.publicaciones = publicaciones.filter(
           (publicacion) => Number(publicacion.autor.id) === Number(perfilId),
         );
+        this.actualizarVista();
       },
       error: () => {
         if (solicitud === this.solicitudPerfil && perfilId === this.perfilId)
@@ -246,5 +280,11 @@ export class VerPerfil implements OnInit {
   }
   formatear(fecha: string): string {
     return new Date(fecha).toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }
