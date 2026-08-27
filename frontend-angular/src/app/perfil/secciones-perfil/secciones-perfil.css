@@ -108,6 +108,7 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 355px));
   gap: 18px;
 }
+.mas-tabs{position:relative;color:#475569}.mas-tabs summary{display:flex;align-items:center;gap:5px;padding:14px;list-style:none;cursor:pointer;white-space:nowrap}.mas-tabs summary::-webkit-details-marker{display:none}.mas-tabs.activo-mas summary{color:#061a38;border-bottom:3px solid #ffc107;font-weight:800}.mas-tabs>div{position:absolute;top:100%;left:0;z-index:20;display:grid;min-width:230px;padding:8px;background:var(--istlc-superficie);border:1px solid var(--istlc-borde);border-radius:7px;box-shadow:0 10px 24px var(--istlc-sombra)}.mas-tabs>div a{padding:10px 12px;border-bottom:0!important}
 .galeria img {
   width: 100%;
   aspect-ratio: 1;

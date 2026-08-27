@@ -1,7 +1,7 @@
 // Componente raíz con navegación, usuario y centro de notificaciones global.
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,7 +18,6 @@ import { NotificacionesService } from './notificaciones/notificaciones-service';
   imports: [
     RouterOutlet,
     RouterLink,
-    RouterLinkActive,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
@@ -103,6 +102,11 @@ export class App implements OnInit, OnDestroy {
   cerrarBusqueda(): void {
     this.busquedaGlobal = '';
     this.resultadosGlobales = [];
+  }
+  get mensajesSinLeer(): number {
+    return this.notificaciones.filter(
+      (notificacion) => notificacion.tipo === 'mensaje' && !notificacion.leida,
+    ).length;
   }
   cargarNotificaciones(): void {
     const id = this.autenticacionService.usuario()?.id;

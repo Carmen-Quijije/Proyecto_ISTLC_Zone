@@ -58,8 +58,8 @@
     </section>
 
     <aside class="columna-lateral derecha">
-      <mat-card class="acceso-card"><h3>Notificaciones</h3><p><mat-icon>notifications</mat-icon> Revisa las novedades de tu comunidad.</p><p><mat-icon>chat_bubble</mat-icon> Tus mensajes están siempre disponibles.</p></mat-card>
-      <mat-card class="acceso-card"><div class="titulo-fila"><h3>Amigos sugeridos</h3><a routerLink="/amigos">Ver</a></div>@for (persona of sugerencias; track persona.id) { <div class="sugerencia"><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil || 'assets/images/icono.png'" alt="Perfil" /></a><div><strong>{{ persona.nombre }}</strong><small>@{{ persona.usuario }}</small></div><button mat-icon-button [disabled]="persona.solicitudPendiente" (click)="seguir(persona)"><mat-icon>{{ persona.solicitudPendiente ? 'schedule' : 'person_add' }}</mat-icon></button></div> }</mat-card>
+      <mat-card class="acceso-card notificaciones-lateral"><h3>Notificaciones</h3><button type="button" (click)="cargarTodo()"><mat-icon>notifications</mat-icon><span>Revisa tus nuevas publicaciones.</span></button><a routerLink="/mensajes"><mat-icon>chat_bubble</mat-icon><span>Revisa tus mensajes.</span></a></mat-card>
+      <mat-card class="acceso-card"><div class="titulo-fila"><h3>Amigos sugeridos</h3><a routerLink="/amigos">Ver</a></div>@for (persona of sugerencias; track persona.id) { <div class="sugerencia"><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil || 'assets/images/icono.png'" alt="Perfil" /></a><div><strong>{{ persona.nombre }}</strong><small>@{{ persona.usuario }}</small></div><button mat-icon-button [disabled]="persona.solicitudPendiente" (click)="seguir(persona)" [title]="persona.solicitudPendiente?'Solicitud enviada':'Agregar amigo'"><mat-icon>{{ persona.solicitudPendiente ? 'schedule' : 'person_add' }}</mat-icon></button></div> }@empty{<p class="sin-sugerencias">No hay nuevas sugerencias.</p>}</mat-card>
     </aside>
   </section>
 </main>

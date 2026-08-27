@@ -181,6 +181,7 @@
   max-height: 430px;
   object-fit: cover;
 }
+.mas-tabs{position:relative;color:var(--istlc-muted)}.mas-tabs summary{display:flex;align-items:center;gap:5px;padding:12px 16px;list-style:none;cursor:pointer}.mas-tabs summary::-webkit-details-marker{display:none}.mas-tabs>div{position:absolute;top:100%;left:0;z-index:20;display:grid;min-width:230px;padding:8px;background:var(--istlc-superficie);border:1px solid var(--istlc-borde);border-radius:7px;box-shadow:0 10px 24px var(--istlc-sombra)}.mas-tabs>div a{padding:10px 12px}
 .foto-editable{position:relative}.foto-editable>button{position:absolute;top:6px;right:6px;color:#fff!important;background:#0009}.espaciador{flex:1}
 .post footer {
   padding: 14px 18px;

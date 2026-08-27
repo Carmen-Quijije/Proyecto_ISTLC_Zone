@@ -342,6 +342,7 @@
   align-items: center;
   color: #475569;
 }
+.notificaciones-lateral button,.notificaciones-lateral>a{display:flex;align-items:center;gap:10px;width:100%;padding:11px 6px;color:var(--istlc-texto);text-align:left;border:0;border-bottom:1px solid var(--istlc-borde);background:transparent;cursor:pointer}.notificaciones-lateral mat-icon,.sugerencia>button mat-icon{color:var(--istlc-amarillo)}.notificaciones-lateral button:hover,.notificaciones-lateral>a:hover{background:var(--istlc-superficie-2)}.sin-sugerencias{font-size:.9rem}
 .aviso {
   padding: 12px;
   border-left: 4px solid #ffc107;

@@ -54,6 +54,10 @@ export class IniciarSesion implements OnInit, OnDestroy {
 
   /** Inicia el cambio automático del carrusel cada 2,5 segundos, como en la versión original. */
   ngOnInit(): void {
+    if (this.autenticacionService.estaAutenticado()) {
+      this.router.navigate(['/muro']);
+      return;
+    }
     this.temporizador = setInterval(() => this.siguienteImagen(), 2500);
   }
 
