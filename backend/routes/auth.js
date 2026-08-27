@@ -336,7 +336,20 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
     try {
-        const { nombre, email, usuario, password, privacidad } = req.body;
+        const {
+            nombre,
+            email,
+            usuario,
+            password,
+            privacidad,
+            viveEn = '',
+            lugarOrigen = '',
+            fechaNacimiento = '',
+            estadoCivil = '',
+            carrera = '',
+            semestre = '',
+            bio = ''
+        } = req.body;
         if (!nombre || !email || !usuario || !password) {
             return res.status(400).json({ success: false, message: 'Faltan datos' });
         }
@@ -357,9 +370,25 @@ router.post('/register', async (req, res) => {
         const expiracion = new Date(Date.now() + 10 * 60000).toISOString();
 
         await exec(
-            `INSERT INTO registros_pendientes (nombre, email, usuario, password, privacidad)
-             VALUES (?, ?, ?, ?, ?)`,
-            [nombre, email, usuario, hashedPassword, !!privacidad]
+            `INSERT INTO registros_pendientes (
+                nombre, email, usuario, password, privacidad,
+                vive_en, lugar_origen, fecha_nacimiento, estado_civil,
+                carrera, semestre, bio
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                nombre,
+                email,
+                usuario,
+                hashedPassword,
+                !!privacidad,
+                viveEn,
+                lugarOrigen,
+                fechaNacimiento,
+                estadoCivil,
+                carrera,
+                semestre,
+                bio
+            ]
         );
         await exec(
             'INSERT INTO codigos_verificacion (email, codigo, fecha_expiracion) VALUES (?, ?, ?)',
@@ -398,9 +427,27 @@ router.post('/verify-email', async (req, res) => {
         }
 
         await exec(
-            `INSERT INTO usuarios (nombre, email, usuario, password, privacidad, codigo_verificacion, email_verificado)
-             VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
-            [pendiente.nombre, pendiente.email, pendiente.usuario, pendiente.password, !!pendiente.privacidad, codigo]
+            `INSERT INTO usuarios (
+                nombre, email, usuario, password, privacidad,
+                codigo_verificacion, email_verificado,
+                vive_en, lugar_origen, fecha_nacimiento, estado_civil,
+                carrera, semestre, bio
+             ) VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                pendiente.nombre,
+                pendiente.email,
+                pendiente.usuario,
+                pendiente.password,
+                !!pendiente.privacidad,
+                codigo,
+                pendiente.vive_en || '',
+                pendiente.lugar_origen || '',
+                pendiente.fecha_nacimiento || '',
+                pendiente.estado_civil || '',
+                pendiente.carrera || '',
+                pendiente.semestre || '',
+                pendiente.bio || ''
+            ]
         );
         await exec('UPDATE codigos_verificacion SET usado = TRUE WHERE id = ?', [codigoValido.id]);
         await exec('DELETE FROM registros_pendientes WHERE email = ?', [email]);

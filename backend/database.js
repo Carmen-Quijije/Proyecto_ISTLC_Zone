@@ -96,6 +96,16 @@ const initDatabase = async () => {
             fecha_registro TIMESTAMPTZ DEFAULT NOW()
         )
     `);
+    await pool.query(`
+        ALTER TABLE registros_pendientes
+        ADD COLUMN IF NOT EXISTS vive_en TEXT,
+        ADD COLUMN IF NOT EXISTS lugar_origen TEXT,
+        ADD COLUMN IF NOT EXISTS fecha_nacimiento TEXT,
+        ADD COLUMN IF NOT EXISTS estado_civil TEXT,
+        ADD COLUMN IF NOT EXISTS carrera TEXT,
+        ADD COLUMN IF NOT EXISTS semestre TEXT,
+        ADD COLUMN IF NOT EXISTS bio TEXT
+    `);
     console.log('Tabla registros_pendientes lista');
 
     await pool.query(`

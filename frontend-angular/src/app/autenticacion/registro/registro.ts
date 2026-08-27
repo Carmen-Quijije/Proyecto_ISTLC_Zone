@@ -8,7 +8,6 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { PerfilService } from '../../perfil/perfil-service';
 import { AutenticacionService } from '../autenticacion-service';
 
 @Component({
@@ -66,7 +65,6 @@ export class Registro {
 
   constructor(
     private autenticacionService: AutenticacionService,
-    private perfilService: PerfilService,
     private router: Router,
   ) {}
 
@@ -89,6 +87,13 @@ export class Registro {
       usuario: valores.usuario.trim().toLowerCase(),
       password: valores.password,
       privacidad: valores.privacidad,
+      viveEn: valores.viveEn.trim(),
+      lugarOrigen: valores.lugarOrigen.trim(),
+      fechaNacimiento: valores.fechaNacimiento,
+      estadoCivil: valores.estadoCivil.trim(),
+      carrera: valores.carrera.trim(),
+      semestre: valores.semestre.trim(),
+      bio: valores.bio.trim(),
     };
     this.procesando = true;
     this.mensaje = '';
@@ -116,10 +121,8 @@ export class Registro {
     this.autenticacionService
       .verificarCorreo(this.emailPendiente, this.formularioCodigo.getRawValue().codigo)
       .subscribe({
-        next: () => {
-          this.mostrar('Correo confirmado correctamente. Guardando tu perfil...', false);
-          this.completarPerfilRegistrado();
-        },
+        next: () =>
+          this.router.navigate(['/iniciarSesion'], { queryParams: { registro: 'ok' } }),
         error: (error) => {
           this.mostrar(error.error?.message || 'Código inválido o expirado.', true);
           this.procesando = false;
@@ -163,38 +166,6 @@ export class Registro {
     const control = this.formularioCodigo.controls.codigo;
     const normalizado = control.value.replace(/\D/g, '').slice(0, 6);
     if (normalizado !== control.value) control.setValue(normalizado, { emitEvent: false });
-  }
-
-  /** Guarda los datos opcionales mediante el endpoint de perfil que ya existe. */
-  private completarPerfilRegistrado(): void {
-    const valores = this.formulario.getRawValue();
-    this.autenticacionService
-      .iniciarSesion({ usuario: valores.usuario.trim().toLowerCase(), password: valores.password })
-      .subscribe({
-        next: (respuesta) => {
-          const usuario = respuesta.usuario;
-          this.perfilService
-            .actualizar({
-              id: usuario.id,
-              nombre: valores.nombre.trim(),
-              viveEn: valores.viveEn.trim(),
-              lugarOrigen: valores.lugarOrigen.trim(),
-              fechaNacimiento: valores.fechaNacimiento,
-              estadoCivil: valores.estadoCivil.trim(),
-              carrera: valores.carrera.trim(),
-              semestre: valores.semestre.trim(),
-              fotoPerfil: usuario.fotoPerfil || '',
-              bio: valores.bio.trim(),
-            })
-            .subscribe({
-              next: () => this.autenticacionService.cerrarSesion(),
-              error: () => this.autenticacionService.cerrarSesion(),
-            });
-        },
-        // La cuenta ya está verificada aunque la sesión temporal no pueda iniciarse.
-        error: () =>
-          this.router.navigate(['/iniciarSesion'], { queryParams: { registro: 'ok' } }),
-      });
   }
 
   private mostrar(mensaje: string, error: boolean): void {
