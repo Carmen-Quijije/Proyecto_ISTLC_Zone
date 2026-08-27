@@ -497,6 +497,14 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     return publicacion.autor.id === this.autenticacionService.usuario()?.id;
   }
 
+  /** Divide el texto sin usar HTML dinámico para resaltar menciones de forma segura. */
+  segmentarMenciones(texto = ''): { texto: string; mencion: boolean }[] {
+    return texto
+      .split(/(@[a-zA-Z0-9._-]+)/g)
+      .filter(Boolean)
+      .map((parte) => ({ texto: parte, mencion: /^@/.test(parte) }));
+  }
+
   formatearFecha(fecha: string): string {
     return new Date(fecha).toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' });
   }

@@ -211,6 +211,26 @@
   padding: 0 18px;
   white-space: pre-wrap;
 }
+.post .mencion-usuario {
+  display: inline;
+  padding: 1px 3px;
+  color: #075db7;
+  font-weight: 700;
+  background: #e7f1ff;
+  border-radius: 4px;
+}
+.etiqueta-perfil {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  color: #075db7 !important;
+}
+.etiqueta-perfil mat-icon {
+  width: 17px;
+  height: 17px;
+  font-size: 17px;
+}
 .post-imagenes {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

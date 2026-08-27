@@ -166,6 +166,18 @@ export class VerPerfil implements OnInit {
     const usuario: any = this.autenticacionService.usuario();
     return this.perfilId === Number(usuario?.id ?? usuario?.usuarioId ?? 0);
   }
+  esAutor(publicacion: Publicacion): boolean {
+    return Number(publicacion.autor.id) === Number(this.autenticacionService.usuario()?.id || 0);
+  }
+  estaEtiquetadoEn(publicacion: Publicacion): boolean {
+    return Number(publicacion.autor.id) !== Number(this.perfilId);
+  }
+  segmentarMenciones(texto = ''): { texto: string; mencion: boolean }[] {
+    return texto
+      .split(/(@[a-zA-Z0-9._-]+)/g)
+      .filter(Boolean)
+      .map((parte) => ({ texto: parte, mencion: /^@/.test(parte) }));
+  }
   seguir(): void {
     const actual = this.autenticacionService.usuario()?.id;
     if (!actual || !this.perfil) return;

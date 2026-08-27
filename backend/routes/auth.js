@@ -143,9 +143,8 @@ const obtenerAmigosMencionados = async (autorId, contenido) => {
     );
 };
 
-const sincronizarEtiquetasPublicacion = async (publicacionId, autorId, contenido, tieneFotos) => {
+const sincronizarEtiquetasPublicacion = async (publicacionId, autorId, contenido) => {
     await exec('DELETE FROM etiquetas_publicaciones WHERE publicacion_id = ?', [publicacionId]);
-    if (!tieneFotos) return;
     const mencionados = await obtenerAmigosMencionados(autorId, contenido);
     const autor = await one('SELECT nombre FROM usuarios WHERE id = ?', [autorId]);
     for (const usuario of mencionados) {
@@ -1021,8 +1020,7 @@ router.post('/posts', async (req, res) => {
         await sincronizarEtiquetasPublicacion(
             publicacionId,
             usuarioId,
-            contenido,
-            imagenes.length > 0
+            contenido
         );
         res.json({ success: true, id: publicacionId });
     } catch (error) {
@@ -1035,10 +1033,15 @@ router.get('/feed/:usuarioId', async (req, res) => {
     try {
         const id = Number(req.params.usuarioId);
         const publicaciones = await all(
-            publicacionesQuery(`WHERE p.usuario_id = ? OR p.usuario_id IN (
-                SELECT seguido_id FROM seguidores WHERE seguidor_id = ?
-            )`),
-            [id, id, id]
+            publicacionesQuery(`WHERE p.usuario_id = ?
+                OR p.usuario_id IN (SELECT seguido_id FROM seguidores WHERE seguidor_id = ?)
+                OR p.id IN (SELECT publicacion_id FROM etiquetas_publicaciones WHERE usuario_id = ?)
+                OR EXISTS (
+                    SELECT 1 FROM usuarios etiquetado
+                    WHERE etiquetado.id = ?
+                      AND LOWER(p.contenido) LIKE '%@' || LOWER(etiquetado.usuario) || '%'
+                )`),
+            [id, id, id, id, id]
         );
         res.json({ success: true, publicaciones: publicaciones.map(mapPublicacion) });
     } catch (error) {
@@ -1051,8 +1054,14 @@ router.get('/posts/user/:usuarioId', async (req, res) => {
     try {
         const currentUserId = Number(req.query.currentUserId || req.params.usuarioId);
         const publicaciones = await all(
-            publicacionesQuery('WHERE p.usuario_id = ?'),
-            [currentUserId, req.params.usuarioId]
+            publicacionesQuery(`WHERE p.usuario_id = ?
+                OR p.id IN (SELECT publicacion_id FROM etiquetas_publicaciones WHERE usuario_id = ?)
+                OR EXISTS (
+                    SELECT 1 FROM usuarios etiquetado
+                    WHERE etiquetado.id = ?
+                      AND LOWER(p.contenido) LIKE '%@' || LOWER(etiquetado.usuario) || '%'
+                )`),
+            [currentUserId, req.params.usuarioId, req.params.usuarioId, req.params.usuarioId]
         );
         res.json({ success: true, publicaciones: publicaciones.map(mapPublicacion) });
     } catch (error) {
@@ -1257,8 +1266,7 @@ router.put('/posts/:id', async (req, res) => {
         await sincronizarEtiquetasPublicacion(
             Number(req.params.id),
             usuarioId,
-            contenido,
-            imagenes.length > 0
+            contenido
         );
         res.json({ success: true });
     } catch (error) {
@@ -1449,10 +1457,16 @@ router.post('/posts/:id/share-profile', async (req, res) => {
     try {
         const original = await one('SELECT * FROM publicaciones WHERE id = ?', [req.params.id]);
         if (!original) return res.status(404).json({ success: false, message: 'Publicacion no encontrada' });
-        await exec(
+        const contenidoCompartido = `Compartido: ${original.contenido}`;
+        const result = await exec(
             `INSERT INTO publicaciones (usuario_id, contenido, imagen_url, imagenes_json)
-             VALUES (?, ?, ?, ?)`,
-            [req.body.usuarioId, `Compartido: ${original.contenido}`, original.imagen_url, original.imagenes_json]
+             VALUES (?, ?, ?, ?) RETURNING id`,
+            [req.body.usuarioId, contenidoCompartido, original.imagen_url, original.imagenes_json]
+        );
+        await sincronizarEtiquetasPublicacion(
+            result.rows[0]?.id,
+            req.body.usuarioId,
+            contenidoCompartido
         );
         res.json({ success: true });
     } catch (error) {

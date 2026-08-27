@@ -154,10 +154,10 @@
 .menu-titulo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  min-width: 390px;
-  padding: 10px 12px;
+  justify-content: flex-start;
+  gap: 10px;
+  min-width: 350px;
+  padding: 8px 10px;
   color: var(--istlc-nav-text);
   background: var(--istlc-azul);
   border-bottom: 2px solid var(--istlc-amarillo);
@@ -165,6 +165,19 @@
 .menu-titulo button {
   color: var(--istlc-texto) !important;
   background: var(--istlc-superficie) !important;
+}
+.menu-titulo .marcar-leidas {
+  min-width: auto;
+  min-height: 30px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  line-height: 30px;
+}
+:host ::ng-deep .menu-notificaciones.mat-mdc-menu-panel {
+  width: min(390px, calc(100vw - 20px));
+  max-width: min(390px, calc(100vw - 20px));
+  overflow-x: hidden;
 }
 .lista-notificaciones {
   max-height: min(480px, 65vh);
@@ -176,7 +189,7 @@
   grid-template-columns: 48px 1fr;
   align-items: start;
   gap: 10px;
-  min-width: 390px;
+  min-width: 0;
   padding: 12px;
   color: var(--istlc-texto);
   background: color-mix(in srgb, var(--istlc-amarillo) 13%, var(--istlc-superficie));
@@ -211,7 +224,8 @@
   background: var(--istlc-amarillo) !important;
 }
 .notificacion-item {
-  min-width: 390px;
+  width: 100%;
+  min-width: 0;
   height: auto !important;
   min-height: 68px;
   color: var(--istlc-texto) !important;
