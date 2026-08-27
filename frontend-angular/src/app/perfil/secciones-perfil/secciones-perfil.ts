@@ -86,8 +86,6 @@ export class SeccionesPerfil implements OnInit {
         };
         this.perfil = r.usuario;
         this.guardarPerfil(this.respuesta);
-        if (this.seccion === 'cumpleanos' && !this.esPropio)
-          this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
         this.actualizarVista();
       },
       error: () => {
@@ -109,17 +107,24 @@ export class SeccionesPerfil implements OnInit {
         this.publicacionesEtiquetadas = etiquetadas;
         this.actualizarVista();
       });
-    if (this.seccion === 'cumpleanos' && this.esPropio)
+    // Cumpleaños siempre pertenece a la red del usuario autenticado, aun al visitar otro perfil.
+    if (this.seccion === 'cumpleanos')
       this.amigosService
-        .listarSiguiendo(this.perfilId, actual)
-        .subscribe((a) => {
+        .listarSiguiendo(actual, actual)
+        .subscribe({
+          next: (a) => {
           if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
           // Orden ascendente: cumpleaños más cercano primero y el más lejano al final.
           this.amigos = a
             .filter((x) => !!x.fechaNacimiento)
             .sort((a, b) => this.dias(a.fechaNacimiento) - this.dias(b.fechaNacimiento));
-          if (this.respuesta) this.respuesta.seguidos = a.length;
           this.actualizarVista();
+          },
+          error: () => {
+            if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
+            this.amigos = [];
+            this.actualizarVista();
+          },
         });
     if (this.seccion === 'actividad')
       this.perfilService.obtenerActividad(this.perfilId).subscribe((a) => {
@@ -169,7 +174,7 @@ export class SeccionesPerfil implements OnInit {
       }));
   }
   get tituloCumpleanos(): string {
-    return this.esPropio ? 'Próximos cumpleaños' : 'Cumpleaños del perfil';
+    return 'Próximos cumpleaños de tus amigos';
   }
   get esPropio(): boolean {
     const usuario: any = this.auth.usuario();

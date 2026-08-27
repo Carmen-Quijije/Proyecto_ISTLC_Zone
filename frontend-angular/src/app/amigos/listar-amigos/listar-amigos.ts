@@ -40,6 +40,7 @@ export class ListarAmigos implements OnInit {
   mensaje = '';
   mensajeRed = '';
   esError = false;
+  private solicitudCarga = 0;
   constructor(
     private route: ActivatedRoute,
     private amigosService: AmigosService,
@@ -66,6 +67,8 @@ export class ListarAmigos implements OnInit {
 
     this.cargandoRed = true;
     this.mensajeRed = '';
+    const perfilSolicitado = this.perfilId;
+    const solicitud = ++this.solicitudCarga;
     if (Number(this.perfilId) === actual) this.perfil = usuarioSesion;
     let errorPerfil = false;
     let errorRed = false;
@@ -85,6 +88,7 @@ export class ListarAmigos implements OnInit {
         }),
       ),
     }).subscribe(({ perfil, red }) => {
+      if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
       if (perfil) {
         this.perfil = perfil.usuario;
         this.seguidores = Number(perfil.seguidores || 0);
@@ -98,6 +102,7 @@ export class ListarAmigos implements OnInit {
           ? 'Los amigos se cargaron, pero no se pudo actualizar la cabecera del perfil.'
           : '';
       this.cargandoRed = false;
+      this.actualizarVista();
     });
     this.buscar();
   }

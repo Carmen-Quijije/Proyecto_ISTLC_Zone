@@ -921,7 +921,6 @@ router.get('/following/:id', async (req, res) => {
              LEFT JOIN seguidores sf ON sf.seguidor_id = ? AND sf.seguido_id = u.id
              LEFT JOIN solicitudes_seguimiento ss
                 ON ss.solicitante_id = ? AND ss.receptor_id = u.id AND ss.estado = 'pendiente'
-             WHERE s.seguidor_id = ?
              ORDER BY u.nombre ASC`,
             [req.params.id, req.params.id, currentUserId, currentUserId]
         );
