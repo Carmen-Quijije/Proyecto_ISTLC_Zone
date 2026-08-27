@@ -93,8 +93,7 @@ export class VerPerfil implements OnInit {
       next: (r) => {
         if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
         if (!r?.usuario?.id) {
-          this.mensaje = 'El servidor no devolvió la información del perfil solicitado.';
-          this.cargando = false;
+          this.cargarPerfilDeRespaldo(id, actual, solicitud);
           return;
         }
         this.respuesta = {
@@ -110,12 +109,7 @@ export class VerPerfil implements OnInit {
       },
       error: () => {
         if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
-        this.mensaje =
-          id === actual
-            ? 'No se pudo actualizar la información del perfil desde el servidor.'
-            : 'No se pudo cargar el perfil solicitado.';
-        this.cargando = false;
-        this.actualizarVista();
+        this.cargarPerfilDeRespaldo(id, actual, solicitud);
       },
     });
     this.perfilService.obtenerPublicaciones(id, actual).subscribe({
@@ -149,13 +143,50 @@ export class VerPerfil implements OnInit {
   }
   private leerVistaPrevia(id: number): Usuario | undefined {
     try {
-      const persona = JSON.parse(localStorage.getItem('perfilVistaPrevia') ?? 'null') as Usuario | null;
+      const clave = `istlc-zone-perfil-vista-${id}`;
+      const persona = JSON.parse(
+        localStorage.getItem(clave) ?? localStorage.getItem('perfilVistaPrevia') ?? 'null',
+      ) as Usuario | null;
+      localStorage.removeItem(clave);
       localStorage.removeItem('perfilVistaPrevia');
       return Number(persona?.id) === Number(id) ? persona ?? undefined : undefined;
     } catch {
+      localStorage.removeItem(`istlc-zone-perfil-vista-${id}`);
       localStorage.removeItem('perfilVistaPrevia');
       return undefined;
     }
+  }
+  /** Usa la lista compatible con la versión anterior si el endpoint individual no responde. */
+  private cargarPerfilDeRespaldo(id: number, actual: number, solicitud: number): void {
+    this.amigosService.buscar('', actual).subscribe({
+      next: (usuarios) => {
+        if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
+        const encontrado = usuarios.find((usuario) => Number(usuario.id) === Number(id));
+        if (encontrado) {
+          this.perfil = encontrado;
+          this.respuesta = {
+            success: true,
+            usuario: encontrado,
+            seguidores: Number(this.respuesta?.seguidores || 0),
+            seguidos: Math.max(this.amigos.length, Number(this.respuesta?.seguidos || 0)),
+            siguiendo: Boolean(encontrado.siguiendo),
+            solicitudPendiente: Boolean(encontrado.solicitudPendiente),
+          };
+          this.guardarPerfil(this.respuesta);
+          this.mensaje = '';
+        } else {
+          this.mensaje = 'No se encontró el perfil solicitado.';
+        }
+        this.cargando = false;
+        this.actualizarVista();
+      },
+      error: () => {
+        if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
+        this.mensaje = 'No se pudo cargar el perfil solicitado.';
+        this.cargando = false;
+        this.actualizarVista();
+      },
+    });
   }
   /** Conserva el último perfil completo por ID para mostrarlo al primer clic mientras Render actualiza. */
   private leerPerfilGuardado(id: number): PerfilRespuesta | undefined {

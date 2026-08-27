@@ -26,6 +26,7 @@ export class SeccionesPerfil implements OnInit {
   publicacionesEtiquetadas: Publicacion[] = [];
   amigos: Usuario[] = [];
   actividades: any[] = [];
+  private solicitudCarga = 0;
   constructor(
     private route: ActivatedRoute,
     private perfilService: PerfilService,
@@ -51,6 +52,16 @@ export class SeccionesPerfil implements OnInit {
     const usuarioSesion: any = this.auth.usuario();
     const actual = Number(usuarioSesion?.id ?? usuarioSesion?.usuarioId ?? 0);
     if (!actual || !this.perfilId || !usuarioSesion) return;
+    const perfilSolicitado = this.perfilId;
+    const solicitud = ++this.solicitudCarga;
+
+    // Muestra inmediatamente el perfil que ya se consultó en la pestaña Todo.
+    const guardado = this.leerPerfilGuardado(perfilSolicitado);
+    if (guardado) {
+      this.perfil = guardado.usuario;
+      this.respuesta = guardado;
+      this.actualizarVista();
+    }
 
     // Nombre, foto, bio y datos del perfil propio se muestran inmediatamente desde la sesión.
     if (this.esPropio) {
@@ -67,17 +78,20 @@ export class SeccionesPerfil implements OnInit {
 
     this.perfilService.obtener(this.perfilId, actual).subscribe({
       next: (r) => {
+        if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
         this.respuesta = {
           ...r,
           seguidores: Math.max(Number(r.seguidores || 0), Number(this.respuesta?.seguidores || 0)),
           seguidos: Math.max(Number(r.seguidos || 0), Number(this.respuesta?.seguidos || 0)),
         };
         this.perfil = r.usuario;
+        this.guardarPerfil(this.respuesta);
         if (this.seccion === 'cumpleanos' && !this.esPropio)
           this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
         this.actualizarVista();
       },
       error: () => {
+        if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
         // En el perfil propio se conserva la información iniciada en sesión.
       },
     });
@@ -90,6 +104,7 @@ export class SeccionesPerfil implements OnInit {
           .obtenerPublicacionesEtiquetadas(this.perfilId, actual)
           .pipe(catchError(() => of([] as Publicacion[]))),
       }).subscribe(({ subidas, etiquetadas }) => {
+        if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
         this.publicaciones = subidas;
         this.publicacionesEtiquetadas = etiquetadas;
         this.actualizarVista();
@@ -98,6 +113,7 @@ export class SeccionesPerfil implements OnInit {
       this.amigosService
         .listarSiguiendo(this.perfilId, actual)
         .subscribe((a) => {
+          if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
           // Orden ascendente: cumpleaños más cercano primero y el más lejano al final.
           this.amigos = a
             .filter((x) => !!x.fechaNacimiento)
@@ -107,6 +123,7 @@ export class SeccionesPerfil implements OnInit {
         });
     if (this.seccion === 'actividad')
       this.perfilService.obtenerActividad(this.perfilId).subscribe((a) => {
+        if (solicitud !== this.solicitudCarga || perfilSolicitado !== this.perfilId) return;
         this.actividades = a;
         this.actualizarVista();
       });
@@ -239,6 +256,27 @@ export class SeccionesPerfil implements OnInit {
       Number(coincidencia[3]),
     );
     return Number.isNaN(fecha.getTime()) ? undefined : fecha;
+  }
+  private leerPerfilGuardado(id: number): PerfilRespuesta | undefined {
+    try {
+      const respuesta = JSON.parse(
+        localStorage.getItem(`istlc-zone-perfil-${id}`) ?? 'null',
+      ) as PerfilRespuesta | null;
+      return Number(respuesta?.usuario?.id) === Number(id) ? respuesta ?? undefined : undefined;
+    } catch {
+      localStorage.removeItem(`istlc-zone-perfil-${id}`);
+      return undefined;
+    }
+  }
+  private guardarPerfil(respuesta: PerfilRespuesta): void {
+    try {
+      localStorage.setItem(
+        `istlc-zone-perfil-${Number(respuesta.usuario.id)}`,
+        JSON.stringify(respuesta),
+      );
+    } catch {
+      // Render continúa siendo la fuente oficial; esta copia solo acelera la vista.
+    }
   }
   private actualizarVista(): void {
     queueMicrotask(() => {

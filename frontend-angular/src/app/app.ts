@@ -1,7 +1,7 @@
 // Componente raíz con navegación, usuario y centro de notificaciones global.
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ApplicationRef, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +12,7 @@ import { AutenticacionService } from './autenticacion/autenticacion-service';
 import { AmigosService } from './amigos/amigos-service';
 import { Notificacion, SolicitudSeguimiento, Usuario } from './core/modelos';
 import { NotificacionesService } from './notificaciones/notificaciones-service';
+import { filter, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -45,20 +46,35 @@ export class App implements OnInit, OnDestroy {
   buscandoUsuarios = false;
   private temporizador?: ReturnType<typeof setInterval>;
   private temporizadorBusqueda?: ReturnType<typeof setTimeout>;
+  private secuenciaBusqueda = 0;
+  private navegacion?: Subscription;
   constructor(
     public autenticacionService: AutenticacionService,
     private notificacionesService: NotificacionesService,
     private amigosService: AmigosService,
     private router: Router,
+    private aplicacion: ApplicationRef,
+    private detector: ChangeDetectorRef,
   ) {}
   ngOnInit(): void {
     this.aplicarTemaGuardado();
     this.cargarNotificaciones();
     this.temporizador = setInterval(() => this.cargarNotificaciones(), 15000);
+    // Refresca todo el árbol también al usar Atrás/Adelante o cambiar solo parámetros.
+    this.navegacion = this.router.events
+      .pipe(filter((evento): evento is NavigationEnd => evento instanceof NavigationEnd))
+      .subscribe(() => {
+        this.cerrarBusqueda();
+        queueMicrotask(() => {
+          this.detector.markForCheck();
+          this.aplicacion.tick();
+        });
+      });
   }
   ngOnDestroy(): void {
     if (this.temporizador) clearInterval(this.temporizador);
     if (this.temporizadorBusqueda) clearTimeout(this.temporizadorBusqueda);
+    this.navegacion?.unsubscribe();
   }
   /** Recupera la apariencia elegida anteriormente por el usuario. */
   private aplicarTemaGuardado(): void {
@@ -80,33 +96,58 @@ export class App implements OnInit, OnDestroy {
     if (this.temporizadorBusqueda) clearTimeout(this.temporizadorBusqueda);
     const termino = this.busquedaGlobal.trim();
     if (!termino) {
+      this.secuenciaBusqueda++;
       this.resultadosGlobales = [];
+      this.buscandoUsuarios = false;
       return;
     }
+    const consulta = termino.toLocaleLowerCase('es-EC');
+    const secuencia = ++this.secuenciaBusqueda;
     this.buscandoUsuarios = true;
     this.temporizadorBusqueda = setTimeout(() => {
       const id = this.autenticacionService.usuario()?.id;
-      if (!id) return;
+      if (!id) {
+        this.buscandoUsuarios = false;
+        return;
+      }
       this.amigosService.buscar(termino, id).subscribe({
         next: (usuarios) => {
-          this.resultadosGlobales = usuarios.slice(0, 5);
+          if (secuencia !== this.secuenciaBusqueda) return;
+          // Primero aparecen nombres o usuarios que comienzan exactamente con lo escrito.
+          this.resultadosGlobales = usuarios
+            .filter(
+              (usuario) =>
+                (usuario.nombre ?? '').toLocaleLowerCase('es-EC').startsWith(consulta) ||
+                (usuario.usuario ?? '').toLocaleLowerCase('es-EC').startsWith(consulta),
+            )
+            .sort((a, b) =>
+              (a.nombre ?? '').localeCompare(b.nombre ?? '', 'es', { sensitivity: 'base' }),
+            )
+            .slice(0, 8);
           this.buscandoUsuarios = false;
+          this.actualizarVista();
         },
         error: () => {
+          if (secuencia !== this.secuenciaBusqueda) return;
           this.resultadosGlobales = [];
           this.buscandoUsuarios = false;
+          this.actualizarVista();
         },
       });
-    }, 250);
+    }, 100);
   }
   cerrarBusqueda(): void {
+    if (this.temporizadorBusqueda) clearTimeout(this.temporizadorBusqueda);
+    this.secuenciaBusqueda++;
     this.busquedaGlobal = '';
     this.resultadosGlobales = [];
+    this.buscandoUsuarios = false;
   }
   /** Conserva una vista previa para mostrar el perfil elegido mientras responde Render. */
   prepararPerfil(persona: Usuario): void {
     localStorage.setItem('perfilVistaPrevia', JSON.stringify(persona));
-    this.cerrarBusqueda();
+    localStorage.setItem(`istlc-zone-perfil-vista-${Number(persona.id)}`, JSON.stringify(persona));
+    // La búsqueda se cierra después de NavigationEnd para no destruir el enlace antes de navegar.
   }
   get mensajesSinLeer(): number {
     return this.notificaciones.filter(
@@ -166,5 +207,12 @@ export class App implements OnInit, OnDestroy {
     return fecha
       ? new Date(fecha).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' })
       : '';
+  }
+
+  private actualizarVista(): void {
+    queueMicrotask(() => {
+      this.detector.markForCheck();
+      this.detector.detectChanges();
+    });
   }
 }
