@@ -539,6 +539,52 @@ router.put('/profile', async (req, res) => {
     }
 });
 
+// Elimina definitivamente la cuenta y sus relaciones dependientes.
+// PostgreSQL borra en cascada publicaciones, comentarios, seguidores, solicitudes y mensajes.
+router.delete('/profile/:id', async (req, res) => {
+    try {
+        const usuarioId = Number(req.params.id);
+        const { confirmacion } = req.body || {};
+        if (!usuarioId || confirmacion !== 'ELIMINAR') {
+            return res.status(400).json({ success: false, message: 'Debes confirmar la eliminación de la cuenta' });
+        }
+
+        const usuario = await one('SELECT id, email, usuario FROM usuarios WHERE id = ?', [usuarioId]);
+        if (!usuario) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+
+        // Reportes sobre contenido del usuario no tienen una clave foránea y se limpian primero.
+        await exec(
+            `DELETE FROM reportes
+             WHERE reportante_id = ?
+                OR (tipo = 'perfil' AND referencia_id = ?)
+                OR (tipo = 'publicacion' AND referencia_id IN (SELECT id FROM publicaciones WHERE usuario_id = ?))
+                OR (tipo = 'comentario' AND referencia_id IN (
+                    SELECT c.id FROM comentarios c
+                    JOIN publicaciones p ON p.id = c.publicacion_id
+                    WHERE c.usuario_id = ? OR p.usuario_id = ?
+                ))`,
+            [usuarioId, usuarioId, usuarioId, usuarioId, usuarioId]
+        );
+        await exec('DELETE FROM codigos_verificacion WHERE LOWER(email) = LOWER(?)', [usuario.email]);
+        await exec('DELETE FROM codigos_recuperacion WHERE LOWER(email) = LOWER(?)', [usuario.email]);
+        await exec(
+            'DELETE FROM registros_pendientes WHERE LOWER(email) = LOWER(?) OR LOWER(usuario) = LOWER(?)',
+            [usuario.email, usuario.usuario]
+        );
+        const eliminado = await exec('DELETE FROM usuarios WHERE id = ?', [usuarioId]);
+
+        if (!eliminado.rowCount) {
+            return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        }
+        res.json({ success: true, message: 'Cuenta eliminada definitivamente' });
+    } catch (error) {
+        console.error('Error eliminar perfil:', error);
+        res.status(500).json({ success: false, message: 'No se pudo eliminar la cuenta' });
+    }
+});
+
 router.post('/upload-image', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'No se recibio imagen' });
