@@ -1,13 +1,14 @@
 <main class="amigos-page">
   <!-- Cabecera compartida visualmente con el perfil original. -->
-  <section class="perfil-mini"><div class="portada"><div class="identidad"><img [src]="perfil?.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><div class="datos-cabecera"><h1>{{perfil?.nombre||'Usuario ISTLC'}}</h1><p>{{seguidores}} seguidores - {{seguidos}} seguidos</p><p>{{perfil?.bio||'Bienvenido a mi perfil de ISTLC Zone.'}}</p><div class="detalles-cabecera"><span><mat-icon>location_on</mat-icon>{{perfil?.viveEn||'No registrado'}}</span><span><mat-icon>school</mat-icon>{{perfil?.carrera||'No registrado'}}</span><span><mat-icon>menu_book</mat-icon>{{perfil?.semestre||'No registrado'}}</span></div></div></div></div></section>
+  <section class="perfil-mini"><div class="portada"><div class="identidad"><img [src]="perfil?.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><div class="datos-cabecera"><h1>{{perfil?.nombre||'Usuario ISTLC'}}</h1><p>{{seguidores}} seguidores · {{seguidos}} seguidos</p><p>{{perfil?.bio||'Bienvenido a mi perfil de ISTLC Zone.'}}</p><div class="detalles-cabecera"><span><mat-icon>location_on</mat-icon>{{perfil?.viveEn||'No registrado'}}</span><span><mat-icon>school</mat-icon>{{perfil?.carrera||'No registrado'}}</span><span><mat-icon>menu_book</mat-icon>{{perfil?.semestre||'No registrado'}}</span></div></div></div></div></section>
   <!-- Todas las opciones conservan el ID del perfil que se está consultando. -->
   <nav class="tabs" aria-label="Secciones del perfil">
     <a [routerLink]="['/perfil']" [queryParams]="{id:perfilId}">Todo</a>
     <a routerLink="/informacion" [queryParams]="{id:perfilId}">Información</a>
     <a routerLink="/fotos" [queryParams]="{id:perfilId}">Fotos</a>
     <a class="activo" aria-current="page" routerLink="/amigos" [queryParams]="{id:perfilId}">Amigos</a>
-    <details class="mas-tabs"><summary>Más <mat-icon>arrow_drop_down</mat-icon></summary><div><a routerLink="/cumpleanos" [queryParams]="{id:perfilId}">Cumpleaños</a><a routerLink="/actividad" [queryParams]="{id:perfilId}">Historial de actividades</a></div></details>
+    <a routerLink="/cumpleanos" [queryParams]="{id:perfilId}">Cumpleaños</a>
+    <a routerLink="/actividad" [queryParams]="{id:perfilId}">Historial de actividades</a>
   </nav>
   <section class="contenido">
     <mat-card class="red-panel">
@@ -18,7 +19,7 @@
         @if(cargandoRed){<p class="secundario">Cargando amigos guardados...</p>}@else{@for(persona of miRed;track persona.id){
           <article class="amigo-card">
             <a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil de {{persona.nombre}}"></a>
-            <h3>{{persona.nombre}}</h3><p>@{{persona.usuario}}</p><small>{{persona.carrera||'Comunidad ISTLC'}}{{persona.semestre?' - '+persona.semestre:''}}</small>
+            <h3><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}">{{persona.nombre}}</a></h3><p>@{{persona.usuario}}</p><small>{{persona.carrera||'Comunidad ISTLC'}}{{persona.semestre?' - '+persona.semestre:''}}</small>
             <a mat-stroked-button [routerLink]="['/perfil']" [queryParams]="{id:persona.id}">Ver perfil</a>
             @if(perfilId===autenticacionService.usuario()?.id){<button mat-button class="siguiendo" type="button" (click)="alternar(persona)">Siguiendo</button>}
           </article>

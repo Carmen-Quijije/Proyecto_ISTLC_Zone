@@ -1,6 +1,6 @@
 .detalle-page{min-height:calc(100vh - 147px);padding:36px 18px;background:var(--istlc-fondo)}
-.detalle-page mat-card{width:min(900px,100%);margin:auto;padding:30px;color:var(--istlc-texto);background:var(--istlc-superficie)}
+.detalle-page mat-card{box-sizing:border-box;width:min(900px,100%);min-width:0;margin:auto;padding:30px;overflow:hidden;color:var(--istlc-texto);background:var(--istlc-superficie)}
 .detalle-page h1,.detalle-page h2{color:var(--istlc-azul)}
-.descripcion{line-height:1.65}.descripcion img{max-width:100%}
+.descripcion{max-width:100%;min-width:0;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal;line-height:1.65}.descripcion img{max-width:100%;height:auto}:host ::ng-deep .descripcion *{box-sizing:border-box;max-width:100%!important;overflow-wrap:anywhere;word-break:break-word;white-space:normal!important}:host ::ng-deep .descripcion pre,:host ::ng-deep .descripcion code{white-space:pre-wrap!important}
 .detalle-page footer{display:flex;justify-content:flex-end;gap:12px;margin-top:28px;padding-top:18px;border-top:1px solid var(--istlc-borde)}
 @media(max-width:600px){.detalle-page footer{align-items:stretch;flex-direction:column}}

@@ -53,6 +53,7 @@
   justify-content: flex-end;
   gap: 10px;
 }
+.espaciador{flex:1}.boton-eliminar{color:#b42318!important;border-color:#b42318!important}.modal-eliminar{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px}.modal-fondo{position:absolute;inset:0;background:#0009}.modal-caja{position:relative;width:min(520px,100%);padding:30px!important;text-align:center}.icono-peligro{display:grid;place-items:center;width:64px;height:64px;margin:0 auto 12px;color:#b42318;background:#fee2e2;border-radius:50%}.icono-peligro mat-icon{width:36px;height:36px;font-size:36px}.modal-caja h2{margin:0 0 12px;color:#061a38}.modal-caja p{line-height:1.55}.modal-caja strong{color:#b42318}.acciones-modal{display:flex;justify-content:center;gap:10px;margin-top:24px}.confirmar-eliminar{color:#fff!important;background:#b42318!important}
 @media (max-width: 640px) {
   .campos {
     grid-template-columns: 1fr;
@@ -63,4 +64,5 @@
   .foto-editor {
     flex-direction: column;
   }
+  .editar-page footer,.acciones-modal{align-items:stretch;flex-direction:column}.espaciador{display:none}
 }

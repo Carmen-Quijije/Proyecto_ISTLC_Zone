@@ -9,10 +9,11 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-listar-empleos',
-  imports: [FormsModule, MatCardModule, MatButtonModule, MatChipsModule, MatIconModule, MatFormFieldModule, MatSelectModule],
+  imports: [FormsModule, MatCardModule, MatButtonModule, MatChipsModule, MatIconModule, MatFormFieldModule, MatSelectModule, MatPaginatorModule],
   templateUrl: './listar-empleos.html',
   styleUrl: './listar-empleos.css',
 })
@@ -20,7 +21,10 @@ export class ListarEmpleos implements OnInit {
   // Primeras doce ofertas que se representarán como tarjetas Material.
   empleos: any[] = [];
   empleosTodos: any[] = [];
+  empleosFiltrados: any[] = [];
   filtroFecha = 'all';
+  pagina = 0;
+  tamanoPagina = 10;
   cargando = true;
   error = '';
 
@@ -44,11 +48,17 @@ export class ListarEmpleos implements OnInit {
   }
   /** Elimina etiquetas HTML y limita la descripción mostrada en cada tarjeta. */
   resumen(html: string): string {
-    return (html ?? '').replace(/<[^>]*>/g, ' ').slice(0, 220);
+    const elemento = document.createElement('textarea');
+    elemento.innerHTML = html ?? '';
+    return elemento.value
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 220);
   }
   aplicarFiltro(): void {
     const hoy = new Date();
-    this.empleos = this.empleosTodos.filter((empleo) => {
+    this.empleosFiltrados = this.empleosTodos.filter((empleo) => {
       const fecha = new Date(Number(empleo.created_at) * 1000);
       if (this.filtroFecha === 'today') return fecha.toDateString() === hoy.toDateString();
       const limite = new Date(hoy);
@@ -57,6 +67,18 @@ export class ListarEmpleos implements OnInit {
       else return true;
       return fecha >= limite;
     });
+    this.pagina = 0;
+    this.actualizarPagina();
+  }
+  /** Presenta únicamente el bloque seleccionado sin volver a consultar la API externa. */
+  cambiarPagina(evento: PageEvent): void {
+    this.pagina = evento.pageIndex;
+    this.tamanoPagina = evento.pageSize;
+    this.actualizarPagina();
+  }
+  private actualizarPagina(): void {
+    const inicio = this.pagina * this.tamanoPagina;
+    this.empleos = this.empleosFiltrados.slice(inicio, inicio + this.tamanoPagina);
   }
   abrirDetalle(empleo: any): void {
     localStorage.setItem('empleoSeleccionado', JSON.stringify(empleo));

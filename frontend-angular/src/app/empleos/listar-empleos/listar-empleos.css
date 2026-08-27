@@ -2,3 +2,10 @@
 mat-chip-set {
   margin-bottom: 12px;
 }
+mat-paginator {
+  margin-top: 24px;
+  color: var(--istlc-texto);
+  background: var(--istlc-superficie);
+  border: 1px solid var(--istlc-borde);
+  border-radius: 10px;
+}

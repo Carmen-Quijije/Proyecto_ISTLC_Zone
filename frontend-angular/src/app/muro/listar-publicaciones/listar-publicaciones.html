@@ -26,7 +26,7 @@
         <mat-form-field appearance="outline"><mat-label>¿Qué estás pensando?</mat-label><textarea matInput [(ngModel)]="contenido" rows="3"></textarea></mat-form-field>
         <label class="selector-imagen"><mat-icon>image</mat-icon><span>{{archivos.length ? archivos.length + ' foto(s) seleccionada(s)' : 'Añadir fotos desde el ordenador (máximo 6)'}}</span><input type="file" accept="image/*" multiple (change)="seleccionarImagenes($event)" hidden /></label>
         @if (previews.length) { <div class="preview-grid">@for (preview of previews; track preview) { <img [src]="preview" alt="Vista previa" /> }</div> }
-        <button mat-flat-button class="boton-amarillo" (click)="publicar()" [disabled]="publicando || (!contenido.trim() && !archivos.length)">{{ publicando ? 'Publicando...' : 'Publicar' }}</button>
+        <button mat-flat-button class="boton-amarillo" (click)="publicar()" [disabled]="publicando || (!contenido.trim() && !archivos.length)">{{ publicando ? estadoPublicacion : 'Publicar' }}</button>
       </mat-card>
 
       @if (mensaje) { <p class="aviso">{{ mensaje }}</p> }
@@ -59,8 +59,8 @@
     </section>
 
     <aside class="columna-lateral derecha">
-      <mat-card class="acceso-card notificaciones-lateral"><h3>Notificaciones</h3><button type="button" (click)="cargarTodo()"><mat-icon>notifications</mat-icon><span>Revisa tus nuevas publicaciones.</span></button><a routerLink="/mensajes"><mat-icon>chat_bubble</mat-icon><span>Revisa tus mensajes.</span></a></mat-card>
-      <mat-card class="acceso-card"><div class="titulo-fila"><h3>Amigos sugeridos</h3><a routerLink="/amigos">Ver</a></div>@for (persona of sugerencias; track persona.id) { <div class="sugerencia"><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil || 'assets/images/icono.png'" alt="Perfil" /></a><div><strong>{{ persona.nombre }}</strong><small>@{{ persona.usuario }}</small><small>{{persona.motivoSugerencia}}</small></div><button mat-icon-button [disabled]="persona.solicitudPendiente" (click)="seguir(persona)" [title]="persona.solicitudPendiente?'Solicitud enviada':'Agregar amigo'"><mat-icon>{{ persona.solicitudPendiente ? 'schedule' : 'person_add' }}</mat-icon></button></div> }@empty{<p class="sin-sugerencias">No hay nuevas sugerencias.</p>}</mat-card>
+      <mat-card class="acceso-card notificaciones-lateral"><h3>Notificaciones</h3><button type="button" (click)="abrirNotificaciones()"><mat-icon>notifications</mat-icon><span>Tienes nuevas notificaciones.</span></button><a routerLink="/mensajes"><mat-icon>chat_bubble</mat-icon><span>Revisa tus mensajes.</span></a></mat-card>
+      <mat-card class="acceso-card"><div class="titulo-fila"><h3>Amigos sugeridos</h3><a routerLink="/amigos">Ver</a></div>@for (persona of sugerencias; track persona.id) { <div class="sugerencia"><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil || 'assets/images/icono.png'" alt="Perfil" /></a><div><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><strong>{{ persona.nombre }}</strong></a><small>@{{ persona.usuario }}</small><small>{{persona.motivoSugerencia}}</small></div><button mat-icon-button [disabled]="persona.solicitudPendiente" (click)="seguir(persona)" [title]="persona.solicitudPendiente?'Solicitud enviada':'Agregar amigo'"><mat-icon>{{ persona.solicitudPendiente ? 'schedule' : 'person_add' }}</mat-icon></button></div> }@empty{<p class="sin-sugerencias">No hay nuevas sugerencias.</p>}</mat-card>
     </aside>
   </section>
 </main>

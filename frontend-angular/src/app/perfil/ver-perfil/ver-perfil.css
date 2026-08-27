@@ -13,19 +13,20 @@
   display: none;
 }
 .perfil-info {
+  box-sizing: border-box;
   width: min(1000px, calc(100% - 50px));
   min-height: 272px;
   margin: auto;
   display: flex;
   align-items: center;
   gap: 28px;
-  padding: 22px 0;
+  padding: 0;
   color: #fff;
 }
 .perfil-foto {
   width: 210px;
   height: 210px;
-  border: 6px solid #fff;
+  border: 5px solid #fff;
   border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 4px 15px #0003;
@@ -41,6 +42,8 @@
 }
 .perfil-datos p {
   margin: 6px 0;
+  color: #fff;
+  font-size: 1.05rem;
 }
 .seguidores {
   font-weight: 700;
@@ -70,10 +73,10 @@
   position: relative;
   z-index: 1;
   display: flex;
-  gap: 8px;
+  gap: 0;
   width: min(1000px, calc(100% - 50px));
   margin: auto;
-  padding: 12px 0;
+  padding: 0;
   background: var(--istlc-superficie);
 }
 .perfil-tabs::before {
@@ -85,7 +88,10 @@
   content: '';
 }
 .perfil-tabs a {
-  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
   color: #475569;
   border-radius: 0;
   cursor: pointer;
@@ -191,7 +197,6 @@
   max-height: 430px;
   object-fit: cover;
 }
-.mas-tabs{position:relative;color:var(--istlc-muted)}.mas-tabs summary{display:flex;align-items:center;gap:5px;padding:12px 16px;list-style:none;cursor:pointer}.mas-tabs summary::-webkit-details-marker{display:none}.mas-tabs>div{position:absolute;top:100%;left:0;z-index:20;display:grid;min-width:230px;padding:8px;background:var(--istlc-superficie);border:1px solid var(--istlc-borde);border-radius:7px;box-shadow:0 10px 24px var(--istlc-sombra)}.mas-tabs>div a{padding:10px 12px}
 .foto-editable{position:relative}.foto-editable>button{position:absolute;top:6px;right:6px;color:#fff!important;background:#0009}.espaciador{flex:1}
 .post footer {
   padding: 14px 18px;

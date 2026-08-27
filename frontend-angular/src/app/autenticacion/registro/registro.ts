@@ -142,6 +142,15 @@ export class Registro {
     });
   }
 
+  /** Cierra el cuadro sin perder los datos escritos ni invalidar el código enviado. */
+  cerrarVerificacion(): void {
+    if (!this.procesando) {
+      this.pasoVerificacion = false;
+      this.formularioCodigo.reset({ codigo: '' });
+      this.mensaje = '';
+    }
+  }
+
   /** Conserva las mismas reglas del usuario empleadas por la versión sin Angular. */
   normalizarUsuario(): void {
     const control = this.formulario.controls.usuario;

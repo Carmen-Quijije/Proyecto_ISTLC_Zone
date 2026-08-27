@@ -15,7 +15,7 @@ export class PublicacionesService {
   obtenerMuro(usuarioId: number) {
     return this.http
       .get<{ success: boolean; publicaciones: Publicacion[] }>(`${this.apiUrl}/feed/${usuarioId}`)
-      .pipe(map((respuesta) => respuesta.publicaciones));
+      .pipe(map((respuesta: any): Publicacion[] => respuesta.publicaciones ?? respuesta.posts ?? []));
   }
 
   crear(usuarioId: number, contenido: string, imagenesUrls: string[] = []) {
@@ -49,7 +49,7 @@ export class PublicacionesService {
       .get<{ success: boolean; comentarios: Comentario[] }>(
         `${this.apiUrl}/posts/${publicacionId}/comments`,
       )
-      .pipe(map((respuesta) => respuesta.comentarios));
+      .pipe(map((respuesta: any): Comentario[] => respuesta.comentarios ?? []));
   }
 
   comentar(
@@ -83,7 +83,7 @@ export class PublicacionesService {
     });
   }
 
-  subirImagen(archivo: File, folder = 'publicaciones') {
+  subirImagen(archivo: File, folder = 'istlc-zone/publicaciones') {
     const datos = new FormData();
     datos.append('image', archivo);
     datos.append('folder', folder);

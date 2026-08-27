@@ -35,14 +35,17 @@ export class SeccionesPerfil implements OnInit {
     this.route.data.subscribe((d) => {
       this.seccion = d['seccion'];
       this.route.queryParamMap.subscribe((p) => {
-        this.perfilId = Number(p.get('id') || this.auth.usuario()?.id || 0);
+        const usuario: any = this.auth.usuario();
+        const idSesion = Number(usuario?.id ?? usuario?.usuarioId ?? 0);
+        const idParametro = Number(p.get('id'));
+        this.perfilId = Number.isFinite(idParametro) && idParametro > 0 ? idParametro : idSesion;
         this.cargar();
       });
     });
   }
   cargar(): void {
-    const usuarioSesion = this.auth.usuario();
-    const actual = Number(usuarioSesion?.id || 0);
+    const usuarioSesion: any = this.auth.usuario();
+    const actual = Number(usuarioSesion?.id ?? usuarioSesion?.usuarioId ?? 0);
     if (!actual || !this.perfilId || !usuarioSesion) return;
 
     // Nombre, foto, bio y datos del perfil propio se muestran inmediatamente desde la sesión.
@@ -51,8 +54,8 @@ export class SeccionesPerfil implements OnInit {
       this.respuesta = {
         success: true,
         usuario: usuarioSesion,
-        seguidores: 0,
-        seguidos: 0,
+        seguidores: Number(usuarioSesion.seguidores ?? 0),
+        seguidos: Number(usuarioSesion.seguidos ?? 0),
         siguiendo: false,
         solicitudPendiente: false,
       };
@@ -60,7 +63,11 @@ export class SeccionesPerfil implements OnInit {
 
     this.perfilService.obtener(this.perfilId, actual).subscribe({
       next: (r) => {
-        this.respuesta = r;
+        this.respuesta = {
+          ...r,
+          seguidores: Math.max(Number(r.seguidores || 0), Number(this.respuesta?.seguidores || 0)),
+          seguidos: Math.max(Number(r.seguidos || 0), Number(this.respuesta?.seguidos || 0)),
+        };
         this.perfil = r.usuario;
         if (this.seccion === 'cumpleanos' && !this.esPropio)
           this.amigos = r.usuario.fechaNacimiento ? [r.usuario] : [];
@@ -124,7 +131,8 @@ export class SeccionesPerfil implements OnInit {
     return this.esPropio ? 'Próximos cumpleaños' : 'Cumpleaños del perfil';
   }
   get esPropio(): boolean {
-    return this.perfilId === this.auth.usuario()?.id;
+    const usuario: any = this.auth.usuario();
+    return this.perfilId === Number(usuario?.id ?? usuario?.usuarioId ?? 0);
   }
   seguir(): void {
     const actual = this.auth.usuario()?.id;

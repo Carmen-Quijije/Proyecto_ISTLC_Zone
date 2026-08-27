@@ -34,14 +34,22 @@ export class VerPerfil implements OnInit {
     public autenticacionService: AutenticacionService,
   ) {}
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) =>
-      this.cargar(Number(params.get('id') || this.autenticacionService.usuario()?.id || 0)),
-    );
+    this.route.queryParamMap.subscribe((params) => {
+      const usuarioSesion: any = this.autenticacionService.usuario();
+      const idSesion = Number(usuarioSesion?.id ?? usuarioSesion?.usuarioId ?? 0);
+      const idParametro = Number(params.get('id'));
+      this.cargar(Number.isFinite(idParametro) && idParametro > 0 ? idParametro : idSesion);
+    });
   }
   cargar(id: number): void {
-    const usuarioSesion = this.autenticacionService.usuario();
-    const actual = usuarioSesion?.id;
-    if (!id || !actual || !usuarioSesion) return;
+    const usuarioSesion: any = this.autenticacionService.usuario();
+    const actual = Number(usuarioSesion?.id ?? usuarioSesion?.usuarioId ?? 0);
+    if (!id || !actual || !usuarioSesion) {
+      this.perfil = undefined;
+      this.cargando = false;
+      this.mensaje = 'No se pudo identificar el perfil. Regresa al muro e inténtalo nuevamente.';
+      return;
+    }
     const solicitud = ++this.solicitudPerfil;
     this.perfilId = id;
     this.mensaje = '';
@@ -54,22 +62,42 @@ export class VerPerfil implements OnInit {
       this.respuesta = {
         success: true,
         usuario: usuarioSesion,
-        seguidores: 0,
-        seguidos: 0,
+        seguidores: Number(usuarioSesion.seguidores ?? 0),
+        seguidos: Number(usuarioSesion.seguidos ?? 0),
         siguiendo: false,
         solicitudPendiente: false,
       };
       this.cargando = false;
     } else {
-      this.perfil = undefined;
-      this.respuesta = undefined;
-      this.cargando = true;
+      const vistaPrevia = this.leerVistaPrevia(id);
+      this.perfil = vistaPrevia;
+      this.respuesta = vistaPrevia
+        ? {
+            success: true,
+            usuario: vistaPrevia,
+            seguidores: 0,
+            seguidos: 0,
+            siguiendo: Boolean(vistaPrevia.siguiendo),
+            solicitudPendiente: Boolean(vistaPrevia.solicitudPendiente),
+          }
+        : undefined;
+      this.cargando = !vistaPrevia;
     }
 
     this.perfilService.obtener(id, actual).subscribe({
       next: (r) => {
         if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
-        this.respuesta = r;
+        if (!r?.usuario?.id) {
+          this.mensaje = 'El servidor no devolvió la información del perfil solicitado.';
+          this.cargando = false;
+          return;
+        }
+        this.respuesta = {
+          ...r,
+          // La lista de relaciones ya cargada evita que una respuesta antigua vuelva a mostrar cero.
+          seguidores: Math.max(Number(r.seguidores || 0), Number(this.respuesta?.seguidores || 0)),
+          seguidos: Math.max(Number(r.seguidos || 0), this.amigos.length, Number(this.respuesta?.seguidos || 0)),
+        };
         this.perfil = r.usuario;
         this.cargando = false;
       },
@@ -84,19 +112,24 @@ export class VerPerfil implements OnInit {
     });
     this.perfilService.obtenerPublicaciones(id, actual).subscribe({
       next: (publicaciones) => {
-        if (solicitud === this.solicitudPerfil && id === this.perfilId)
-          this.publicaciones = publicaciones;
+        if (solicitud !== this.solicitudPerfil || id !== this.perfilId) return;
+        this.publicaciones = publicaciones;
+        if (!publicaciones.length) this.cargarPublicacionesDesdeMuro(actual, id, solicitud);
       },
       error: () => {
         if (solicitud === this.solicitudPerfil && id === this.perfilId)
-          this.publicaciones = [];
+          this.cargarPublicacionesDesdeMuro(actual, id, solicitud);
       },
     });
     this.amigosService.listarSiguiendo(id, actual).subscribe({
       next: (amigos) => {
         if (solicitud === this.solicitudPerfil && id === this.perfilId) {
           this.amigos = amigos;
-          if (id === actual && this.respuesta) this.respuesta.seguidos = amigos.length;
+          if (this.respuesta)
+            this.respuesta.seguidos = Math.max(
+              Number(this.respuesta.seguidos || 0),
+              amigos.length,
+            );
         }
       },
       error: () => {
@@ -104,8 +137,34 @@ export class VerPerfil implements OnInit {
       },
     });
   }
+  private leerVistaPrevia(id: number): Usuario | undefined {
+    try {
+      const persona = JSON.parse(localStorage.getItem('perfilVistaPrevia') ?? 'null') as Usuario | null;
+      localStorage.removeItem('perfilVistaPrevia');
+      return Number(persona?.id) === Number(id) ? persona ?? undefined : undefined;
+    } catch {
+      localStorage.removeItem('perfilVistaPrevia');
+      return undefined;
+    }
+  }
+  /** Respaldo compatible con el muro original para no ocultar publicaciones ya existentes. */
+  private cargarPublicacionesDesdeMuro(actual: number, perfilId: number, solicitud: number): void {
+    this.publicacionesService.obtenerMuro(actual).subscribe({
+      next: (publicaciones) => {
+        if (solicitud !== this.solicitudPerfil || perfilId !== this.perfilId) return;
+        this.publicaciones = publicaciones.filter(
+          (publicacion) => Number(publicacion.autor.id) === Number(perfilId),
+        );
+      },
+      error: () => {
+        if (solicitud === this.solicitudPerfil && perfilId === this.perfilId)
+          this.publicaciones = [];
+      },
+    });
+  }
   get esPropio(): boolean {
-    return this.perfilId === this.autenticacionService.usuario()?.id;
+    const usuario: any = this.autenticacionService.usuario();
+    return this.perfilId === Number(usuario?.id ?? usuario?.usuarioId ?? 0);
   }
   seguir(): void {
     const actual = this.autenticacionService.usuario()?.id;

@@ -33,6 +33,8 @@ export class EditarPerfil implements OnInit {
   fotoPreview = 'assets/images/icono.png';
   archivo?: File;
   guardando = false;
+  mostrarConfirmacionEliminar = false;
+  eliminando = false;
   readonly formulario = this.fb.nonNullable.group({
     nombre: [''],
     viveEn: [''],
@@ -91,5 +93,30 @@ export class EditarPerfil implements OnInit {
         },
       });
     else actualizar(this.formulario.getRawValue().fotoPerfil);
+  }
+
+  abrirEliminar(): void {
+    this.mensaje = '';
+    this.mostrarConfirmacionEliminar = true;
+  }
+
+  cerrarEliminar(): void {
+    if (!this.eliminando) this.mostrarConfirmacionEliminar = false;
+  }
+
+  /** Elimina la cuenta solo después de aceptar el aviso mostrado en el modal. */
+  eliminarPerfil(): void {
+    const usuario: any = this.auth.usuario();
+    const id = Number(usuario?.id ?? usuario?.usuarioId ?? 0);
+    if (!id || this.eliminando) return;
+    this.eliminando = true;
+    this.perfilService.eliminar(id).subscribe({
+      next: () => this.auth.cerrarSesion(),
+      error: (error) => {
+        this.eliminando = false;
+        this.esError = true;
+        this.mensaje = error.error?.message || 'No se pudo eliminar la cuenta.';
+      },
+    });
   }
 }

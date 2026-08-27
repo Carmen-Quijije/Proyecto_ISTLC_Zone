@@ -1,7 +1,7 @@
 .amigos-page { min-height: calc(100vh - 145px); background: var(--istlc-fondo); }
 .perfil-mini { background: var(--istlc-superficie); border-bottom: 1px solid var(--istlc-borde); }
 .portada { min-height: 272px; background: linear-gradient(135deg, #958861, #061a38); }
-.identidad { width: min(1000px, calc(100% - 50px)); min-height: 272px; margin: auto; display: flex; align-items: center; gap: 28px; color: #fff; }
+.identidad { box-sizing:border-box; width: min(1000px, calc(100% - 50px)); min-height: 272px; margin: auto; display: flex; align-items: center; gap: 28px; color: #fff; }
 .identidad > img { width: 210px; height: 210px; border: 5px solid #fff; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 15px #0003; }
 .datos-cabecera { flex: 1; }
 .datos-cabecera h1 { margin: 0 0 8px; color: #fff; font-size: clamp(2rem, 4vw, 3rem); line-height: 1; text-shadow: 0 3px 4px #0008; }
@@ -10,16 +10,10 @@
 .detalles-cabecera span { display: flex; align-items: center; gap: 5px; }
 .detalles-cabecera mat-icon { color: #fff; }
 .contenido h2, .amigo-card h3, .tarjeta-persona h3 { margin: 0; color: var(--istlc-texto); }
-.tabs { position: relative; z-index: 1; display: flex; align-items: stretch; gap: 8px; width: min(1000px, calc(100% - 50px)); margin: auto; padding: 10px 0; background: var(--istlc-superficie); }
+.tabs { position: relative; z-index: 1; display: flex; align-items: stretch; gap: 0; width: min(1000px, calc(100% - 50px)); margin: auto; padding: 0; overflow-x: auto; background: var(--istlc-superficie); }
 .tabs::before { position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--istlc-superficie); border-bottom: 1px solid var(--istlc-borde); content: ''; }
-.tabs > a, .mas-tabs summary { padding: 12px 16px; color: var(--istlc-muted); cursor: pointer; white-space: nowrap; }
+.tabs > a { display:flex; align-items:center; min-height:48px; padding: 0 16px; color: var(--istlc-muted); cursor: pointer; white-space: nowrap; }
 .tabs .activo { border-bottom: 3px solid #0d6efd; color: #0d6efd; font-weight: 800; }
-.mas-tabs { position: relative; }
-.mas-tabs summary { display: flex; align-items: center; list-style: none; }
-.mas-tabs summary::-webkit-details-marker { display: none; }
-.mas-tabs summary mat-icon { margin: 0; }
-.mas-tabs > div { position: absolute; top: 100%; left: 0; z-index: 20; display: grid; min-width: 230px; padding: 8px; background: var(--istlc-superficie); border: 1px solid var(--istlc-borde); border-radius: 7px; box-shadow: 0 10px 24px var(--istlc-sombra); }
-.mas-tabs > div a { padding: 10px; color: var(--istlc-muted); }
 .contenido { width: min(1350px, calc(100% - 32px)); margin: auto; padding: 24px 0; display: grid; gap: 24px; }
 .contenido > mat-card { padding: 26px; }
 .secundario, .amigo-card p, .tarjeta-persona p { color: var(--istlc-muted); }

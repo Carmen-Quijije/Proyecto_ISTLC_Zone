@@ -17,7 +17,7 @@ export class AmigosService {
       .get<{ success: boolean; usuarios: Usuario[] }>(
         `${this.apiUrl}/users?q=${encodeURIComponent(termino)}&currentUserId=${usuarioId}`,
       )
-        .pipe(map((respuesta) => respuesta.usuarios ?? []));
+        .pipe(map((respuesta) => (respuesta.usuarios ?? []).map((usuario) => this.normalizarUsuario(usuario))));
   }
 
   /** Lista las personas que forman parte de la red de un perfil. */
@@ -26,7 +26,7 @@ export class AmigosService {
       .get<{ success: boolean; usuarios: Usuario[] }>(
         `${this.apiUrl}/following/${perfilId}?currentUserId=${usuarioActualId}`,
       )
-      .pipe(map((respuesta) => respuesta.usuarios ?? []));
+      .pipe(map((respuesta) => (respuesta.usuarios ?? []).map((usuario) => this.normalizarUsuario(usuario))));
   }
 
   /** Prioriza amigos de amigos y completa la lista con las cuentas más recientes. */
@@ -80,5 +80,22 @@ export class AmigosService {
   /** Elimina un seguimiento o una solicitud pendiente. */
   dejarDeSeguir(seguidorId: number, seguidoId: number) {
     return this.http.delete(`${this.apiUrl}/follow`, { body: { seguidorId, seguidoId } });
+  }
+
+  /** Normaliza identificadores y campos heredados antes de construir enlaces de perfil. */
+  private normalizarUsuario(usuario: any): Usuario {
+    return {
+      ...usuario,
+      id: Number(usuario.id ?? usuario.usuarioId ?? usuario.usuario_id ?? 0),
+      nombre: usuario.nombre ?? usuario.nombreCompleto ?? usuario.usuario ?? 'Usuario ISTLC',
+      usuario: usuario.usuario ?? usuario.username ?? '',
+      fotoPerfil: usuario.fotoPerfil ?? usuario.foto_perfil ?? '',
+      viveEn: usuario.viveEn ?? usuario.vive_en ?? '',
+      lugarOrigen: usuario.lugarOrigen ?? usuario.lugar_origen ?? '',
+      fechaNacimiento: usuario.fechaNacimiento ?? usuario.fecha_nacimiento ?? '',
+      estadoCivil: usuario.estadoCivil ?? usuario.estado_civil ?? '',
+      solicitudPendiente: Boolean(usuario.solicitudPendiente ?? usuario.solicitud_pendiente),
+      siguiendo: Boolean(usuario.siguiendo),
+    };
   }
 }

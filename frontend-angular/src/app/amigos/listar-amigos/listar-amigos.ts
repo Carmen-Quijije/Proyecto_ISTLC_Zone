@@ -88,7 +88,7 @@ export class ListarAmigos implements OnInit {
         this.seguidos = Number(perfil.seguidos || 0);
       }
       this.miRed = red;
-      if (Number(this.perfilId) === actual && errorPerfil) this.seguidos = red.length;
+      this.seguidos = Math.max(this.seguidos, red.length);
       this.mensajeRed = errorRed
         ? 'No se pudo cargar la lista de amigos guardada en el servidor.'
         : errorPerfil

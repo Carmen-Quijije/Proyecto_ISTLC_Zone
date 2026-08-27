@@ -61,9 +61,34 @@ body {
 }
 body {
   font-family: Roboto, Arial, sans-serif;
+  font-size: 16px;
   color: var(--istlc-texto);
   background: var(--istlc-fondo);
   transition: color 180ms ease, background-color 180ms ease;
+}
+/* El contenido general usa una escala uniforme; títulos y subtítulos conservan su jerarquía. */
+p,
+li,
+label,
+small,
+input,
+textarea,
+select,
+button,
+.mat-mdc-button,
+.mat-mdc-menu-item,
+.mat-mdc-form-field,
+.mat-mdc-option,
+.mat-mdc-select-value-text,
+.mat-mdc-form-field-hint,
+.mat-mdc-card-content {
+  font-size: 1rem;
+}
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
 }
 a {
   color: var(--istlc-azul);

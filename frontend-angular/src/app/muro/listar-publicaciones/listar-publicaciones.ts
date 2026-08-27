@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { finalize, forkJoin } from 'rxjs';
+import { concatMap, finalize, from, of, switchMap, timeout, toArray } from 'rxjs';
 import { AmigosService } from '../../amigos/amigos-service';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
 import { Comentario, Publicacion, Usuario } from '../../core/modelos';
@@ -48,7 +48,9 @@ export class ListarPublicaciones implements OnInit {
   imagenesVisor: string[] = [];
   indiceVisor = 0;
   publicando = false;
+  estadoPublicacion = 'Publicando...';
   mensaje = '';
+  private cargaActual = 0;
 
   constructor(
     private publicacionesService: PublicacionesService,
@@ -59,26 +61,36 @@ export class ListarPublicaciones implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.cargarTodo();
+    // Se ejecuta al entrar y también cuando cambia un parámetro del muro.
+    this.route.queryParamMap.subscribe(() => this.cargarTodo());
   }
 
   cargarTodo(): void {
-    const usuarioSesion = this.autenticacionService.usuario();
-    const id = usuarioSesion?.id;
-    if (!id) return;
+    const usuarioSesion: any = this.autenticacionService.usuario();
+    const id = Number(usuarioSesion?.id ?? usuarioSesion?.usuarioId ?? 0);
+    if (!id) {
+      this.mensaje = 'No se pudo identificar la sesión para cargar el muro.';
+      return;
+    }
+    const carga = ++this.cargaActual;
+    this.mensaje = '';
     // Muestra inmediatamente los datos guardados al iniciar sesión mientras Render responde.
-    this.perfil = this.perfil ?? usuarioSesion;
+    this.perfil = usuarioSesion;
     this.publicacionesService
       .obtenerMuro(id)
       .subscribe({
         next: (datos) => {
+          if (carga !== this.cargaActual) return;
           this.publicaciones = datos;
           this.enfocarPublicacionDesdeUrl();
         },
-        error: () => (this.mensaje = 'No se pudo cargar el muro.'),
+        error: () => {
+          if (carga === this.cargaActual) this.mensaje = 'No se pudo cargar el muro. Intenta nuevamente.';
+        },
       });
     this.perfilService.obtener(id, id).subscribe({
       next: (respuesta) => {
+        if (carga !== this.cargaActual) return;
         this.perfil = respuesta.usuario;
         this.seguidores = respuesta.seguidores;
         this.seguidos = respuesta.seguidos;
@@ -90,52 +102,83 @@ export class ListarPublicaciones implements OnInit {
     });
     this.amigosService
       .obtenerSugerencias(id)
-      .subscribe((usuarios) => (this.sugerencias = usuarios));
+      .subscribe((usuarios) => {
+        if (carga === this.cargaActual) this.sugerencias = usuarios;
+      });
     this.amigosService
       .listarSiguiendo(id, id)
-      .subscribe((usuarios) => (this.contactosCompartir = usuarios));
+      .subscribe((usuarios) => {
+        if (carga !== this.cargaActual) return;
+        this.contactosCompartir = usuarios;
+        this.seguidos = Math.max(this.seguidos, usuarios.length);
+      });
   }
 
   seleccionarImagenes(evento: Event): void {
     const seleccionados = Array.from((evento.target as HTMLInputElement).files ?? []);
-    this.archivos = seleccionados.slice(0, 6);
-    this.mensaje =
-      seleccionados.length > 6 ? 'Puedes subir hasta 6 fotos por publicación.' : '';
+    const demasiadoGrandes = seleccionados.filter((archivo) => archivo.size > 8 * 1024 * 1024);
+    this.archivos = seleccionados
+      .filter((archivo) => archivo.size <= 8 * 1024 * 1024)
+      .slice(0, 6);
+    this.mensaje = demasiadoGrandes.length
+      ? 'Cada fotografía debe pesar máximo 8 MB.'
+      : seleccionados.length > 6
+        ? 'Puedes subir hasta 6 fotos por publicación.'
+        : '';
     this.previews.forEach((url) => URL.revokeObjectURL(url));
     this.previews = this.archivos.map((archivo) => URL.createObjectURL(archivo));
   }
 
   publicar(): void {
-    const id = this.autenticacionService.usuario()?.id;
-    if (!id || (!this.contenido.trim() && !this.archivos.length)) return;
+    const usuario: any = this.autenticacionService.usuario();
+    const id = Number(usuario?.id ?? usuario?.usuarioId ?? 0);
+    if (!id || this.publicando || (!this.contenido.trim() && !this.archivos.length)) return;
     this.publicando = true;
-    const crear = (urls: string[]) =>
-      this.publicacionesService.crear(id, this.contenido.trim(), urls).subscribe({
+    this.mensaje = '';
+    const contenido = this.contenido.trim();
+    const archivos = [...this.archivos];
+    this.estadoPublicacion = archivos.length ? 'Subiendo imágenes...' : 'Publicando...';
+
+    const imagenes$ = archivos.length
+      ? from(archivos).pipe(
+          // La versión anterior subía una por una para no saturar Cloudinary.
+          concatMap((archivo) =>
+            this.publicacionesService.subirImagen(archivo).pipe(timeout(90000)),
+          ),
+          toArray(),
+        )
+      : of([]);
+
+    imagenes$
+      .pipe(
+        switchMap((respuestas) => {
+          this.estadoPublicacion = 'Publicando...';
+          return this.publicacionesService
+            .crear(id, contenido, respuestas.map((respuesta) => respuesta.url))
+            .pipe(timeout(90000));
+        }),
+        // Siempre habilita nuevamente el botón, tanto en éxito como en error o espera agotada.
+        finalize(() => {
+          this.publicando = false;
+          this.estadoPublicacion = 'Publicando...';
+        }),
+      )
+      .subscribe({
         next: () => {
+          this.previews.forEach((url) => URL.revokeObjectURL(url));
           this.contenido = '';
           this.archivos = [];
           this.previews = [];
-          this.publicando = false;
+          this.mensaje = 'Publicación creada correctamente.';
           this.cargarTodo();
         },
         error: (error) => {
-          this.mensaje = error.error?.message || 'No se pudo publicar.';
-          this.publicando = false;
+          this.mensaje =
+            error?.name === 'TimeoutError'
+              ? 'La publicación tardó demasiado. Intenta nuevamente en unos segundos.'
+              : error.error?.message || 'No se pudo completar la publicación.';
         },
       });
-    if (!this.archivos.length) {
-      crear([]);
-      return;
-    }
-    forkJoin(
-      this.archivos.map((archivo) => this.publicacionesService.subirImagen(archivo)),
-    ).subscribe({
-      next: (respuestas) => crear(respuestas.map((respuesta) => respuesta.url)),
-      error: () => {
-        this.mensaje = 'No se pudieron subir las imágenes.';
-        this.publicando = false;
-      },
-    });
   }
 
   cambiarMeGusta(publicacion: Publicacion): void {
@@ -333,6 +376,11 @@ export class ListarPublicaciones implements OnInit {
         this.mensaje = error.error?.message || 'No se pudo enviar la solicitud de amistad.';
       },
     });
+  }
+
+  /** Abre el mismo panel global de la campana sin duplicar llamadas al servidor. */
+  abrirNotificaciones(): void {
+    document.getElementById('btn-notificaciones-app')?.click();
   }
 
   esPropia(publicacion: Publicacion): boolean {

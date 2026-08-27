@@ -103,6 +103,11 @@ export class App implements OnInit, OnDestroy {
     this.busquedaGlobal = '';
     this.resultadosGlobales = [];
   }
+  /** Conserva una vista previa para mostrar el perfil elegido mientras responde Render. */
+  prepararPerfil(persona: Usuario): void {
+    localStorage.setItem('perfilVistaPrevia', JSON.stringify(persona));
+    this.cerrarBusqueda();
+  }
   get mensajesSinLeer(): number {
     return this.notificaciones.filter(
       (notificacion) => notificacion.tipo === 'mensaje' && !notificacion.leida,
@@ -125,6 +130,15 @@ export class App implements OnInit, OnDestroy {
       .subscribe(() => this.cargarNotificaciones());
   }
   abrirNotificacion(notificacion: Notificacion): void {
+    const usuarioId = this.autenticacionService.usuario()?.id;
+    if (usuarioId && !notificacion.leida) {
+      this.notificacionesService.marcarUna(notificacion.id, usuarioId).subscribe({
+        next: () => {
+          notificacion.leida = true;
+          this.sinLeer = Math.max(0, this.sinLeer - 1);
+        },
+      });
+    }
     const referencia = notificacion.referenciaId ?? notificacion.referencia_id;
     if (notificacion.tipo === 'mensaje')
       this.router.navigate(['/mensajes'], { queryParams: { contacto: referencia } });
@@ -146,5 +160,11 @@ export class App implements OnInit, OnDestroy {
         this.sinLeer = this.solicitudes.length;
         this.notificaciones = this.notificaciones.map((n) => ({ ...n, leida: true }));
       });
+  }
+
+  formatearFechaNotificacion(fecha: string): string {
+    return fecha
+      ? new Date(fecha).toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' })
+      : '';
   }
 }

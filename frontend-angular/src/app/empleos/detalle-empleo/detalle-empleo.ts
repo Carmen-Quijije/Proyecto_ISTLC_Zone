@@ -12,6 +12,13 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class DetalleEmpleo {
   empleo: any = JSON.parse(localStorage.getItem('empleoSeleccionado') || 'null');
+  /** Convierte entidades HTML de la API; Angular vuelve a sanear el resultado al mostrarlo. */
+  descripcion(valor?: string): string {
+    if (!valor) return 'No hay descripción disponible.';
+    const elemento = document.createElement('textarea');
+    elemento.innerHTML = valor;
+    return elemento.value;
+  }
   titulo(valor?: string): string {
     return (valor || 'Vacante disponible')
       .replace(/\s*-?\s*\(?m\/[fw]\/[dd]\)?/gi, '')
