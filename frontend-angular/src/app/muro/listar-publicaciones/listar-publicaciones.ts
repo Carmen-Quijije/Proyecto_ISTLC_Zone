@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { forkJoin } from 'rxjs';
+import { finalize, forkJoin } from 'rxjs';
 import { AmigosService } from '../../amigos/amigos-service';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
 import { Comentario, Publicacion, Usuario } from '../../core/modelos';
@@ -41,6 +41,8 @@ export class ListarPublicaciones implements OnInit {
   comentariosVisibles = new Set<number>();
   textosComentario: Record<number, string> = {};
   respuestasComentario: Record<number, Comentario | undefined> = {};
+  likesProcesando = new Set<number>();
+  comentariosProcesando = new Set<number>();
   compartirPublicacionId?: number;
   contactosCompartir: Usuario[] = [];
   imagenesVisor: string[] = [];
@@ -88,7 +90,10 @@ export class ListarPublicaciones implements OnInit {
   }
 
   seleccionarImagenes(evento: Event): void {
-    this.archivos = Array.from((evento.target as HTMLInputElement).files ?? []).slice(0, 4);
+    const seleccionados = Array.from((evento.target as HTMLInputElement).files ?? []);
+    this.archivos = seleccionados.slice(0, 6);
+    this.mensaje =
+      seleccionados.length > 6 ? 'Puedes subir hasta 6 fotos por publicación.' : '';
     this.previews.forEach((url) => URL.revokeObjectURL(url));
     this.previews = this.archivos.map((archivo) => URL.createObjectURL(archivo));
   }
@@ -128,12 +133,23 @@ export class ListarPublicaciones implements OnInit {
 
   cambiarMeGusta(publicacion: Publicacion): void {
     const id = this.autenticacionService.usuario()?.id;
-    if (!id) return;
+    if (!id || this.likesProcesando.has(publicacion.id)) return;
+    this.likesProcesando.add(publicacion.id);
     this.publicacionesService
       .cambiarMeGusta(publicacion.id, id, publicacion.likedByMe)
-      .subscribe(() => {
-        publicacion.totalLikes += publicacion.likedByMe ? -1 : 1;
-        publicacion.likedByMe = !publicacion.likedByMe;
+      .pipe(finalize(() => this.likesProcesando.delete(publicacion.id)))
+      .subscribe({
+        next: () => {
+          publicacion.totalLikes = Math.max(
+            0,
+            publicacion.totalLikes + (publicacion.likedByMe ? -1 : 1),
+          );
+          publicacion.likedByMe = !publicacion.likedByMe;
+          this.mensaje = '';
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo actualizar el Me gusta.';
+        },
       });
   }
 
@@ -149,20 +165,34 @@ export class ListarPublicaciones implements OnInit {
   cargarComentarios(publicacionId: number): void {
     this.publicacionesService
       .obtenerComentarios(publicacionId)
-      .subscribe((datos) => (this.comentarios[publicacionId] = datos));
+      .subscribe((datos) => {
+        this.comentarios[publicacionId] = datos;
+        const publicacion = this.publicaciones.find((item) => item.id === publicacionId);
+        if (publicacion) publicacion.totalComentarios = datos.length;
+      });
   }
 
   comentar(publicacion: Publicacion): void {
     const id = this.autenticacionService.usuario()?.id;
     const texto = this.textosComentario[publicacion.id]?.trim();
-    if (!id || !texto) return;
+    if (!id || !texto || this.comentariosProcesando.has(publicacion.id)) return;
+    this.comentariosProcesando.add(publicacion.id);
     const padre = this.respuestasComentario[publicacion.id]?.id;
-    this.publicacionesService.comentar(publicacion.id, id, texto, padre).subscribe(() => {
-      this.textosComentario[publicacion.id] = '';
-      this.respuestasComentario[publicacion.id] = undefined;
-      publicacion.totalComentarios++;
-      this.cargarComentarios(publicacion.id);
-    });
+    this.publicacionesService
+      .comentar(publicacion.id, id, texto, padre)
+      .pipe(finalize(() => this.comentariosProcesando.delete(publicacion.id)))
+      .subscribe({
+      next: () => {
+        this.textosComentario[publicacion.id] = '';
+        this.respuestasComentario[publicacion.id] = undefined;
+        publicacion.totalComentarios++;
+        this.mensaje = '';
+        this.cargarComentarios(publicacion.id);
+      },
+      error: (error) => {
+        this.mensaje = error.error?.message || 'No se pudo publicar el comentario.';
+      },
+      });
   }
 
   prepararRespuesta(publicacionId: number, comentario: Comentario): void {
@@ -192,7 +222,6 @@ export class ListarPublicaciones implements OnInit {
     this.publicacionesService
       .eliminarComentario(publicacion.id, comentario.id, id)
       .subscribe(() => {
-        publicacion.totalComentarios = Math.max(0, publicacion.totalComentarios - 1);
         this.cargarComentarios(publicacion.id);
       });
   }
@@ -288,7 +317,15 @@ export class ListarPublicaciones implements OnInit {
   seguir(persona: Usuario): void {
     const id = this.autenticacionService.usuario()?.id;
     if (!id) return;
-    this.amigosService.seguir(id, persona.id).subscribe(() => (persona.solicitudPendiente = true));
+    this.amigosService.seguir(id, persona.id).subscribe({
+      next: () => {
+        persona.solicitudPendiente = true;
+        this.mensaje = `Solicitud enviada a ${persona.nombre}.`;
+      },
+      error: (error) => {
+        this.mensaje = error.error?.message || 'No se pudo enviar la solicitud de amistad.';
+      },
+    });
   }
 
   esPropia(publicacion: Publicacion): boolean {

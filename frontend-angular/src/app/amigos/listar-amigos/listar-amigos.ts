@@ -36,6 +36,7 @@ export class ListarAmigos implements OnInit {
   seguidos = 0;
   cargando = true;
   mensaje = '';
+  esError = false;
   constructor(
     private route: ActivatedRoute,
     private amigosService: AmigosService,
@@ -70,6 +71,7 @@ export class ListarAmigos implements OnInit {
       },
       error: () => {
         this.mensaje = 'No se pudieron cargar los perfiles.';
+        this.esError = true;
         this.cargando = false;
       },
     });
@@ -78,14 +80,31 @@ export class ListarAmigos implements OnInit {
     const id = this.autenticacionService.usuario()?.id;
     if (!id) return;
     if (persona.siguiendo) {
-      this.amigosService.dejarDeSeguir(id, persona.id).subscribe(() => {
-        persona.siguiendo = false;
-        this.miRed = this.miRed.filter((p) => p.id !== persona.id);
+      this.amigosService.dejarDeSeguir(id, persona.id).subscribe({
+        next: () => {
+          persona.siguiendo = false;
+          persona.solicitudPendiente = false;
+          this.miRed = this.miRed.filter((p) => p.id !== persona.id);
+          this.mensaje = `Ya no sigues a ${persona.nombre}.`;
+          this.esError = false;
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo actualizar la lista de amigos.';
+          this.esError = true;
+        },
       });
     } else {
-      this.amigosService
-        .seguir(id, persona.id)
-        .subscribe(() => (persona.solicitudPendiente = true));
+      this.amigosService.seguir(id, persona.id).subscribe({
+        next: () => {
+          persona.solicitudPendiente = true;
+          this.mensaje = `Solicitud enviada a ${persona.nombre}.`;
+          this.esError = false;
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo enviar la solicitud de amistad.';
+          this.esError = true;
+        },
+      });
     }
   }
 }
