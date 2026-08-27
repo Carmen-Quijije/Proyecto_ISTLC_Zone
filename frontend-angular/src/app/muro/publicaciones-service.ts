@@ -2,7 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map } from 'rxjs';
-import { Comentario, Publicacion } from '../core/modelos';
+import { Comentario, Publicacion, Usuario } from '../core/modelos';
 
 export type { Comentario, Publicacion } from '../core/modelos';
 
@@ -101,6 +101,14 @@ export class PublicacionesService {
 
   compartirEnPerfil(publicacionId: number, usuarioId: number) {
     return this.http.post(`${this.apiUrl}/posts/${publicacionId}/share-profile`, { usuarioId });
+  }
+
+  obtenerUsuariosMeGusta(publicacionId: number) {
+    return this.http
+      .get<{ success: boolean; usuarios: Usuario[] }>(
+        `${this.apiUrl}/posts/${publicacionId}/likes`,
+      )
+      .pipe(map((respuesta) => respuesta.usuarios ?? []));
   }
 
   compartirPorMensaje(publicacionId: number, emisorId: number, receptorId: number) {

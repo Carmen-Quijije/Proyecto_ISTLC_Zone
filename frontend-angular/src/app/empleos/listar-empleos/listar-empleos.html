@@ -22,7 +22,7 @@
     >
     } @empty {
     <!-- Estado temporal mientras se cargan ofertas o cuando no hay resultados. -->
-    <p class="texto-secundario">{{cargando?'Cargando ofertas de empleo…':error||'No se encontraron ofertas con el filtro seleccionado.'}}</p>
+    @if(!cargando){<p class="texto-secundario">{{error||'No se encontraron ofertas con el filtro seleccionado.'}}</p>}
     }
   </div>
   @if(empleosFiltrados.length){<mat-paginator [length]="empleosFiltrados.length" [pageIndex]="pagina" [pageSize]="tamanoPagina" [pageSizeOptions]="[10,20,30,40,50]" showFirstLastButtons aria-label="Páginas de ofertas de empleo" (page)="cambiarPagina($event)"></mat-paginator>}

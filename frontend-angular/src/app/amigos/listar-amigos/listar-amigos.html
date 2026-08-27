@@ -1,6 +1,6 @@
 <main class="amigos-page">
   <!-- Cabecera compartida visualmente con el perfil original. -->
-  <section class="perfil-mini"><div class="portada"><div class="identidad"><img [src]="perfil?.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><div class="datos-cabecera"><h1>{{perfil?.nombre||'Usuario ISTLC'}}</h1><p>{{seguidores}} seguidores · {{seguidos}} seguidos</p><p>{{perfil?.bio||'Bienvenido a mi perfil de ISTLC Zone.'}}</p><div class="detalles-cabecera"><span><mat-icon>location_on</mat-icon>{{perfil?.viveEn||'No registrado'}}</span><span><mat-icon>school</mat-icon>{{perfil?.carrera||'No registrado'}}</span><span><mat-icon>menu_book</mat-icon>{{perfil?.semestre||'No registrado'}}</span></div></div></div></div></section>
+  <section class="perfil-mini"><div class="portada"><div class="identidad"><img [src]="perfil?.fotoPerfil||'assets/images/icono.png'" alt="Perfil"><div class="datos-cabecera"><h1>{{perfil?.nombre||'Usuario ISTLC'}}</h1><p>{{seguidores}} seguidores · {{seguidos}} seguidos</p><p>{{perfil?.bio||'Miembro de la comunidad ISTLC Zone'}}</p><div class="detalles-cabecera"><span><mat-icon>location_on</mat-icon>{{perfil?.viveEn||'No registrado'}}</span><span><mat-icon>person</mat-icon>{{perfil?.tipoUsuario||(perfil?.carrera==='Docente'?'Docente':'Estudiante')}}</span><span><mat-icon>menu_book</mat-icon>{{perfil?.semestre||'No registrado'}}</span></div></div></div></div></section>
   <!-- Todas las opciones conservan el ID del perfil que se está consultando. -->
   <nav class="tabs" aria-label="Secciones del perfil">
     <a [routerLink]="['/perfil']" [queryParams]="{id:perfilId}">Todo</a>
@@ -16,7 +16,7 @@
       <p class="secundario">Personas que ya forman parte de {{perfilId===autenticacionService.usuario()?.id?'tu':'esta'}} red.</p>
       @if(mensajeRed){<div class="error-red"><span>{{mensajeRed}}</span><button mat-button type="button" (click)="cargar()">Reintentar</button></div>}
       <div class="red-grid">
-        @if(cargandoRed){<p class="secundario">Cargando amigos guardados...</p>}@else{@for(persona of miRed;track persona.id){
+        @if(!cargandoRed){@for(persona of miRed;track persona.id){
           <article class="amigo-card">
             <a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}"><img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil de {{persona.nombre}}"></a>
             <h3><a [routerLink]="['/perfil']" [queryParams]="{id:persona.id}">{{persona.nombre}}</a></h3><p>@{{persona.usuario}}</p><small>{{persona.carrera||'Comunidad ISTLC'}}{{persona.semestre?' - '+persona.semestre:''}}</small>
@@ -27,7 +27,7 @@
       </div>
     </mat-card>
     <mat-card class="busqueda"><h2>Buscar compañeros</h2><p class="secundario">Encuentra estudiantes registrados y agrégalos a tu red.</p><mat-form-field appearance="outline"><mat-label>Buscar por nombre, usuario o correo</mat-label><input matInput [(ngModel)]="termino" (input)="buscar()"><mat-icon matSuffix>search</mat-icon></mat-form-field></mat-card>
-    @if(cargando){<p class="secundario">Cargando perfiles...</p>}@if(mensaje){<p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{mensaje}}</p>}
+    @if(mensaje){<p [class.mensaje-error]="esError" [class.mensaje-exito]="!esError">{{mensaje}}</p>}
     <div class="resultados">
       @for(persona of personas;track persona.id){
         <mat-card class="tarjeta-persona">

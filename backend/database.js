@@ -108,6 +108,17 @@ const initDatabase = async () => {
     `);
     console.log('Tabla registros_pendientes lista');
 
+    // El tipo institucional se incorpora de forma segura a las tablas existentes de Render.
+    await pool.query(`
+        ALTER TABLE usuarios
+        ADD COLUMN IF NOT EXISTS tipo_usuario TEXT
+    `);
+    await pool.query(`
+        ALTER TABLE registros_pendientes
+        ADD COLUMN IF NOT EXISTS tipo_usuario TEXT
+    `);
+    console.log('Tipo de usuario institucional listo');
+
     await pool.query(`
         CREATE TABLE IF NOT EXISTS seguidores (
             id SERIAL PRIMARY KEY,
@@ -188,6 +199,17 @@ const initDatabase = async () => {
         )
     `);
     console.log('Tabla likes_publicaciones lista');
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS etiquetas_publicaciones (
+            id SERIAL PRIMARY KEY,
+            publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+            usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            fecha TIMESTAMPTZ DEFAULT NOW(),
+            UNIQUE (publicacion_id, usuario_id)
+        )
+    `);
+    console.log('Tabla etiquetas_publicaciones lista');
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS mensajes (

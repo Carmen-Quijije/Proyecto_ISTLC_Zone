@@ -109,6 +109,62 @@
 .crear-publicacion mat-form-field {
   width: 100%;
 }
+.ayuda-mencion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -8px 0 12px;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+.ayuda-mencion mat-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: #d89f00;
+}
+.sugerencias-mencion {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  gap: 3px;
+  margin: -16px 0 12px;
+  padding: 6px;
+  border: 1px solid #d5dbe3;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 5px 16px #061a3820;
+}
+.sugerencias-mencion button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  color: #061a38;
+  text-align: left;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+.sugerencias-mencion button:hover {
+  background: #fff8df;
+}
+.sugerencias-mencion img {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.sugerencias-mencion span {
+  display: grid;
+}
+.sugerencias-mencion small {
+  color: #64748b;
+}
+.comentario-menciones {
+  margin: -13px 0 8px 58px;
+}
 .selector-imagen {
   display: flex;
   align-items: center;
@@ -211,7 +267,10 @@
   box-shadow: 0 2px 5px #0001;
 }
 .acciones-publicacion button.activo {
-  color: #c62828;
+  color: #b4232c;
+  background: #fdebec;
+  border-color: #e8a8ad;
+  box-shadow: inset 0 0 0 1px #ffffff99;
 }
 .comentarios {
   padding: 14px 18px;
@@ -252,14 +311,29 @@
 }
 .acciones-comentario button {
   padding: 0;
-  color: #475569;
+  color: #748092;
   border: 0;
   background: transparent;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 400;
   cursor: pointer;
 }
 .acciones-comentario button.peligro {
-  color: #c62828;
+  color: #d15f66;
+}
+.acciones-comentario button:hover {
+  color: #35445a;
+  text-decoration: underline;
+}
+.acciones-comentario button.peligro:hover {
+  color: #b4232c;
+}
+.ver-mas-comentarios {
+  display: block;
+  margin: 4px auto 10px;
+  color: #53657d !important;
+  font-size: 0.86rem;
+  font-weight: 500;
 }
 .respondiendo {
   display: flex;
@@ -267,6 +341,22 @@
   gap: 5px;
   margin: 8px 0 0 58px;
   color: #64748b;
+}
+.contador-interactivo {
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.contador-interactivo:not(:disabled):hover {
+  color: #b4232c;
+  text-decoration: underline;
+}
+.contador-interactivo:disabled {
+  color: inherit;
+  cursor: default;
 }
 .panel-compartir {
   display: grid;
@@ -330,6 +420,87 @@
 }
 .visor-siguiente {
   right: 18px;
+}
+.modal-social {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(6, 26, 56, 0.62);
+}
+.modal-social-contenido {
+  width: min(520px, 94vw);
+  max-height: min(680px, 86vh);
+  overflow: hidden;
+  border-radius: 12px !important;
+  background: var(--istlc-superficie, #fff);
+}
+.modal-social-contenido > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--istlc-borde, #d5dbe3);
+}
+.modal-social-contenido h2 {
+  margin: 0;
+  color: var(--istlc-texto, #061a38);
+  font-size: 1.2rem;
+}
+.modal-lista {
+  max-height: calc(86vh - 70px);
+  overflow-y: auto;
+  padding: 10px 16px 18px;
+}
+.usuario-reaccion,
+.comentario-modal {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 4px;
+  color: var(--istlc-texto, #061a38);
+  border-bottom: 1px solid var(--istlc-borde, #e5e7eb);
+}
+.usuario-reaccion img,
+.comentario-modal img {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.usuario-reaccion span,
+.comentario-modal > div {
+  display: grid;
+  flex: 1;
+}
+.usuario-reaccion small,
+.comentario-modal small {
+  color: #748092;
+}
+.usuario-reaccion > mat-icon {
+  color: #b4232c;
+}
+.comentario-modal p {
+  margin: 3px 0 0;
+  white-space: pre-wrap;
+}
+.comentario-modal.respuesta {
+  margin-left: 38px;
+}
+.modal-espera {
+  width: 34px;
+  height: 34px;
+  margin: 28px auto;
+  border: 3px solid #e5e7eb;
+  border-top-color: #ffc107;
+  border-radius: 50%;
+  animation: girar-modal 0.75s linear infinite;
+}
+@keyframes girar-modal {
+  to { transform: rotate(360deg); }
 }
 .nuevo-comentario mat-form-field {
   flex: 1;

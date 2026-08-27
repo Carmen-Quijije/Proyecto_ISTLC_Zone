@@ -148,7 +148,7 @@ export class App implements OnInit, OnDestroy {
       this.router.navigate(['/muro'], {
         queryParams: {
           publicacion: referencia,
-          comentarios: ['comentario', 'respuesta_comentario'].includes(notificacion.tipo) ? 1 : null,
+          comentarios: ['comentario', 'respuesta_comentario', 'mencion'].includes(notificacion.tipo) ? 1 : null,
         },
       });
     else this.router.navigate(['/muro']);

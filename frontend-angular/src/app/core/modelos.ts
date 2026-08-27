@@ -10,6 +10,7 @@ export interface Usuario {
   lugarOrigen?: string;
   fechaNacimiento?: string;
   estadoCivil?: string;
+  tipoUsuario?: string;
   carrera?: string;
   semestre?: string;
   fotoPerfil?: string;

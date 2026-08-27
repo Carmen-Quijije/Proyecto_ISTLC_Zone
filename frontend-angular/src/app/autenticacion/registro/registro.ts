@@ -8,6 +8,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { CARRERAS, SEMESTRES, TIPOS_USUARIO } from '../../core/opciones-perfil';
 import { AutenticacionService } from '../autenticacion-service';
 
 @Component({
@@ -18,6 +20,7 @@ import { AutenticacionService } from '../autenticacion-service';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
@@ -32,6 +35,9 @@ export class Registro {
   mensaje = '';
   esError = false;
   emailPendiente = '';
+  readonly tiposUsuario = TIPOS_USUARIO;
+  readonly carreras = CARRERAS;
+  readonly semestres = SEMESTRES;
 
   readonly formulario = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
@@ -53,8 +59,9 @@ export class Registro {
     lugarOrigen: [''],
     fechaNacimiento: [''],
     estadoCivil: [''],
-    carrera: [''],
-    semestre: [''],
+    tipoUsuario: ['', Validators.required],
+    carrera: ['', Validators.required],
+    semestre: ['', Validators.required],
     bio: [''],
     terminos: [false, Validators.requiredTrue],
     privacidad: [false],
@@ -66,7 +73,13 @@ export class Registro {
   constructor(
     private autenticacionService: AutenticacionService,
     private router: Router,
-  ) {}
+  ) {
+    this.formulario.controls.carrera.disable({ emitEvent: false });
+    this.formulario.controls.semestre.disable({ emitEvent: false });
+    this.formulario.controls.tipoUsuario.valueChanges.subscribe((tipo) =>
+      this.aplicarTipoUsuario(tipo),
+    );
+  }
 
   registrar(): void {
     if (this.formulario.invalid) {
@@ -91,6 +104,7 @@ export class Registro {
       lugarOrigen: valores.lugarOrigen.trim(),
       fechaNacimiento: valores.fechaNacimiento,
       estadoCivil: valores.estadoCivil.trim(),
+      tipoUsuario: valores.tipoUsuario,
       carrera: valores.carrera.trim(),
       semestre: valores.semestre.trim(),
       bio: valores.bio.trim(),
@@ -166,6 +180,28 @@ export class Registro {
     const control = this.formularioCodigo.controls.codigo;
     const normalizado = control.value.replace(/\D/g, '').slice(0, 6);
     if (normalizado !== control.value) control.setValue(normalizado, { emitEvent: false });
+  }
+
+  /** Activa los campos académicos según el tipo de miembro seleccionado. */
+  private aplicarTipoUsuario(tipo: string): void {
+    const carrera = this.formulario.controls.carrera;
+    const semestre = this.formulario.controls.semestre;
+    carrera.reset('', { emitEvent: false });
+    semestre.reset('', { emitEvent: false });
+
+    if (!tipo) {
+      carrera.disable({ emitEvent: false });
+      semestre.disable({ emitEvent: false });
+      return;
+    }
+
+    carrera.enable({ emitEvent: false });
+    if (tipo === 'Estudiante') {
+      semestre.enable({ emitEvent: false });
+    } else {
+      semestre.setValue('No aplica', { emitEvent: false });
+      semestre.disable({ emitEvent: false });
+    }
   }
 
   private mostrar(mensaje: string, error: boolean): void {

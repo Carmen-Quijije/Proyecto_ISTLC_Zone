@@ -62,7 +62,29 @@
 }
 .perfil-acciones {
   display: flex;
+  align-self: flex-end;
+  align-items: center;
   gap: 8px;
+  margin: 0 0 44px auto;
+}
+.perfil-acciones button[mat-stroked-button],
+.perfil-acciones button[mat-flat-button],
+.perfil-acciones a[mat-flat-button] {
+  min-width: 132px;
+  min-height: 44px;
+  justify-content: center;
+  border: 1px solid #ffc107 !important;
+  font-weight: 700;
+}
+.perfil-acciones .estado-seguimiento {
+  color: #061a38 !important;
+  background: #ffe082 !important;
+}
+.perfil-acciones .reportar-perfil {
+  min-width: 44px;
+  color: #fff !important;
+  border-color: #ffffff66 !important;
+  background: #061a3866 !important;
 }
 .amarillo {
   background: #ffc107 !important;
@@ -78,6 +100,8 @@
   margin: auto;
   padding: 0;
   background: var(--istlc-superficie);
+  flex-wrap: wrap;
+  overflow: visible;
 }
 .perfil-tabs::before {
   position: absolute;
@@ -226,7 +250,8 @@
     justify-content: center;
   }
   .perfil-tabs {
-    overflow: auto;
+    flex-wrap: wrap;
+    overflow: visible;
   }
   .perfil-contenido {
     grid-template-columns: 1fr;

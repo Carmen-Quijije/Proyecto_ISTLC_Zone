@@ -1,5 +1,5 @@
 // Muro social equivalente a la versión original: perfil, publicaciones, comentarios y sugerencias.
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -28,7 +28,7 @@ import { PublicacionesService } from '../publicaciones-service';
   templateUrl: './listar-publicaciones.html',
   styleUrl: './listar-publicaciones.css',
 })
-export class ListarPublicaciones implements OnInit {
+export class ListarPublicaciones implements OnInit, OnDestroy {
   publicaciones: Publicacion[] = [];
   perfil?: Usuario;
   seguidores = 0;
@@ -47,10 +47,17 @@ export class ListarPublicaciones implements OnInit {
   contactosCompartir: Usuario[] = [];
   imagenesVisor: string[] = [];
   indiceVisor = 0;
+  publicacionMeGustaModal?: Publicacion;
+  usuariosMeGusta: Usuario[] = [];
+  cargandoUsuariosMeGusta = false;
+  publicacionComentariosModal?: Publicacion;
+  comentariosModal: Comentario[] = [];
+  cargandoComentariosModal = false;
   publicando = false;
   estadoPublicacion = 'Publicando...';
   mensaje = '';
   private cargaActual = 0;
+  private temporizadorActualizacion?: ReturnType<typeof setInterval>;
 
   constructor(
     private publicacionesService: PublicacionesService,
@@ -63,6 +70,28 @@ export class ListarPublicaciones implements OnInit {
   ngOnInit(): void {
     // Se ejecuta al entrar y también cuando cambia un parámetro del muro.
     this.route.queryParamMap.subscribe(() => this.cargarTodo());
+    this.temporizadorActualizacion = setInterval(() => this.refrescarPublicaciones(), 10000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.temporizadorActualizacion) clearInterval(this.temporizadorActualizacion);
+  }
+
+  /** Actualiza contadores y contenido sin recargar el resto del muro ni cerrar comentarios. */
+  private refrescarPublicaciones(): void {
+    if (document.hidden || this.publicando) return;
+    const usuario: any = this.autenticacionService.usuario();
+    const id = Number(usuario?.id ?? usuario?.usuarioId ?? 0);
+    if (!id) return;
+    this.publicacionesService.obtenerMuro(id).subscribe({
+      next: (datos) => {
+        this.publicaciones = datos;
+        [...this.comentariosVisibles].forEach((publicacionId) =>
+          this.cargarComentarios(publicacionId),
+        );
+      },
+      error: () => {},
+    });
   }
 
   cargarTodo(): void {
@@ -181,26 +210,83 @@ export class ListarPublicaciones implements OnInit {
       });
   }
 
+  get mencionesPublicacion(): Usuario[] {
+    return this.filtrarMenciones(this.contenido);
+  }
+
+  mencionesComentario(publicacionId: number): Usuario[] {
+    return this.filtrarMenciones(this.textosComentario[publicacionId] ?? '');
+  }
+
+  agregarMencionPublicacion(persona: Usuario): void {
+    this.contenido = this.insertarMencion(this.contenido, persona.usuario);
+  }
+
+  agregarMencionComentario(publicacionId: number, persona: Usuario): void {
+    this.textosComentario[publicacionId] = this.insertarMencion(
+      this.textosComentario[publicacionId] ?? '',
+      persona.usuario,
+    );
+  }
+
+  private filtrarMenciones(texto: string): Usuario[] {
+    const coincidencia = /(?:^|\s)@([^\s@]*)$/.exec(texto);
+    if (!coincidencia) return [];
+    const termino = coincidencia[1].toLowerCase();
+    return this.contactosCompartir
+      .filter(
+        (persona) =>
+          (persona.usuario ?? '').toLowerCase().includes(termino) ||
+          (persona.nombre ?? '').toLowerCase().includes(termino),
+      )
+      .slice(0, 5);
+  }
+
+  private insertarMencion(texto: string, usuario: string): string {
+    return `${texto.replace(/(?:^|\s)@[^\s@]*$/, (valor) =>
+      valor.startsWith(' ') ? ` @${usuario}` : `@${usuario}`,
+    )} `;
+  }
+
   cambiarMeGusta(publicacion: Publicacion): void {
     const id = this.autenticacionService.usuario()?.id;
     if (!id || this.likesProcesando.has(publicacion.id)) return;
+    const estadoAnterior = publicacion.likedByMe;
+    const totalAnterior = publicacion.totalLikes;
+    // Refleja el clic inmediatamente; si el servidor falla, se restaura el estado anterior.
+    publicacion.likedByMe = !estadoAnterior;
+    publicacion.totalLikes = Math.max(0, totalAnterior + (estadoAnterior ? -1 : 1));
     this.likesProcesando.add(publicacion.id);
     this.publicacionesService
-      .cambiarMeGusta(publicacion.id, id, publicacion.likedByMe)
+      .cambiarMeGusta(publicacion.id, id, estadoAnterior)
       .pipe(finalize(() => this.likesProcesando.delete(publicacion.id)))
       .subscribe({
-        next: () => {
-          publicacion.totalLikes = Math.max(
-            0,
-            publicacion.totalLikes + (publicacion.likedByMe ? -1 : 1),
-          );
-          publicacion.likedByMe = !publicacion.likedByMe;
-          this.mensaje = '';
-        },
+        next: () => (this.mensaje = ''),
         error: (error) => {
+          publicacion.likedByMe = estadoAnterior;
+          publicacion.totalLikes = totalAnterior;
           this.mensaje = error.error?.message || 'No se pudo actualizar el Me gusta.';
         },
       });
+  }
+
+  abrirUsuariosMeGusta(publicacion: Publicacion): void {
+    if (!publicacion.totalLikes) return;
+    this.publicacionMeGustaModal = publicacion;
+    this.usuariosMeGusta = [];
+    this.cargandoUsuariosMeGusta = true;
+    this.publicacionesService
+      .obtenerUsuariosMeGusta(publicacion.id)
+      .pipe(finalize(() => (this.cargandoUsuariosMeGusta = false)))
+      .subscribe({
+        next: (usuarios) => (this.usuariosMeGusta = usuarios),
+        error: () => (this.mensaje = 'No se pudo consultar quién reaccionó a la publicación.'),
+      });
+  }
+
+  cerrarUsuariosMeGusta(): void {
+    this.publicacionMeGustaModal = undefined;
+    this.usuariosMeGusta = [];
   }
 
   mostrarComentarios(publicacion: Publicacion): void {
@@ -217,9 +303,33 @@ export class ListarPublicaciones implements OnInit {
       .obtenerComentarios(publicacionId)
       .subscribe((datos) => {
         this.comentarios[publicacionId] = datos;
+        if (this.publicacionComentariosModal?.id === publicacionId)
+          this.comentariosModal = datos;
         const publicacion = this.publicaciones.find((item) => item.id === publicacionId);
         if (publicacion) publicacion.totalComentarios = datos.length;
       });
+  }
+
+  abrirComentariosModal(publicacion: Publicacion): void {
+    this.publicacionComentariosModal = publicacion;
+    this.comentariosModal = this.comentarios[publicacion.id] ?? [];
+    this.cargandoComentariosModal = true;
+    this.publicacionesService
+      .obtenerComentarios(publicacion.id)
+      .pipe(finalize(() => (this.cargandoComentariosModal = false)))
+      .subscribe({
+        next: (datos) => {
+          this.comentarios[publicacion.id] = datos;
+          this.comentariosModal = datos;
+          publicacion.totalComentarios = datos.length;
+        },
+        error: () => (this.mensaje = 'No se pudieron cargar todos los comentarios.'),
+      });
+  }
+
+  cerrarComentariosModal(): void {
+    this.publicacionComentariosModal = undefined;
+    this.comentariosModal = [];
   }
 
   comentar(publicacion: Publicacion): void {

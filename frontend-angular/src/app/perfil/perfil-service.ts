@@ -63,6 +63,15 @@ export class PerfilService {
       .pipe(map((respuesta) => respuesta.actividades));
   }
 
+  /** Recupera publicaciones con fotografías donde el perfil fue mencionado con @usuario. */
+  obtenerPublicacionesEtiquetadas(usuarioId: number, usuarioActualId: number) {
+    return this.http
+      .get<{ success: boolean; publicaciones: Publicacion[] }>(
+        `${this.apiUrl}/posts/tagged/${usuarioId}?currentUserId=${usuarioActualId}`,
+      )
+      .pipe(map((respuesta: any) => respuesta.publicaciones ?? respuesta.posts ?? []));
+  }
+
   /** Admite tanto los campos normalizados de Angular como los nombres de la versión original. */
   private normalizarUsuario(usuario: any): Usuario {
     return {

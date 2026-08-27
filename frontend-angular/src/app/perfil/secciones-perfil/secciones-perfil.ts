@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { catchError, forkJoin, of } from 'rxjs';
 import { AmigosService } from '../../amigos/amigos-service';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
 import { PerfilRespuesta, Publicacion, Usuario } from '../../core/modelos';
@@ -22,6 +23,7 @@ export class SeccionesPerfil implements OnInit {
   perfil?: Usuario;
   respuesta?: PerfilRespuesta;
   publicaciones: Publicacion[] = [];
+  publicacionesEtiquetadas: Publicacion[] = [];
   amigos: Usuario[] = [];
   actividades: any[] = [];
   constructor(
@@ -77,9 +79,17 @@ export class SeccionesPerfil implements OnInit {
       },
     });
     if (this.seccion === 'fotos')
-      this.perfilService
-        .obtenerPublicaciones(this.perfilId, actual)
-        .subscribe((p) => (this.publicaciones = p));
+      forkJoin({
+        subidas: this.perfilService
+          .obtenerPublicaciones(this.perfilId, actual)
+          .pipe(catchError(() => of([] as Publicacion[]))),
+        etiquetadas: this.perfilService
+          .obtenerPublicacionesEtiquetadas(this.perfilId, actual)
+          .pipe(catchError(() => of([] as Publicacion[]))),
+      }).subscribe(({ subidas, etiquetadas }) => {
+        this.publicaciones = subidas;
+        this.publicacionesEtiquetadas = etiquetadas;
+      });
     if (this.seccion === 'cumpleanos' && this.esPropio)
       this.amigosService
         .listarSiguiendo(this.perfilId, actual)
@@ -97,9 +107,15 @@ export class SeccionesPerfil implements OnInit {
     return [...new Set(this.publicaciones.flatMap((p) => this.fotosPublicacion(p)))];
   }
   get gruposFotos(): { clave: string; titulo: string; fotos: string[] }[] {
+    return this.agruparFotos(this.publicaciones);
+  }
+  get gruposFotosEtiquetadas(): { clave: string; titulo: string; fotos: string[] }[] {
+    return this.agruparFotos(this.publicacionesEtiquetadas);
+  }
+  private agruparFotos(publicaciones: Publicacion[]): { clave: string; titulo: string; fotos: string[] }[] {
     const grupos = new Map<string, string[]>();
     const agregadas = new Set<string>();
-    for (const publicacion of this.publicaciones) {
+    for (const publicacion of publicaciones) {
       const fotos = this.fotosPublicacion(publicacion).filter((foto) => {
         if (agregadas.has(foto)) return false;
         agregadas.add(foto);
@@ -173,6 +189,33 @@ export class SeccionesPerfil implements OnInit {
           year: 'numeric',
         })
       : 'No registrado';
+  }
+  iconoActividad(tipo?: string): string {
+    const iconos: Record<string, string> = {
+      publicacion: 'article',
+      compartir: 'share',
+      comentario: 'chat_bubble',
+      like: 'favorite',
+      seguimiento: 'person_add',
+      solicitud_aceptada: 'how_to_reg',
+      registro: 'person',
+    };
+    return iconos[tipo ?? ''] ?? 'history';
+  }
+  rutaActividad(item: any): string {
+    return String(item?.destino ?? '').includes('muro.html') ? '/muro' : '/perfil';
+  }
+  parametrosActividad(item: any): Record<string, number | string> {
+    const destino = String(item?.destino ?? '');
+    if (destino.includes('muro.html')) {
+      const publicacion = Number(/(?:post|publicacion)=(\d+)/.exec(destino)?.[1] ?? 0);
+      return {
+        ...(publicacion ? { publicacion } : {}),
+        ...(destino.includes('comentarios=1') ? { comentarios: 1 } : {}),
+      };
+    }
+    const id = Number(/[?&]id=(\d+)/.exec(destino)?.[1] ?? this.perfilId);
+    return { id };
   }
   private fotosPublicacion(publicacion: Publicacion): string[] {
     const fotos = Array.isArray(publicacion.imagenes) ? publicacion.imagenes.filter(Boolean) : [];

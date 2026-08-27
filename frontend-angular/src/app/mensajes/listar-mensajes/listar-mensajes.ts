@@ -47,6 +47,8 @@ export class ListarMensajes implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Presenta la última lista conocida de inmediato y luego la sincroniza con Render.
+    this.restaurarContactosGuardados();
     // También vuelve a evaluar el contacto cuando cambia ?contacto= en la misma pantalla.
     this.route.queryParamMap.subscribe(() => this.cargarContactos(false));
     this.temporizador = setInterval(() => this.refrescar(), 5000);
@@ -103,6 +105,7 @@ export class ListarMensajes implements OnInit, OnDestroy {
           if (b.ultimaFecha) return 1;
           return (a.nombre ?? '').localeCompare(b.nombre ?? '', 'es');
         });
+        this.guardarContactos();
 
         this.filtrar();
         this.abrirContactoSolicitado();
@@ -243,6 +246,31 @@ export class ListarMensajes implements OnInit, OnDestroy {
     if (document.hidden) return;
     this.cargarContactos(true);
     if (this.contacto) this.obtenerChat();
+  }
+
+  private claveContactos(): string {
+    return `istlc-zone-conversaciones-${Number(this.autenticacionService.usuario()?.id || 0)}`;
+  }
+
+  private restaurarContactosGuardados(): void {
+    try {
+      const guardados = JSON.parse(localStorage.getItem(this.claveContactos()) || '[]');
+      if (!Array.isArray(guardados) || !guardados.length) return;
+      this.contactos = guardados;
+      this.contactosFiltrados = [...guardados];
+      this.cargandoContactos = false;
+      this.abrirContactoSolicitado();
+    } catch {
+      localStorage.removeItem(this.claveContactos());
+    }
+  }
+
+  private guardarContactos(): void {
+    try {
+      localStorage.setItem(this.claveContactos(), JSON.stringify(this.contactos.slice(0, 100)));
+    } catch {
+      // El almacenamiento local es solo una mejora visual; la fuente oficial sigue siendo Render.
+    }
   }
 
   hora(fecha?: string): string {

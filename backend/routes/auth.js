@@ -91,6 +91,7 @@ const normalizarUsuario = (usuario = {}) => ({
     lugarOrigen: usuario.lugar_origen || '',
     fechaNacimiento: usuario.fecha_nacimiento || '',
     estadoCivil: usuario.estado_civil || '',
+    tipoUsuario: usuario.tipo_usuario || '',
     carrera: usuario.carrera || '',
     semestre: usuario.semestre || '',
     fotoPerfil: usuario.foto_perfil || '',
@@ -101,12 +102,12 @@ const normalizarUsuario = (usuario = {}) => ({
 const usuarioSelect = `
     id, nombre, email, usuario, privacidad, email_verificado,
     vive_en, lugar_origen, fecha_nacimiento, estado_civil,
-    carrera, semestre, foto_perfil, bio, rol
+    tipo_usuario, carrera, semestre, foto_perfil, bio, rol
 `;
 const usuarioSelectConAlias = (alias) => `
     ${alias}.id, ${alias}.nombre, ${alias}.email, ${alias}.usuario, ${alias}.privacidad, ${alias}.email_verificado,
     ${alias}.vive_en, ${alias}.lugar_origen, ${alias}.fecha_nacimiento, ${alias}.estado_civil,
-    ${alias}.carrera, ${alias}.semestre, ${alias}.foto_perfil, ${alias}.bio, ${alias}.rol
+    ${alias}.tipo_usuario, ${alias}.carrera, ${alias}.semestre, ${alias}.foto_perfil, ${alias}.bio, ${alias}.rol
 `;
 
 const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) => {
@@ -115,6 +116,64 @@ const crearNotificacion = async (usuarioId, tipo, mensaje, referenciaId = null) 
         'INSERT INTO notificaciones (usuario_id, tipo, mensaje, referencia_id) VALUES (?, ?, ?, ?)',
         [usuarioId, tipo, mensaje, referenciaId]
     );
+};
+
+const extraerMenciones = (contenido = '') => [
+    ...new Set(
+        [...String(contenido).matchAll(/@([a-zA-Z0-9._-]+)/g)]
+            .map((coincidencia) => coincidencia[1].toLowerCase())
+    )
+];
+
+const obtenerAmigosMencionados = async (autorId, contenido) => {
+    const usuarios = extraerMenciones(contenido);
+    if (!usuarios.length) return [];
+    const marcadores = usuarios.map(() => '?').join(', ');
+    return all(
+        `SELECT u.id, u.nombre, u.usuario
+         FROM usuarios u
+         WHERE LOWER(u.usuario) IN (${marcadores})
+           AND u.id <> ?
+           AND EXISTS (
+               SELECT 1 FROM seguidores s
+               WHERE (s.seguidor_id = ? AND s.seguido_id = u.id)
+                  OR (s.seguidor_id = u.id AND s.seguido_id = ?)
+           )`,
+        [...usuarios, autorId, autorId, autorId]
+    );
+};
+
+const sincronizarEtiquetasPublicacion = async (publicacionId, autorId, contenido, tieneFotos) => {
+    await exec('DELETE FROM etiquetas_publicaciones WHERE publicacion_id = ?', [publicacionId]);
+    if (!tieneFotos) return;
+    const mencionados = await obtenerAmigosMencionados(autorId, contenido);
+    const autor = await one('SELECT nombre FROM usuarios WHERE id = ?', [autorId]);
+    for (const usuario of mencionados) {
+        await exec(
+            `INSERT INTO etiquetas_publicaciones (publicacion_id, usuario_id)
+             VALUES (?, ?) ON CONFLICT (publicacion_id, usuario_id) DO NOTHING`,
+            [publicacionId, usuario.id]
+        );
+        await crearNotificacion(
+            usuario.id,
+            'etiqueta',
+            `${autor?.nombre || 'Un usuario'} te etiqueto en una foto`,
+            publicacionId
+        );
+    }
+};
+
+const notificarMencionesComentario = async (publicacionId, autorId, contenido) => {
+    const mencionados = await obtenerAmigosMencionados(autorId, contenido);
+    const autor = await one('SELECT nombre FROM usuarios WHERE id = ?', [autorId]);
+    for (const usuario of mencionados) {
+        await crearNotificacion(
+            usuario.id,
+            'mencion',
+            `${autor?.nombre || 'Un usuario'} te menciono en un comentario`,
+            publicacionId
+        );
+    }
 };
 
 const esAdministrador = async (usuarioId) => {
@@ -346,12 +405,22 @@ router.post('/register', async (req, res) => {
             lugarOrigen = '',
             fechaNacimiento = '',
             estadoCivil = '',
+            tipoUsuario = '',
             carrera = '',
             semestre = '',
             bio = ''
         } = req.body;
         if (!nombre || !email || !usuario || !password) {
             return res.status(400).json({ success: false, message: 'Faltan datos' });
+        }
+        if (!['Estudiante', 'Docente'].includes(tipoUsuario)) {
+            return res.status(400).json({ success: false, message: 'Selecciona si eres estudiante o docente' });
+        }
+        if (!carrera) {
+            return res.status(400).json({ success: false, message: 'Selecciona una carrera' });
+        }
+        if (tipoUsuario === 'Estudiante' && !semestre) {
+            return res.status(400).json({ success: false, message: 'Selecciona tu semestre' });
         }
         if (!email.endsWith('@tecnologicoliceocristiano.edu.ec')) {
             return res.status(400).json({ success: false, message: 'Solo se aceptan correos institucionales' });
@@ -373,8 +442,8 @@ router.post('/register', async (req, res) => {
             `INSERT INTO registros_pendientes (
                 nombre, email, usuario, password, privacidad,
                 vive_en, lugar_origen, fecha_nacimiento, estado_civil,
-                carrera, semestre, bio
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                tipo_usuario, carrera, semestre, bio
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 nombre,
                 email,
@@ -385,8 +454,9 @@ router.post('/register', async (req, res) => {
                 lugarOrigen,
                 fechaNacimiento,
                 estadoCivil,
+                tipoUsuario,
                 carrera,
-                semestre,
+                tipoUsuario === 'Docente' ? 'No aplica' : semestre,
                 bio
             ]
         );
@@ -431,8 +501,8 @@ router.post('/verify-email', async (req, res) => {
                 nombre, email, usuario, password, privacidad,
                 codigo_verificacion, email_verificado,
                 vive_en, lugar_origen, fecha_nacimiento, estado_civil,
-                carrera, semestre, bio
-             ) VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?)`,
+                tipo_usuario, carrera, semestre, bio
+             ) VALUES (?, ?, ?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 pendiente.nombre,
                 pendiente.email,
@@ -444,6 +514,7 @@ router.post('/verify-email', async (req, res) => {
                 pendiente.lugar_origen || '',
                 pendiente.fecha_nacimiento || '',
                 pendiente.estado_civil || '',
+                pendiente.tipo_usuario || '',
                 pendiente.carrera || '',
                 pendiente.semestre || '',
                 pendiente.bio || ''
@@ -570,13 +641,19 @@ router.get('/profile/:id', async (req, res) => {
 
 router.put('/profile', async (req, res) => {
     try {
-        const { id, nombre, viveEn, lugarOrigen, fechaNacimiento, estadoCivil, carrera, semestre, fotoPerfil, bio } = req.body;
+        const { id, nombre, viveEn, lugarOrigen, fechaNacimiento, estadoCivil, tipoUsuario, carrera, semestre, fotoPerfil, bio } = req.body;
+        if (!['Estudiante', 'Docente'].includes(tipoUsuario) || !carrera) {
+            return res.status(400).json({ success: false, message: 'Selecciona el tipo de usuario y la carrera' });
+        }
+        if (tipoUsuario === 'Estudiante' && !semestre) {
+            return res.status(400).json({ success: false, message: 'Selecciona tu semestre' });
+        }
         await exec(
             `UPDATE usuarios
              SET nombre = ?, vive_en = ?, lugar_origen = ?, fecha_nacimiento = ?, estado_civil = ?,
-                 carrera = ?, semestre = ?, foto_perfil = ?, bio = ?
+                 tipo_usuario = ?, carrera = ?, semestre = ?, foto_perfil = ?, bio = ?
              WHERE id = ?`,
-            [nombre, viveEn, lugarOrigen, fechaNacimiento, estadoCivil, carrera, semestre, fotoPerfil, bio, id]
+            [nombre, viveEn, lugarOrigen, fechaNacimiento, estadoCivil, tipoUsuario, carrera, tipoUsuario === 'Docente' ? 'No aplica' : semestre, fotoPerfil, bio, id]
         );
         const actualizado = await one(`SELECT ${usuarioSelect} FROM usuarios WHERE id = ?`, [id]);
         res.json({ success: true, usuario: normalizarUsuario(actualizado) });
@@ -940,7 +1017,14 @@ router.post('/posts', async (req, res) => {
              VALUES (?, ?, ?, ?) RETURNING id`,
             [usuarioId, contenido || '', imagenes[0] || null, JSON.stringify(imagenes)]
         );
-        res.json({ success: true, id: result.rows[0]?.id });
+        const publicacionId = result.rows[0]?.id;
+        await sincronizarEtiquetasPublicacion(
+            publicacionId,
+            usuarioId,
+            contenido,
+            imagenes.length > 0
+        );
+        res.json({ success: true, id: publicacionId });
     } catch (error) {
         console.error('Error publicar:', error);
         res.status(500).json({ success: false, message: 'No se pudo publicar' });
@@ -974,6 +1058,31 @@ router.get('/posts/user/:usuarioId', async (req, res) => {
     } catch (error) {
         console.error('Error posts user:', error);
         res.status(500).json({ success: false, message: 'No se pudieron cargar publicaciones' });
+    }
+});
+
+router.get('/posts/tagged/:usuarioId', async (req, res) => {
+    try {
+        const usuarioId = Number(req.params.usuarioId);
+        const currentUserId = Number(req.query.currentUserId || usuarioId);
+        const usuario = await one('SELECT usuario FROM usuarios WHERE id = ?', [usuarioId]);
+        if (!usuario) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+        const publicaciones = await all(
+            publicacionesQuery(`WHERE p.usuario_id <> ? AND (
+                p.id IN (SELECT publicacion_id FROM etiquetas_publicaciones WHERE usuario_id = ?)
+                OR LOWER(p.contenido) LIKE ?
+            )`),
+            [currentUserId, usuarioId, usuarioId, `%@${String(usuario.usuario).toLowerCase()}%`]
+        );
+        res.json({
+            success: true,
+            publicaciones: publicaciones
+                .map(mapPublicacion)
+                .filter((publicacion) => publicacion.imagenes.length > 0)
+        });
+    } catch (error) {
+        console.error('Error fotos etiquetadas:', error);
+        res.status(500).json({ success: false, message: 'No se pudieron cargar las fotos etiquetadas' });
     }
 });
 
@@ -1015,10 +1124,13 @@ router.get('/activity/:usuarioId', async (req, res) => {
         );
 
         publicaciones.forEach((publicacion) => {
+            const esCompartida = /^Compartido:/i.test(publicacion.contenido || '');
             actividades.push({
                 clave: `publicacion-${publicacion.id}`,
-                tipo: 'publicacion',
-                titulo: `${usuario.nombre} publico en su perfil`,
+                tipo: esCompartida ? 'compartir' : 'publicacion',
+                titulo: esCompartida
+                    ? `${usuario.nombre} compartio una publicacion`
+                    : `${usuario.nombre} publico en su perfil`,
                 descripcion: publicacion.contenido || (publicacion.imagen_url ? 'Publicacion con foto' : 'Nueva publicacion'),
                 fecha: publicacion.fecha,
                 destino: `perfil.html?id=${usuario.id}#publicacion-${publicacion.id}`,
@@ -1098,6 +1210,29 @@ router.get('/activity/:usuarioId', async (req, res) => {
             });
         });
 
+        const solicitudesAceptadas = await all(
+            `SELECT ss.id, ss.fecha, u.id AS solicitante_id, u.nombre AS solicitante_nombre,
+                    u.foto_perfil AS solicitante_foto
+             FROM solicitudes_seguimiento ss
+             JOIN usuarios u ON u.id = ss.solicitante_id
+             WHERE ss.receptor_id = ? AND ss.estado = 'aceptada'
+             ORDER BY ss.fecha DESC
+             LIMIT 50`,
+            [usuarioId]
+        );
+        solicitudesAceptadas.forEach((solicitud) => {
+            actividades.push({
+                clave: `solicitud-aceptada-${solicitud.id}`,
+                tipo: 'solicitud_aceptada',
+                titulo: `${usuario.nombre} acepto la solicitud de ${solicitud.solicitante_nombre}`,
+                descripcion: 'Nueva conexion dentro de ISTLC Zone.',
+                fecha: solicitud.fecha,
+                destino: `perfil.html?id=${solicitud.solicitante_id}`,
+                nombrePersona: solicitud.solicitante_nombre,
+                foto: solicitud.solicitante_foto || fotoUsuario
+            });
+        });
+
         actividades.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
         res.json({ success: true, actividades });
     } catch (error) {
@@ -1118,6 +1253,12 @@ router.put('/posts/:id', async (req, res) => {
         await exec(
             'UPDATE publicaciones SET contenido = ?, imagen_url = ?, imagenes_json = ? WHERE id = ?',
             [contenido || '', imagenes[0] || null, JSON.stringify(imagenes), req.params.id]
+        );
+        await sincronizarEtiquetasPublicacion(
+            Number(req.params.id),
+            usuarioId,
+            contenido,
+            imagenes.length > 0
         );
         res.json({ success: true });
     } catch (error) {
@@ -1165,6 +1306,32 @@ router.delete('/posts/:id/like', async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, message: 'No se pudo quitar me gusta' });
+    }
+});
+
+// Devuelve los perfiles que reaccionaron a una publicación para el modal del muro.
+router.get('/posts/:id/likes', async (req, res) => {
+    try {
+        const usuarios = await all(
+            `SELECT u.id, u.nombre, u.usuario, u.foto_perfil
+             FROM likes_publicaciones lp
+             JOIN usuarios u ON u.id = lp.usuario_id
+             WHERE lp.publicacion_id = ?
+             ORDER BY lp.fecha DESC`,
+            [req.params.id]
+        );
+        res.json({
+            success: true,
+            usuarios: usuarios.map((usuario) => ({
+                id: usuario.id,
+                nombre: usuario.nombre,
+                usuario: usuario.usuario,
+                fotoPerfil: usuario.foto_perfil || ''
+            }))
+        });
+    } catch (error) {
+        console.error('Error usuarios Me gusta:', error);
+        res.status(500).json({ success: false, message: 'No se pudieron cargar los Me gusta' });
     }
 });
 
@@ -1216,6 +1383,7 @@ router.post('/posts/:id/comments', async (req, res) => {
         } else if (post && Number(post.usuario_id) !== Number(usuarioId)) {
             await crearNotificacion(post.usuario_id, 'comentario', `${autor?.nombre || 'Un usuario'} comento tu publicacion`, req.params.id);
         }
+        await notificarMencionesComentario(Number(req.params.id), usuarioId, contenido);
         res.json({ success: true });
     } catch (error) {
         console.error('Error crear comentario:', error);

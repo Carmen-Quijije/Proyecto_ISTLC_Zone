@@ -10,7 +10,7 @@
 .detalles-cabecera span { display: flex; align-items: center; gap: 5px; }
 .detalles-cabecera mat-icon { color: #fff; }
 .contenido h2, .amigo-card h3, .tarjeta-persona h3 { margin: 0; color: var(--istlc-texto); }
-.tabs { position: relative; z-index: 1; display: flex; align-items: stretch; gap: 0; width: min(1000px, calc(100% - 50px)); margin: auto; padding: 0; overflow-x: auto; background: var(--istlc-superficie); }
+.tabs { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; width: min(1000px, calc(100% - 50px)); margin: auto; padding: 0; overflow: visible; background: var(--istlc-superficie); }
 .tabs::before { position: absolute; inset: 0 calc(50% - 50vw); z-index: -1; background: var(--istlc-superficie); border-bottom: 1px solid var(--istlc-borde); content: ''; }
 .tabs > a { display:flex; align-items:center; min-height:48px; padding: 0 16px; color: var(--istlc-muted); cursor: pointer; white-space: nowrap; }
 .tabs .activo { border-bottom: 3px solid #0d6efd; color: #0d6efd; font-weight: 800; }
@@ -29,4 +29,4 @@
 .busqueda mat-form-field { width: 100%; margin-top: 12px; }
 .tarjeta-persona button { background: var(--istlc-amarillo); color: var(--istlc-boton-texto); font-weight: 800; }
 @media (max-width: 900px) { .red-grid, .resultados { grid-template-columns: repeat(2, minmax(230px, 1fr)); } }
-@media (max-width: 650px) { .identidad { flex-direction: column; justify-content: center; padding: 24px 0; text-align: center; } .identidad > img { width: 150px; height: 150px; } .detalles-cabecera { justify-content: center; } .tabs { overflow-x: auto; } .contenido { width: min(100% - 20px, 1350px); } .red-grid, .resultados { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .identidad { flex-direction: column; justify-content: center; padding: 24px 0; text-align: center; } .identidad > img { width: 150px; height: 150px; } .detalles-cabecera { justify-content: center; } .tabs { flex-wrap: wrap; overflow: visible; } .contenido { width: min(100% - 20px, 1350px); } .red-grid, .resultados { grid-template-columns: 1fr; } }

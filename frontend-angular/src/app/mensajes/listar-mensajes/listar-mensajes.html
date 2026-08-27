@@ -6,7 +6,7 @@
       <mat-form-field appearance="outline"><mat-label>Buscar personas</mat-label><input matInput [(ngModel)]="busqueda" (input)="filtrar()"><mat-icon matSuffix>search</mat-icon></mat-form-field>
       @if(mensajeError){<div class="error-carga"><span>{{mensajeError}}</span><button mat-button type="button" (click)="cargarContactos(false)">Reintentar</button></div>}
       <div class="lista">
-        @if(cargandoContactos){<p class="vacio">Cargando conversaciones...</p>}@else{
+        @if(!cargandoContactos){
           @for(persona of contactosFiltrados;track persona.id){
             <button class="contacto" [class.activo]="contacto?.id===persona.id" (click)="abrir(persona)">
               <img [src]="persona.fotoPerfil||'assets/images/icono.png'" alt="Perfil">
