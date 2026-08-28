@@ -1,19 +1,30 @@
 // Perfil completo con datos, red y publicaciones, compatible con perfiles propios y ajenos.
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { forkJoin } from 'rxjs';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { finalize, forkJoin } from 'rxjs';
 import { AmigosService } from '../../amigos/amigos-service';
 import { AutenticacionService } from '../../autenticacion/autenticacion-service';
-import { PerfilRespuesta, Publicacion, Usuario } from '../../core/modelos';
+import { Comentario, PerfilRespuesta, Publicacion, Usuario } from '../../core/modelos';
 import { PublicacionesService } from '../../muro/publicaciones-service';
 import { PerfilService } from '../perfil-service';
 
 @Component({
   selector: 'app-ver-perfil',
-  imports: [RouterLink, MatCardModule, MatButtonModule, MatIconModule],
+  imports: [
+    FormsModule,
+    RouterLink,
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   templateUrl: './ver-perfil.html',
   styleUrl: './ver-perfil.css',
 })
@@ -26,6 +37,12 @@ export class VerPerfil implements OnInit {
   usuariosEtiquetados: Usuario[] = [];
   publicacionEtiquetasModal?: Publicacion;
   cargandoEtiquetas = false;
+  comentarios: Record<number, Comentario[]> = {};
+  comentariosVisibles = new Set<number>();
+  textosComentario: Record<number, string> = {};
+  respuestasComentario: Record<number, Comentario | undefined> = {};
+  likesProcesando = new Set<number>();
+  comentariosProcesando = new Set<number>();
   cargando = true;
   mensaje = '';
   private solicitudPerfil = 0;
@@ -284,6 +301,121 @@ export class VerPerfil implements OnInit {
   prepararPerfilVisitado(usuario: Usuario): void {
     localStorage.setItem(`istlc-zone-perfil-vista-${Number(usuario.id)}`, JSON.stringify(usuario));
   }
+  cambiarMeGusta(publicacion: Publicacion): void {
+    const usuarioId = Number(this.autenticacionService.usuario()?.id || 0);
+    if (!usuarioId || this.likesProcesando.has(publicacion.id)) return;
+    const anterior = Boolean(publicacion.likedByMe);
+    const totalAnterior = Number(publicacion.totalLikes || 0);
+    publicacion.likedByMe = !anterior;
+    publicacion.totalLikes = Math.max(0, totalAnterior + (anterior ? -1 : 1));
+    this.likesProcesando.add(publicacion.id);
+    this.actualizarVista();
+    this.publicacionesService
+      .cambiarMeGusta(publicacion.id, usuarioId, anterior)
+      .pipe(
+        finalize(() => {
+          this.likesProcesando.delete(publicacion.id);
+          this.actualizarVista();
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.mensaje = '';
+          this.actualizarVista();
+        },
+        error: (error) => {
+          publicacion.likedByMe = anterior;
+          publicacion.totalLikes = totalAnterior;
+          this.mensaje = error.error?.message || 'No se pudo actualizar el Me gusta.';
+          this.actualizarVista();
+        },
+      });
+  }
+  mostrarComentarios(publicacion: Publicacion): void {
+    if (this.comentariosVisibles.has(publicacion.id)) {
+      this.comentariosVisibles.delete(publicacion.id);
+      this.actualizarVista();
+      return;
+    }
+    this.comentariosVisibles.add(publicacion.id);
+    this.cargarComentarios(publicacion);
+  }
+  cargarComentarios(publicacion: Publicacion): void {
+    this.publicacionesService.obtenerComentarios(publicacion.id).subscribe({
+      next: (comentarios) => {
+        this.comentarios[publicacion.id] = comentarios;
+        publicacion.totalComentarios = comentarios.length;
+        this.actualizarVista();
+      },
+      error: () => {
+        this.mensaje = 'No se pudieron cargar los comentarios.';
+        this.actualizarVista();
+      },
+    });
+  }
+  comentar(publicacion: Publicacion): void {
+    const usuarioId = Number(this.autenticacionService.usuario()?.id || 0);
+    const contenido = (this.textosComentario[publicacion.id] ?? '').trim();
+    if (!usuarioId || !contenido || this.comentariosProcesando.has(publicacion.id)) return;
+    this.comentariosProcesando.add(publicacion.id);
+    const comentarioPadreId = this.respuestasComentario[publicacion.id]?.id;
+    this.publicacionesService
+      .comentar(publicacion.id, usuarioId, contenido, comentarioPadreId)
+      .pipe(
+        finalize(() => {
+          this.comentariosProcesando.delete(publicacion.id);
+          this.actualizarVista();
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.textosComentario[publicacion.id] = '';
+          this.respuestasComentario[publicacion.id] = undefined;
+          publicacion.totalComentarios++;
+          this.cargarComentarios(publicacion);
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo publicar el comentario.';
+          this.actualizarVista();
+        },
+      });
+  }
+  prepararRespuesta(publicacionId: number, comentario: Comentario): void {
+    this.respuestasComentario[publicacionId] = comentario;
+  }
+  cancelarRespuesta(publicacionId: number): void {
+    this.respuestasComentario[publicacionId] = undefined;
+  }
+  esComentarioPropio(comentario: Comentario): boolean {
+    return Number(comentario.autor.id) === Number(this.autenticacionService.usuario()?.id || 0);
+  }
+  editarComentario(publicacion: Publicacion, comentario: Comentario): void {
+    const usuarioId = Number(this.autenticacionService.usuario()?.id || 0);
+    const contenido = window.prompt('Editar comentario', comentario.contenido)?.trim();
+    if (!usuarioId || !contenido) return;
+    this.publicacionesService
+      .editarComentario(publicacion.id, comentario.id, usuarioId, contenido)
+      .subscribe({
+        next: () => this.cargarComentarios(publicacion),
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo editar el comentario.';
+          this.actualizarVista();
+        },
+      });
+  }
+  eliminarComentario(publicacion: Publicacion, comentario: Comentario): void {
+    const usuarioId = Number(this.autenticacionService.usuario()?.id || 0);
+    if (!usuarioId || !window.confirm('¿Eliminar este comentario?')) return;
+    this.publicacionesService
+      .eliminarComentario(publicacion.id, comentario.id, usuarioId)
+      .subscribe({
+        next: () => this.cargarComentarios(publicacion),
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo eliminar el comentario.';
+          this.actualizarVista();
+        },
+      });
+  }
   seguir(): void {
     const actual = this.autenticacionService.usuario()?.id;
     if (!actual || !this.perfil) return;
@@ -312,7 +444,16 @@ export class VerPerfil implements OnInit {
     if (!usuarioId || contenido === undefined || contenido === null) return;
     this.publicacionesService
       .editar(publicacion.id, usuarioId, contenido, publicacion.imagenes)
-      .subscribe(() => (publicacion.contenido = contenido));
+      .subscribe({
+        next: () => {
+          publicacion.contenido = contenido;
+          this.actualizarVista();
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo editar la publicación.';
+          this.actualizarVista();
+        },
+      });
   }
   agregarImagenes(publicacion: Publicacion): void {
     const usuarioId = this.autenticacionService.usuario()?.id;
@@ -329,7 +470,10 @@ export class VerPerfil implements OnInit {
           const imagenes = [...publicacion.imagenes, ...respuestas.map((r) => r.url)];
           this.publicacionesService
             .editar(publicacion.id, usuarioId, publicacion.contenido, imagenes)
-            .subscribe(() => (publicacion.imagenes = imagenes));
+            .subscribe(() => {
+              publicacion.imagenes = imagenes;
+              this.actualizarVista();
+            });
         },
       );
     };
@@ -341,14 +485,26 @@ export class VerPerfil implements OnInit {
     const imagenes = publicacion.imagenes.filter((_, i) => i !== indice);
     this.publicacionesService
       .editar(publicacion.id, usuarioId, publicacion.contenido, imagenes)
-      .subscribe(() => (publicacion.imagenes = imagenes));
+      .subscribe(() => {
+        publicacion.imagenes = imagenes;
+        this.actualizarVista();
+      });
   }
   eliminarPublicacion(publicacion: Publicacion): void {
     const usuarioId = this.autenticacionService.usuario()?.id;
     if (!usuarioId || !window.confirm('¿Eliminar esta publicación?')) return;
     this.publicacionesService
       .eliminar(publicacion.id, usuarioId)
-      .subscribe(() => (this.publicaciones = this.publicaciones.filter((p) => p.id !== publicacion.id)));
+      .subscribe({
+        next: () => {
+          this.publicaciones = this.publicaciones.filter((p) => p.id !== publicacion.id);
+          this.actualizarVista();
+        },
+        error: (error) => {
+          this.mensaje = error.error?.message || 'No se pudo eliminar la publicación.';
+          this.actualizarVista();
+        },
+      });
   }
   formatear(fecha: string): string {
     return new Date(fecha).toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' });

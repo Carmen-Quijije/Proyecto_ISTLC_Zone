@@ -268,15 +268,26 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     publicacion.likedByMe = !estadoAnterior;
     publicacion.totalLikes = Math.max(0, totalAnterior + (estadoAnterior ? -1 : 1));
     this.likesProcesando.add(publicacion.id);
+    this.actualizarVista();
     this.publicacionesService
       .cambiarMeGusta(publicacion.id, id, estadoAnterior)
-      .pipe(finalize(() => this.likesProcesando.delete(publicacion.id)))
+      .pipe(
+        finalize(() => {
+          this.likesProcesando.delete(publicacion.id);
+          this.actualizarVista();
+        }),
+      )
       .subscribe({
-        next: () => (this.mensaje = ''),
+        next: () => {
+          this.mensaje = '';
+          this.guardarEstadoMuro();
+          this.actualizarVista();
+        },
         error: (error) => {
           publicacion.likedByMe = estadoAnterior;
           publicacion.totalLikes = totalAnterior;
           this.mensaje = error.error?.message || 'No se pudo actualizar el Me gusta.';
+          this.actualizarVista();
         },
       });
   }
@@ -318,6 +329,8 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
           this.comentariosModal = datos;
         const publicacion = this.publicaciones.find((item) => item.id === publicacionId);
         if (publicacion) publicacion.totalComentarios = datos.length;
+        this.guardarEstadoMuro();
+        this.actualizarVista();
       });
   }
 
@@ -351,17 +364,24 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     const padre = this.respuestasComentario[publicacion.id]?.id;
     this.publicacionesService
       .comentar(publicacion.id, id, texto, padre)
-      .pipe(finalize(() => this.comentariosProcesando.delete(publicacion.id)))
+      .pipe(
+        finalize(() => {
+          this.comentariosProcesando.delete(publicacion.id);
+          this.actualizarVista();
+        }),
+      )
       .subscribe({
       next: () => {
         this.textosComentario[publicacion.id] = '';
         this.respuestasComentario[publicacion.id] = undefined;
         publicacion.totalComentarios++;
         this.mensaje = '';
+        this.actualizarVista();
         this.cargarComentarios(publicacion.id);
       },
       error: (error) => {
         this.mensaje = error.error?.message || 'No se pudo publicar el comentario.';
+        this.actualizarVista();
       },
       });
   }
@@ -412,7 +432,11 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     if (!id || contenido === undefined || contenido === null) return;
     this.publicacionesService
       .editar(publicacion.id, id, contenido, publicacion.imagenes)
-      .subscribe(() => (publicacion.contenido = contenido));
+      .subscribe(() => {
+        publicacion.contenido = contenido;
+        this.guardarEstadoMuro();
+        this.actualizarVista();
+      });
   }
 
   eliminarPublicacion(publicacion: Publicacion): void {
@@ -420,10 +444,11 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     if (!id || !window.confirm('¿Eliminar esta publicación?')) return;
     this.publicacionesService
       .eliminar(publicacion.id, id)
-      .subscribe(
-        () =>
-          (this.publicaciones = this.publicaciones.filter((item) => item.id !== publicacion.id)),
-      );
+      .subscribe(() => {
+        this.publicaciones = this.publicaciones.filter((item) => item.id !== publicacion.id);
+        this.guardarEstadoMuro();
+        this.actualizarVista();
+      });
   }
 
   reportar(publicacion: Publicacion): void {
@@ -537,6 +562,11 @@ export class ListarPublicaciones implements OnInit, OnDestroy {
     } catch {
       // Render sigue siendo la fuente oficial; esta copia evita un muro vacío al regresar.
     }
+  }
+
+  private guardarEstadoMuro(): void {
+    const usuarioId = Number(this.autenticacionService.usuario()?.id || 0);
+    if (usuarioId) this.guardarMuro(usuarioId, this.publicaciones);
   }
 
   private actualizarVista(): void {
